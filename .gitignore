@@ -30,3 +30,16 @@
 *.exe
 *.out
 *.app
+
+# Build folder
+build
+
+# Temporary files
+*~
+
+# Submodule builds
+deps/sundials-install
+
+# Python virtual environment
+.venv
+
