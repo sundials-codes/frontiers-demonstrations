@@ -72,7 +72,7 @@ Since each of NumPy, Matplotlib, and Pandas are widely used, it is likely that t
 python3 -m venv .venv
 source .venv/bin/activate
 cd deps
-pip install -e python_requirements.txt
+pip install -r python_requirements.txt
 ```
 
 You may "deactivate" this Python environment from your current shell with the command
