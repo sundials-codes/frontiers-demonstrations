@@ -89,4 +89,5 @@ message(STATUS "Found SUNDIALS: ${SUNDIALS_DIR}")
 # add subdirectories for specific demonstration test codes
 # --------------------------------------------------------
 
+add_subdirectory(Population)
 add_subdirectory(Euler_1D)
