@@ -7,6 +7,12 @@ set(sources population_density.cpp)
 #   set the target name
 set(target population_density)
 
+#   source files
+set(sources population_density_imex.cpp)
+
+#   set the target name
+set(target population_density_imex)
+
 #   set the executable, listing the source files on which it depends
 add_executable(${target} ${sources})
 
