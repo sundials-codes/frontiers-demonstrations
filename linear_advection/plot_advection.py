@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 # ------------------------------------------------------------------------------
 # Programmer(s):  Daniel R. Reynolds @ SMU
-# Modified by Sylvia Amihere @ SMU
 # ------------------------------------------------------------------------------
 # SUNDIALS Copyright Start
 # Copyright (c) 2002-2024, Lawrence Livermore National Security
@@ -99,10 +98,10 @@ def exact_Riemann(t, x, xI):
     # begin solution
     rho1 = 1.0
     p1 = 1.0
-    u1 = 0.0
+    u1 = 1.0
     rho5 = 0.125
-    p5 = 0.1
-    u5 = 0.0
+    p5 = 1.0
+    u5 = 1.0
 
     # solve for post-shock pressure by secant method initial guesses
     p40 = p1
@@ -206,25 +205,28 @@ ax02 = fig.add_subplot(gs[0, 2])  # right column
 ax12 = fig.add_subplot(gs[1, 2])
 ax22 = fig.add_subplot(gs[2, 2])
 it = 0
+tval = repr(float(t[it])).zfill(3)
 ax00.plot(x, rho[it, :], "-b", x, rhotrue[it, :], ":k")
 ax10.plot(x, u[it, :], "-b", x, utrue[it, :], ":k")
 ax20.plot(x, p[it, :], "-b", x, ptrue[it, :], ":k")
-ax00.set_title(r"$t =$ " + repr(t[it]).zfill(3))
+ax00.set_title(r"$t =$ " + tval)
 ax00.set_ylabel(r"$\rho$")
 ax10.set_ylabel(r"$v_x$")
 ax20.set_ylabel(r"$p$")
 ax20.set_xlabel(r"$x$")
 it = nt // 2
+tval = repr(float(t[it])).zfill(3)
 ax01.plot(x, rho[it, :], "-b", x, rhotrue[it, :], ":k")
 ax11.plot(x, u[it, :], "-b", x, utrue[it, :], ":k")
 ax21.plot(x, p[it, :], "-b", x, ptrue[it, :], ":k")
-ax01.set_title(r"$t =$ " + repr(t[it]).zfill(3))
+ax01.set_title(r"$t =$ " + tval)
 ax21.set_xlabel(r"$x$")
 it = nt - 1
+tval = repr(float(t[it])).zfill(3)
 ax02.plot(x, rho[it, :], "-b", x, rhotrue[it, :], ":k")
 ax12.plot(x, u[it, :], "-b", x, utrue[it, :], ":k")
 ax22.plot(x, p[it, :], "-b", x, ptrue[it, :], ":k")
-ax02.set_title(r"$t =$ " + repr(t[it]).zfill(3))
+ax02.set_title(r"$t =$ " + tval)
 ax22.set_xlabel(r"$x$")
 plt.savefig("advection_frames.png")
 
