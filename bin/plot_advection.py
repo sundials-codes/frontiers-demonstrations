@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # ------------------------------------------------------------------------------
 # Programmer(s):  Daniel R. Reynolds @ SMU
+# Modified by Sylvia Amihere @ SMU
 # ------------------------------------------------------------------------------
 # SUNDIALS Copyright Start
 # Copyright (c) 2002-2024, Lawrence Livermore National Security
@@ -12,7 +13,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 # SUNDIALS Copyright End
 # ------------------------------------------------------------------------------
-# matplotlib-based plotting script for the serial ark_sod_lsrk example
+# matplotlib-based plotting script for the serial linear advection example
 # ------------------------------------------------------------------------------
 
 # imports
@@ -23,7 +24,7 @@ import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 
 # data file name
-datafile = "sod.out"
+datafile = "advection.out"
 
 # return with an error if the file does not exist
 if not os.path.isfile(datafile):
@@ -225,7 +226,7 @@ ax12.plot(x, u[it, :], "-b", x, utrue[it, :], ":k")
 ax22.plot(x, p[it, :], "-b", x, ptrue[it, :], ":k")
 ax02.set_title(r"$t =$ " + repr(t[it]).zfill(3))
 ax22.set_xlabel(r"$x$")
-plt.savefig("sod_frames.png")
+plt.savefig("advection_frames.png")
 
 plt.show()
 
