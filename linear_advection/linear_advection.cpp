@@ -12,14 +12,14 @@
  * SPDX-License-Identifier: BSD-3-Clause
  * SUNDIALS Copyright End
  * -----------------------------------------------------------------------------
- * This example performs a 1D linear advection problem 
+ * This example performs a 1D linear advection problem
  *    [rho, u, v, w, p] = { [1, 1, 0, 0, 1],     if 0.25 <= x <= 0.5
  *                        { [0.01, 1, 0, 0, 1],  otherwise
  *    e(x) = p(x)/(gamma - 1) + 0.5*(u^2)
- * 
+ *
  * The code solves the 1D compressible Euler equations in conserved variables,
  * over the domain (t,x) in [0, 0.5] x [0, 1].
- * 
+ *
  * Since the Linear Advection is specified in terms of primitive variables, we
  * convert between primitive and conserved variables for the initial conditions
  * and accuracy results.
@@ -557,17 +557,17 @@ int SetIC(N_Vector y, EulerData& udata)
   for (long int i = 0; i < udata.nx; i++)
   {
     sunrealtype xloc = ((sunrealtype)i + HALF) * udata.dx + udata.xl;
-    if (xloc >= FOURTH && xloc <= HALF) 
+    if (xloc >= FOURTH && xloc <= HALF)
     {
       rho[i] = rhoL;
       mx[i]  = rhoL * uL;
-      et[i]  = udata.eos_inv(rhoL, uL, ZERO, ZERO, pL);
+      et[i]  = udata.eos_inv(rhoL, rhoL*uL, ZERO, ZERO, pL);
     }
     else
     {
       rho[i] = rhoR;
       mx[i]  = rhoR * uR;
-      et[i]  = udata.eos_inv(rhoR, uR, ZERO, ZERO, pR);
+      et[i]  = udata.eos_inv(rhoR, rhoR*uR, ZERO, ZERO, pR);
     }
     my[i] = ZERO;
     mz[i] = ZERO;

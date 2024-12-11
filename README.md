@@ -124,17 +124,17 @@ Like most CMake-based projects, in-source builds are not permitted, so the code 
 ```bash
   mkdir frontiers-demonstrations/build
   cd frontiers-demonstrations/build
-  cmake -DCMAKE_INSTALL_PREFIX="[install-path]" -DSUNDIALS_ROOT="[sundials-path] .."
+  cmake -DSUNDIALS_ROOT="[sundials-path] .."
   make -j install
 ```
 
-where `[install-path]` is the path to where the binary and test input files should be installed and `[sundials-path]` is the path to the top-level folder containing the SUNDIALS installation.
+where `[sundials-path]` is the path to the top-level folder containing the SUNDIALS installation.
 
-If SUNDIALS was installed using the submodule-based instructions above, then the following commands should be sufficient to install into a new `frontiers-demonstrations/install` directory:
+If SUNDIALS was installed using the submodule-based instructions above, then the following commands should be sufficient to install the executables into a new `frontiers-demonstrations/bin` directory:
 
 ```bash
   mkdir frontiers-demonstrations/build
   cd frontiers-demonstrations/build
-  cmake -DCMAKE_INSTALL_PREFIX=../install -DSUNDIALS_ROOT=../deps/sundials-install .."
+  cmake -DSUNDIALS_ROOT=../deps/sundials-install ..
   make -j install
 ```
