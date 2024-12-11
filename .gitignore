@@ -34,6 +34,9 @@
 # Build folder
 build
 
+# Installed 'bin' folder
+bin
+
 # Temporary files
 *~
 
@@ -43,3 +46,5 @@ deps/sundials-install
 # Python virtual environment
 .venv
 
+# MacOS
+.DS_Store
