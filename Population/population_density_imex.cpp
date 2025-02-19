@@ -42,6 +42,9 @@
 
 /* Header files */
 #include <arkode/arkode_arkstep.h> /* prototypes for ARKStep fcts., consts */
+// #include <arkode/arkode_erkstep.h> //Sylvia
+// #include <arkode/arkode_butcher_erk.h> //Sylvia : ERK butcher tables
+// #include <arkode/arkode_butcher_dirk.h> //Sylvia : DIRK butcher tables 
 #include <math.h>
 #include <nvector/nvector_serial.h> /* serial N_Vector types, fcts., macros */
 #include <stdio.h>
@@ -124,6 +127,8 @@ int main(void)
   if (check_flag(&flag, "ARKodeSetMaxNumSteps", 1)) { return 1; }
   flag = ARKodeSStolerances(arkode_mem, rtol, atol);
   if (check_flag(&flag, "ARKodeSStolerances", 1)) { return 1; }
+  flag = ARKStepSetTableName(arkode_mem, "ARKODE_SSP_SDIRK_2_1_2", "ARKODE_SSP_ERK_2_1_2"); //Sylvia
+  if (check_flag(&flag, "ARKStepSetTableName", 1)) { return 1; } //Sylvia
 
   /* Initialize PCG solver -- no preconditioning, with up to N iterations  */
   SUNLinearSolver LS = SUNLinSol_PCG(y, 0, (int)N, ctx);

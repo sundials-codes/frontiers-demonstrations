@@ -84,7 +84,7 @@ public:
 
   // constructor (with default values)
   ARKODEParameters()
-    : integrator("ARKODE_LSRK_SSP_10_4"),
+    : integrator("ARKODE_SSP_ERK_10_1_2"),
       stages(0),
       rtol(SUN_RCONST(1.e-4)),
       atol(SUN_RCONST(1.e-11)),
@@ -124,7 +124,8 @@ public:
   EulerData()
     : nx(512),
       t0(ZERO),
-      tf(SUN_RCONST(HALF)), 
+      // tf(SUN_RCONST(HALF)), 
+      tf(SUN_RCONST(0.45)),
       xl(ZERO),
       xr(ONE),
       dx(ZERO),
