@@ -127,7 +127,7 @@ int main(void)
   if (check_flag(&flag, "ARKodeSetMaxNumSteps", 1)) { return 1; }
   flag = ARKodeSStolerances(arkode_mem, rtol, atol);
   if (check_flag(&flag, "ARKodeSStolerances", 1)) { return 1; }
-  flag = ARKStepSetTableName(arkode_mem, "ARKODE_SSP_SDIRK_2_1_2", "ARKODE_SSP_ERK_2_1_2"); //Sylvia
+  flag = ARKStepSetTableName(arkode_mem, "ARKODE_SSP_ESDIRK_4_2_3", "ARKODE_SSP_ERK_4_2_3"); //Sylvia
   if (check_flag(&flag, "ARKStepSetTableName", 1)) { return 1; } //Sylvia
 
   /* Initialize PCG solver -- no preconditioning, with up to N iterations  */
