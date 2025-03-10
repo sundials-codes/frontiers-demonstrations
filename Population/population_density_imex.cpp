@@ -40,6 +40,18 @@
  * are printed at the end.
  *---------------------------------------------------------------*/
 
+ #include <algorithm>
+ #include <cmath>
+ #include <cstdio>
+ #include <fstream>
+ #include <iomanip>
+ #include <iostream>
+ #include <limits>
+ #include <sstream>
+ #include <string>
+ #include <vector>
+
+
 /* Header files */
 #include <arkode/arkode_arkstep.h> /* prototypes for ARKStep fcts., consts */
 // #include <arkode/arkode_erkstep.h> //Sylvia
@@ -49,9 +61,12 @@
 #include <nvector/nvector_serial.h> /* serial N_Vector types, fcts., macros */
 #include <stdio.h>
 #include <stdlib.h>
+#include "sundials/sundials_core.hpp"
 #include <sundials/sundials_types.h> /* defs. of sunrealtype, sunindextype, etc */
 #include <sunlinsol/sunlinsol_pcg.h> /* access to PCG SUNLinearSolver        */
 #include <time.h>
+// #include "population_density_imex.hpp"
+using namespace std;
 
 #if defined(SUNDIALS_EXTENDED_PRECISION)
 #define GSYM "Lg"
@@ -63,6 +78,8 @@
 #define FSYM "f"
 #endif
 
+#define ZERO SUN_RCONST(0.0)
+
 /* user data structure */
 typedef struct
 {
@@ -71,35 +88,80 @@ typedef struct
   sunrealtype k;  /* diffusion coefficient */
 }* UserData;
 
+ class ARKODEParameters
+ {
+ public:
+   // Integration method
+   std::string Iintegrator;
+   std::string Eintegrator;
+ 
+   // Relative and absolute tolerances
+   sunrealtype rtol;
+   sunrealtype atol;
+ 
+   // Step size selection (ZERO = adaptive steps)
+   sunrealtype fixed_h;
+ 
+   // Maximum number of time steps between outputs
+   int maxsteps;
+ 
+   // Output-related information
+   int output;         // 0 = none, 1 = stats, 2 = disk, 3 = disk with tstop
+   int nout;           // number of output times
+   std::ofstream uout; // output file stream
+ 
+   // constructor (with default values)
+   ARKODEParameters()
+     : Iintegrator("ARKODE_LSRK_SSP_S_2"),
+       Eintegrator("ARKODE_LSRK_SSP_S_2"),
+       rtol(SUN_RCONST(1.e-4)),
+       atol(SUN_RCONST(1.e-11)),
+       fixed_h(ZERO),
+       maxsteps(10000),
+       output(1),
+       nout(10){};
+ 
+ }; // end ARKODEParameters
+
 /* User-supplied Functions Called by the Solver */
 static int fe(sunrealtype t, N_Vector y, N_Vector ydot, void* user_data); //Explicit RHS
 static int f(sunrealtype t, N_Vector y, N_Vector ydot, void* user_data); //Implicit RHS
 static int Jac(N_Vector v, N_Vector Jv, sunrealtype t, N_Vector y, N_Vector fy,
                void* user_data, N_Vector tmp);
+static int ReadInputs(std::vector<std::string>& args, UserData& udata,
+  ARKODEParameters& uopts, SUNContext ctx);
+static void InputHelp();
 
 /* Private function to check function return values */
 static int check_flag(void* flagvalue, const char* funcname, int opt);
 
 /* Main Program */
-int main(void)
+// int main(void)
+int main(int argc, char* argv[])
 {
+
+  // SUNDIALS context object for this simulation
+  sundials::Context ctx;
+
+  UserData udata;
+  ARKODEParameters uopts;
+
+  vector<string> args(argv + 1, argv + argc);
+
+  int flag = ReadInputs(args, udata, uopts, ctx);
+  if (check_flag(&flag, "ReadInputs", 1)) { return 1; }
+  if (flag > 0) { return 0; }
+
   /* general problem parameters */
   const sunrealtype T0 = SUN_RCONST(0.0); /* initial time */
   const sunrealtype Tf = SUN_RCONST(1.0); /* final time */
   const int Nt         = 10;              /* total number of output times */
-  const sunrealtype rtol = 1.e-6;         /* relative tolerance */
-  const sunrealtype atol = 1.e-10;        /* absolute tolerance */
+  // const sunrealtype rtol = 1.e-6;         /* relative tolerance */
+  // const sunrealtype atol = 1.e-10;        /* absolute tolerance */
   const sunindextype N = 201;             /* spatial mesh size */
   const sunrealtype k  = 0.02; // d = 0.02, 0.04 or 0 /* diffusion coefficient */
-  int flag;                              /* reusable error-checking flag */
 
-  /* Create the SUNDIALS context object for this simulation */
-  SUNContext ctx;
-  flag = SUNContext_Create(SUN_COMM_NULL, &ctx);
-  if (check_flag(&flag, "SUNContext_Create", 1)) { return 1; }
-
-  /* allocate and fill udata structure */
-  UserData udata = (UserData)malloc(sizeof(*udata));
+  /* fill udata structure */
   udata->N  = N;
   udata->k  = k;
   udata->dx = SUN_RCONST(1.0) / (N - 1); /* mesh spacing */
@@ -125,10 +187,12 @@ int main(void)
   if (check_flag(&flag, "ARKodeSetUserData", 1)) { return 1; }
   flag = ARKodeSetMaxNumSteps(arkode_mem, 10000);
   if (check_flag(&flag, "ARKodeSetMaxNumSteps", 1)) { return 1; }
-  flag = ARKodeSStolerances(arkode_mem, rtol, atol);
+  flag = ARKodeSStolerances(arkode_mem, uopts.rtol, uopts.atol);
   if (check_flag(&flag, "ARKodeSStolerances", 1)) { return 1; }
   flag = ARKStepSetTableName(arkode_mem, "ARKODE_SSP_ESDIRK_4_2_3", "ARKODE_SSP_ERK_4_2_3"); //Sylvia: new embedded imex-ssp methods
   if (check_flag(&flag, "ARKStepSetTableName", 1)) { return 1; } //Sylvia
+  // flag = ARKStepWriteParameters(arkode_mem, stdout); //Sylvia
+  // if (check_flag(&flag, "ARKStepWriteParameters", 1)) { return 1; } //Sylvia
 
   /* Initialize PCG solver -- no preconditioning, with up to N iterations  */
   SUNLinearSolver LS = SUNLinSol_PCG(y, 0, (int)N, ctx);
@@ -192,7 +256,6 @@ int main(void)
   free(udata);             /* Free user data */
   ARKodeFree(&arkode_mem); /* Free integrator memory */
   SUNLinSolFree(LS);       /* Free linear solver */
-  SUNContext_Free(&ctx);   /* Free context */
 
   return 0;
 }
@@ -240,6 +303,134 @@ static int fe(sunrealtype t, N_Vector y, N_Vector ydot, void* user_data)
 
   return 0; /* Return with success */
 }
+
+inline void find_arg(std::vector<std::string>& args, const std::string key,
+  sunrealtype& dest)
+{
+  auto it = find(args.begin(), args.end(), key);
+  if (it != args.end())
+  {
+#if defined(SUNDIALS_SINGLE_PRECISION)
+    dest = stof(*(it + 1));
+#elif defined(SUNDIALS_DOUBLE_PRECISION)
+    dest = stod(*(it + 1));
+#elif defined(SUNDIALS_EXTENDED_PRECISION)
+    dest = stold(*(it + 1));
+#endif
+    args.erase(it, it + 2);
+  }
+}
+
+
+inline void find_arg(std::vector<std::string>& args, const std::string key,
+  long int& dest)
+{
+auto it = find(args.begin(), args.end(), key);
+if (it != args.end())
+{
+dest = stoll(*(it + 1));
+args.erase(it, it + 2);
+}
+}
+
+inline void find_arg(std::vector<std::string>& args, const std::string key,
+  int& dest)
+{
+  auto it = find(args.begin(), args.end(), key);
+  if (it != args.end())
+  {
+   dest = stoi(*(it + 1));
+   args.erase(it, it + 2);
+  }
+}
+
+inline void find_arg(std::vector<std::string>& args, const std::string key,
+  std::string& dest)
+{
+  auto it = find(args.begin(), args.end(), key);
+  if (it != args.end())
+  {
+    dest = *(it + 1);
+    args.erase(it, it + 2);
+  }
+}
+
+inline void find_arg(std::vector<std::string>& args, const std::string key,
+  bool& dest, bool store = true)
+{
+  auto it = find(args.begin(), args.end(), key);
+  if (it != args.end())
+  {
+    dest = store;
+    args.erase(it);
+  }
+}
+
+
+static int ReadInputs(std::vector<std::string>& args, UserData& udata,
+  ARKODEParameters& uopts, SUNContext ctx)
+{
+  if (find(args.begin(), args.end(), "--help") != args.end())
+  {
+  InputHelp();
+  return 1;
+  }
+
+// Problem parameters
+//  find_arg(args, "--gamma", udata.gamma);
+//  find_arg(args, "--tf", udata.tf);
+//  find_arg(args, "--xl", udata.xl);
+//  find_arg(args, "--xr", udata.xr);
+//  find_arg(args, "--nx", udata.nx);
+
+// Integrator options
+//  find_arg(args, "--integrator", uopts.integrator);
+//  find_arg(args, "--stages", uopts.stages);
+  find_arg(args, "--rtol", uopts.rtol);
+  find_arg(args, "--atol", uopts.atol);
+//  find_arg(args, "--fixed_h", uopts.fixed_h);
+//  find_arg(args, "--maxsteps", uopts.maxsteps);
+//  find_arg(args, "--output", uopts.output);
+//  find_arg(args, "--nout", uopts.nout);
+
+// Recompute mesh spacing and [re]allocate flux array
+//  udata.dx = (udata.xr - udata.xl) / ((sunrealtype)udata.nx);
+//  if (udata.flux) { delete[] udata.flux; }
+//  udata.flux = new sunrealtype[NSPECIES * (udata.nx + 1)];
+
+//  if (uopts.stages < 0)
+//  {
+//    std::cerr << "ERROR: Invalid number of stages" << std::endl;
+//    return -1;
+//  }
+
+return 0;
+}
+
+
+
+static void InputHelp()
+ {
+   std::cout << std::endl;
+   std::cout << "Command line options:" << std::endl;
+  //  std::cout << "  --integrator <str> : method (ARKODE_LSRK_SSP_S_2, "
+  //               "ARKODE_LSRK_SSP_S_3, "
+  //               "ARKODE_LSRK_SSP_10_4, or any valid ARKODE_ERKTableID)\n";
+  //  std::cout << "  --stages <int>     : number of stages (ignored for "
+  //               "ARKODE_LSRK_SSP_10_4 and ERK)\n";
+  //  std::cout << "  --tf <real>        : final time\n";
+  //  std::cout << "  --xl <real>        : domain lower boundary\n";
+  //  std::cout << "  --xr <real>        : domain upper boundary\n";
+  //  std::cout << "  --gamma <real>     : ideal gas constant\n";
+  //  std::cout << "  --nx <int>         : number of mesh points\n";
+   std::cout << "  --rtol <real>      : relative tolerance\n";
+   std::cout << "  --atol <real>      : absolute tolerance\n";
+  //  std::cout << "  --fixed_h <real>   : fixed step size\n";
+  //  std::cout << "  --maxsteps <int>   : max steps between outputs\n";
+  //  std::cout << "  --output <int>     : output level\n";
+  //  std::cout << "  --nout <int>       : number of outputs\n";
+   std::cout << "  --help             : print options and exit\n";
+ }
 
 
 /* f routine to compute the ODE implicit RHS function f(t,y). */
