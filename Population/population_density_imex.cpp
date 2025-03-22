@@ -58,6 +58,7 @@
 // #include <arkode/arkode_butcher_dirk.h> //Sylvia : DIRK butcher tables 
 #include <math.h>
 #include <nvector/nvector_serial.h> /* serial N_Vector types, fcts., macros */
+#include "nvector/nvector_manyvector.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include "sundials/sundials_core.hpp"
@@ -194,7 +195,6 @@ int main(int argc, char* argv[])
 
   flag = PrintSetup(udata, uopts);
   if (check_flag(&flag, "PrintSetup", 1)) { return 1;}
-  
 
   /* Initialize data structures */
   N_Vector y = N_VNew_Serial(udata.N, ctx); /* Create serial vector for solution */
@@ -249,6 +249,8 @@ int main(int argc, char* argv[])
   printf("        t      ||u||_rms\n");
   printf("   -------------------------\n");
   printf("  %10.6" FSYM "  %10.6f\n", t, sqrt(N_VDotProd(y, y) / udata.N));
+  // printf("  %10.6" FSYM "  %10.6f\n", t, N_VGetSubvector_ManyVector(y, 0));//Sylvia
+
   for (int iout = 0; iout < uopts.Nt; iout++)
   {
     flag = ARKodeEvolve(arkode_mem, tout, y, &t, ARK_NORMAL); /* call integrator */
@@ -267,10 +269,13 @@ int main(int argc, char* argv[])
     }
 
     /* output results to disk */
+    fprintf(UFID, "Time step: %.2" FSYM "\n", t); 
+    fprintf(UFID, "-------------------------------------------------------------------- \n");
+    fprintf(UFID, "-------------------------------------------------------------------- \n");
     for (int i = 0; i < udata.N; i++) { fprintf(UFID, " %.16" ESYM "", data[i]); }
-    fprintf(UFID, "\n");
+    fprintf(UFID, "\n \n");
   }
-  printf("   -------------------------\n");
+  printf("   -------------------------\n \n");
   fclose(UFID);
 
   /* Print final statistics */
@@ -518,6 +523,8 @@ static int PrintSetup(UserData& udata, ARKODEParameters& uopts)
 
   return 0;
 }
+
+
  
 
 
