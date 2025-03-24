@@ -94,11 +94,15 @@ using namespace std;
     sunindextype N; /* number of intervals   */
     sunrealtype dx; /* mesh spacing          */
     sunrealtype k;  /* diffusion coefficient */
+    sunrealtype xstart;  /* left endpoint on spatial grid */
+    sunrealtype xend;  /* right endpoint on spatial grid */
 
   // constructor (with default values)
   UserData()
   : N(201),
     k(0.02),
+    xstart(ZERO),
+    xend(1.0),
     dx(ZERO){};
   };
 
@@ -139,7 +143,7 @@ public:
       output(1),
       Nt(10),
       T0(ZERO),
-      Tf(1.0){};
+      Tf(10.0){};
  
  }; // end ARKODEParameters
 
@@ -235,6 +239,13 @@ int main(int argc, char* argv[])
 
   /* Open output stream for results, access data array */
   FILE* UFID = fopen("population.txt", "w");
+  fprintf(UFID, "Title: Population Model \n");
+  fprintf(UFID, "Number of Time Steps %d \n", uopts.Nt);
+  fprintf(UFID, "Initial Time %f \n", uopts.T0);
+  fprintf(UFID, "Final Time %f \n", uopts.Tf);
+  fprintf(UFID, "Spatial Dimension %d \n", udata.N);
+  fprintf(UFID, "Left endpoint %f \n", udata.xstart);
+  fprintf(UFID, "Right endpoint %f \n", udata.xend);
   sunrealtype* data = N_VGetArrayPointer(y);
 
   /* output initial condition to disk */
@@ -270,8 +281,7 @@ int main(int argc, char* argv[])
 
     /* output results to disk */
     fprintf(UFID, "Time step: %.2" FSYM "\n", t); 
-    fprintf(UFID, "-------------------------------------------------------------------- \n");
-    fprintf(UFID, "-------------------------------------------------------------------- \n");
+    // fprintf(UFID, "-------------------------------------------------------------------- \n");
     for (int i = 0; i < udata.N; i++) { fprintf(UFID, " %.16" ESYM "", data[i]); }
     fprintf(UFID, "\n \n");
   }
@@ -452,6 +462,9 @@ static int ReadInputs(std::vector<std::string>& args, UserData& udata,
 // Problem parameters
  find_arg(args, "--N", udata.N);
  find_arg(args, "--k", udata.k);
+ find_arg(args, "--xstart", udata.xstart);
+ find_arg(args, "--xend", udata.xend);
+
 
 // Integrator options
   find_arg(args, "--IMintegrator", uopts.IMintegrator);
@@ -466,8 +479,8 @@ static int ReadInputs(std::vector<std::string>& args, UserData& udata,
  find_arg(args,  "--Nt", uopts.Nt);
 
  // Recompute mesh spacing and [re]allocate flux array
- udata.dx = SUN_RCONST(1.0) / (udata.N - 1);
-//  udata.dx = (udata.xr - udata.xl) / ((sunrealtype)udata.nx);
+//  udata.dx = SUN_RCONST(1.0) / (udata.N - 1);
+ udata.dx = (udata.xend - udata.xstart) / (udata.N);
 
 return 0;
 }
@@ -490,8 +503,10 @@ static void InputHelp()
    std::cout << "  --fixed_h <real>  : fixed step size\n";
    std::cout << "  --maxsteps <int>  : max steps between outputs\n";
    std::cout << "  --output <int>    : output level\n";
-   std::cout << "  --T0 <real>        : initial time \n";
-   std::cout << "  --Tf <real>        : end time\n";
+   std::cout << "  --xstart <real>   : left spatial end point  \n";
+   std::cout << "  --xend <real>     : right spatial end point  \n";
+   std::cout << "  --T0 <real>       : initial time \n";
+   std::cout << "  --Tf <real>       : end time\n";
    std::cout << "  --Nt <int>        : number of outputs\n";
    std::cout << "  --help            : print options and exit\n";
  }
@@ -506,6 +521,8 @@ static int PrintSetup(UserData& udata, ARKODEParameters& uopts)
   std::cout << "  N            = " << udata.N << std::endl;
   std::cout << "  k            = " << udata.k << std::endl;
   std::cout << "  dx           = " << udata.dx << std::endl;
+  std::cout << "  xstart       = " << udata.xstart << std::endl;
+  std::cout << "  xend         = " << udata.xend << std::endl;
   std::cout << " --------------------------------- " << std::endl;
   std::cout << "  IMintegrator = " << uopts.IMintegrator << std::endl;
   std::cout << "  EXintegrator = " << uopts.EXintegrator << std::endl;
