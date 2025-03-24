@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # ------------------------------------------------------------------------------
-# Programmer(s):  Daniel R. Reynolds and Sylvia Amihere @ SMU
+# Programmer(s):  Sylvia Amihere and Daniel R. Reynolds @ SMU
 # ------------------------------------------------------------------------------
 # SUNDIALS Copyright Start
 # Copyright (c) 2002-2024, Lawrence Livermore National Security

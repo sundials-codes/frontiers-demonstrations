@@ -220,6 +220,11 @@ int main(int argc, char* argv[])
   if (check_flag(&flag, "ARKodeSStolerances", 1)) { return 1; }
   flag = ARKStepSetTableName(arkode_mem, uopts.IMintegrator.c_str(), uopts.EXintegrator.c_str()); //Sylvia: new embedded imex-ssp methods
   if (check_flag(&flag, "ARKStepSetTableName", 1)) { return 1; } //Sylvia
+  if (uopts.fixed_h > 0.0)
+  {
+    flag = ARKodeSetFixedStep(arkode_mem, uopts.fixed_h);
+    if (check_flag(&flag, "ARKodeSetFixedStep", 1)) { return 1; }
+  }
   // flag = ARKStepWriteParameters(arkode_mem, stdout); //Sylvia
   // if (check_flag(&flag, "ARKStepWriteParameters", 1)) { return 1; } //Sylvia
   
