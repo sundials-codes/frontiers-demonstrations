@@ -1,6 +1,5 @@
 /* -----------------------------------------------------------------------------
- * Programmer(s): Daniel R. Reynolds @ SMU
- * Modified by Sylvia Amihere @ SMU
+ * Programmer(s): Daniel R. Reynolds and Sylvia Amihere @ SMU
  * -----------------------------------------------------------------------------
  * SUNDIALS Copyright Start
  * Copyright (c) 2002-2024, Lawrence Livermore National Security
@@ -94,8 +93,15 @@ int main(int argc, char* argv[])
 
   // Determine type (LSRKStep vs ERKStep)
   bool lsrk = false;
-  if (uopts.integrator == "ARKODE_LSRK_SSP_S_2") { lsrk = true; }
-  if (uopts.integrator == "ARKODE_LSRK_SSP_S_3") { lsrk = true; }
+  int stages = -1;
+  if (uopts.integrator == "ARKODE_LSRK_SSP_S_2") { 
+    lsrk = true; 
+    stages = 2;
+  }
+  if (uopts.integrator == "ARKODE_LSRK_SSP_S_3") { 
+    lsrk = true;
+    stages = 4; 
+  }
   if (uopts.integrator == "ARKODE_LSRK_SSP_10_4") { lsrk = true; }
 
   if (lsrk) // Setup LSRKStep
@@ -112,6 +118,11 @@ int main(int argc, char* argv[])
     if (uopts.stages > 0)
     {
       flag = LSRKStepSetNumSSPStages(arkode_mem, uopts.stages);
+      if (check_flag(flag, "LSRKStepSetNumSSPStages")) { return 1; }
+    }
+    else if (stages > 0)
+    {
+      flag = LSRKStepSetNumSSPStages(arkode_mem, stages);
       if (check_flag(flag, "LSRKStepSetNumSSPStages")) { return 1; }
     }
   }

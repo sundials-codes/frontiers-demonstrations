@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 # ------------------------------------------------------------------------------
-# Programmer(s):  Daniel R. Reynolds @ SMU
-# Modified by Sylvia Amihere @ SMU
+# Programmer(s):  Daniel R. Reynolds and Sylvia Amihere @ SMU
 # ------------------------------------------------------------------------------
 # SUNDIALS Copyright Start
 # Copyright (c) 2002-2024, Lawrence Livermore National Security
@@ -100,7 +99,7 @@ for it in range(nt):
 # print("rs", result_rho)
 
 PrintNorms = False
-DoPlots = True
+DoPlots = False
 
 ## Amihere (Task2): Plotting the L2 error norm :: ||rho_{xx}(t,x)|| - ||rho_{xx}(0,x)||
 itx = 0

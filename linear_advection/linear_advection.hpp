@@ -1,6 +1,5 @@
 /* -----------------------------------------------------------------------------
- * Programmer(s): Daniel R. Reynolds @ SMU
- * Modified by Sylvia Amihere @ SMU
+ * Programmer(s): Daniel R. Reynolds and Sylvia Amihere @ SMU
  * -----------------------------------------------------------------------------
  * SUNDIALS Copyright Start
  * Copyright (c) 2002-2024, Lawrence Livermore National Security
@@ -61,6 +60,8 @@ class ARKODEParameters
 public:
   // Integration method (ARKODE_LSRK_SSP_S_2, ARKODE_LSRK_SSP_S_3, ARKODE_LSRK_SSP_10_4,
   // or any valid ARKODE_ERKTableID for ERK methods)
+  //Corresponding ERK_SSP methods of the above LSRK_SSP methods:
+  // (ARKODE_SSP_ERK_10_3_4, ARKODE_SSP_ERK_9_2_3, ARKODE_SSP_ERK_10_1_2)
   std::string integrator;
 
   // Method stages (0 => to use the default; ignored if using ARKODE_LSRK_SSP_10_4 or
@@ -84,7 +85,7 @@ public:
 
   // constructor (with default values)
   ARKODEParameters()
-    : integrator("ARKODE_SSP_ERK_10_1_2"),
+    : integrator("ARKODE_LSRK_SSP_S_2"),
       stages(0),
       rtol(SUN_RCONST(1.e-4)),
       atol(SUN_RCONST(1.e-11)),
