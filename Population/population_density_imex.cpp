@@ -144,6 +144,7 @@ public:
       Nt(10),
       T0(ZERO),
       Tf(10.0){};
+      // ARKODE_SSP_LSPUM_SDIRK_3_1_2
  
  }; // end ARKODEParameters
 
@@ -248,7 +249,7 @@ int main(int argc, char* argv[])
   fprintf(UFID, "Number of Time Steps %d \n", uopts.Nt);
   fprintf(UFID, "Initial Time %f \n", uopts.T0);
   fprintf(UFID, "Final Time %f \n", uopts.Tf);
-  fprintf(UFID, "Spatial Dimension %d \n", udata.N);
+  fprintf(UFID, "Spatial Dimension %lld \n", udata.N);
   fprintf(UFID, "Left endpoint %f \n", udata.xstart);
   fprintf(UFID, "Right endpoint %f \n", udata.xend);
   sunrealtype* data = N_VGetArrayPointer(y);
@@ -326,7 +327,7 @@ static int fe(sunrealtype t, N_Vector y, N_Vector ydot, void* user_data)
   const sunrealtype dx = udata->dx;
   const sunrealtype rd = 1.0;
   const sunrealtype epsb = 0.005;
-  const sunrealtype bRate = 0.001; // neg for decline and pos for increase in birth rate
+  const sunrealtype bRate = 1.0;//0.001; // neg for decline and pos for increase in birth rate
   const sunrealtype bRateE = 1.0 + bRate * t;
 
   /* update random seed */
@@ -409,6 +410,17 @@ inline void find_arg(std::vector<std::string>& args, const std::string key,
   }
 }
 
+
+inline void find_arg(std::vector<std::string>& args, const std::string key,
+  long long& dest)
+{
+auto it = find(args.begin(), args.end(), key);
+if (it != args.end())
+{
+dest = stoll(*(it + 1));
+args.erase(it, it + 2);
+}
+}
 
 inline void find_arg(std::vector<std::string>& args, const std::string key,
   long int& dest)
