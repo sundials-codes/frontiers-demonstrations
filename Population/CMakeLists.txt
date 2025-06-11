@@ -4,6 +4,9 @@
 #   source files
 set(sources population_density.cpp)
 
+#   extra installation files
+set(extras plot_population.py)
+
 #   set the target name
 set(target population_density)
 
