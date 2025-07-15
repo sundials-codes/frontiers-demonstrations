@@ -14,7 +14,7 @@
  * Example problem:
  *
  * The following test simulates a simple 1D Population Density equation,
- *    P_t = f + b(x,P) - r_d*P + kP_xx
+ *    P_t = f + b(x,P)P - r_d*P + kP_xx
  * for t in [0, 10], x in [0, 1], with initial conditions
  *    P(0,x) =  0
  * Periodic boundary conditions, and a point-source term,
@@ -99,7 +99,7 @@ using namespace std;
 
   // constructor (with default values)
   UserData()
-  : N(201),
+  : N(100),
     k(0.02),
     xstart(ZERO),
     xend(1.0),
@@ -163,6 +163,7 @@ static int check_flag(void* flagvalue, const char* funcname, int opt);
 // int main(void)
 int main(int argc, char* argv[])
 {
+  sunrealtype* ydata; //in order to extract the minimum element of the solution vector y
 
   // SUNDIALS context object for this simulation
   sundials::Context ctx;
@@ -249,7 +250,8 @@ int main(int argc, char* argv[])
   fprintf(UFID, "Number of Time Steps %d \n", uopts.Nt);
   fprintf(UFID, "Initial Time %f \n", uopts.T0);
   fprintf(UFID, "Final Time %f \n", uopts.Tf);
-  fprintf(UFID, "Spatial Dimension %lld \n", udata.N);
+  // fprintf(UFID, "Spatial Dimension %lld \n", udata.N);
+  fprintf(UFID, "Spatial Dimension %d \n", udata.N);
   fprintf(UFID, "Left endpoint %f \n", udata.xstart);
   fprintf(UFID, "Right endpoint %f \n", udata.xend);
   sunrealtype* data = N_VGetArrayPointer(y);
@@ -263,27 +265,62 @@ int main(int argc, char* argv[])
   sunrealtype t = uopts.T0;
   sunrealtype dTout = (uopts.Tf - uopts.T0) / uopts.Nt;
   sunrealtype tout  = uopts.T0 + dTout;
-  printf("        t      ||u||_rms\n");
-  printf("   -------------------------\n");
-  printf("  %10.6" FSYM "  %10.6f\n", t, sqrt(N_VDotProd(y, y) / udata.N));
-  // printf("  %10.6" FSYM "  %10.6f\n", t, N_VGetSubvector_ManyVector(y, 0));//Sylvia
+  // printf("        t      ||u||_rms\n");
+  // printf("   -------------------------\n");
+  // printf("  %10.6" FSYM "  %10.6f\n", t, sqrt(N_VDotProd(y, y) / udata.N));
+  // // printf("  %10.6" FSYM "  %10.6f\n", t, N_VGetSubvector_ManyVector(y, 0));//Sylvia
 
-  for (int iout = 0; iout < uopts.Nt; iout++)
+  // for (int iout = 0; iout < uopts.Nt; iout++)
+  // {
+  //   flag = ARKodeEvolve(arkode_mem, tout, y, &t, ARK_NORMAL); /* call integrator */
+  //   if (check_flag(&flag, "ARKodeEvolve", 1)) { break; }
+  //   printf("  %10.6" FSYM "  %10.6f\n", t,
+  //          sqrt(N_VDotProd(y, y) / udata.N)); /* print solution stats */
+  //   if (flag >= 0)
+  //   { /* successful solve: update output time */
+  //     tout += dTout;
+  //     tout = (tout > uopts.Tf) ? uopts.Tf : tout;
+  //   }
+  //   else
+  //   { /* unsuccessful solve: break */
+  //     fprintf(stderr, "Solver failure, stopping integration\n");
+  //     break;
+  //   }
+
+  //   /* output results to disk */
+  //   fprintf(UFID, "Time step: %.2" FSYM "\n", t); 
+  //   // fprintf(UFID, "-------------------------------------------------------------------- \n");
+  //   for (int i = 0; i < udata.N; i++) { fprintf(UFID, " %.16" ESYM "", data[i]); }
+  //   fprintf(UFID, "\n \n");
+  // }
+  // printf("   -------------------------\n \n");
+  // fclose(UFID);
+
+  ydata = N_VGetArrayPointer(y); //in order to extract the minimum element of the solution vector y
+   while (tout <= uopts.Tf)
   {
-    flag = ARKodeEvolve(arkode_mem, tout, y, &t, ARK_NORMAL); /* call integrator */
+    flag = ARKodeEvolve(arkode_mem, uopts.Tf, y, &t, ARK_ONE_STEP); /* call integrator */
     if (check_flag(&flag, "ARKodeEvolve", 1)) { break; }
-    printf("  %10.6" FSYM "  %10.6f\n", t,
-           sqrt(N_VDotProd(y, y) / udata.N)); /* print solution stats */
-    if (flag >= 0)
-    { /* successful solve: update output time */
-      tout += dTout;
-      tout = (tout > uopts.Tf) ? uopts.Tf : tout;
-    }
-    else
+    if (flag < 0)
     { /* unsuccessful solve: break */
       fprintf(stderr, "Solver failure, stopping integration\n");
       break;
     }
+    float minVal = ydata[0];
+    for (int i = 0; i<udata.N; i++){
+      if (ydata[i] < minVal){
+        minVal = ydata[i];
+      }
+    }
+    if (minVal < 0.0){
+      printf("The population has a negative (minimum) value of %f at time step t = %f \n", minVal, tout);
+    }
+    else {
+      printf("The population has no negative value at time step t = %f. \n", tout);
+    }
+    tout += dTout;
+    // printf("The minimum value of the numerical solution at time step t = %f is %f \n", tout, minVal);
+    // N_VPrint(y); //print the solution vector
 
     /* output results to disk */
     fprintf(UFID, "Time step: %.2" FSYM "\n", t); 
@@ -328,7 +365,7 @@ static int fe(sunrealtype t, N_Vector y, N_Vector ydot, void* user_data)
   const sunrealtype rd = 1.0;
   const sunrealtype epsb = 0.005;
   const sunrealtype bRate = 1.0;//0.001; // neg for decline and pos for increase in birth rate
-  const sunrealtype bRateE = 1.0 + bRate * t;
+  const sunrealtype bRateE = 1.0;// + bRate * t;
 
   /* update random seed */
   srand(time(NULL));
@@ -339,12 +376,13 @@ static int fe(sunrealtype t, N_Vector y, N_Vector ydot, void* user_data)
       sunrealtype rb = (dx*i <= 0.5) ? bRateE : 100.0*bRateE;
       sunrealtype rand_num = (float)random() /(float)RAND_MAX;
       sunrealtype fsource = rand_num * 0.4 + 0.8;
-      Ydot[i] = rb * (epsb / (epsb + Y[i])) - rd * Y[i] + fsource;
+      Ydot[i] = fsource + rb * (epsb / (epsb + Y[i]))*Y[i] - rd * Y[i];
     }
   } else {
     for (int i = 0; i < N; i++) {
       sunrealtype rb = (dx*i <= 0.5) ? bRateE : 100.0*bRateE;
-      Ydot[i] = rb * (epsb / (epsb + Y[i])) - rd * Y[i];
+      sunrealtype fsource = 0.0;
+      Ydot[i] = fsource + rb * (epsb / (epsb + Y[i]))*Y[i] - rd * Y[i];
     }
   }
 
