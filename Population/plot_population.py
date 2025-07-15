@@ -86,7 +86,6 @@ with open(datafile, "r") as file:
     #         all_pSol.append(pSol)
     # # print(len(all_pSol))
     # # print(len(all_pSol[0]))
-
     
     #   plot defaults: increase default font size, increase plot width, enable LaTeX rendering
     plt.rc("font", size=15)
@@ -106,7 +105,7 @@ with open(datafile, "r") as file:
     ax00.set_title(r"$t =$ " + tval)
     ax00.set_ylabel(r"$P(t,x)$")
     ax00.set_xlabel(r"$x$")
-    it = 5
+    it = 2
     tval = repr(float(t[it])).zfill(3)
     ax01.plot(x, pSol[it, :], "-b")
     ax01.set_title(r"$t =$ " + tval)
