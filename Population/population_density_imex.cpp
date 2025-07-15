@@ -1,5 +1,5 @@
 /*---------------------------------------------------------------
- * Programmer(s): Daniel R. Reynolds and Sylvia Amihere  @ SMU
+ * Programmer(s): Daniel R. Reynolds and Sylvia Amihere @ SMU
  *---------------------------------------------------------------
  * SUNDIALS Copyright Start
  * Copyright (c) 2002-2024, Lawrence Livermore National Security
@@ -14,7 +14,7 @@
  * Example problem:
  *
  * The following test simulates a simple 1D Population Density equation,
- *    P_t = f + b(x,P) - r_d*P + kP_xx
+ *    P_t = f + b(x,P)P - r_d*P + kP_xx
  * for t in [0, 10], x in [0, 1], with initial conditions
  *    P(0,x) =  0
  * Periodic boundary conditions, and a point-source term,

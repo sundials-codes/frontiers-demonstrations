@@ -105,16 +105,22 @@ with open(datafile, "r") as file:
     ax00.set_title(r"$t =$ " + tval)
     ax00.set_ylabel(r"$P(t,x)$")
     ax00.set_xlabel(r"$x$")
-    it = 2
+    ax00.set_xticks([0.0, 0.2, 0.4, 0.6, 0.8, 1.0])
+
+    middleval = int(np.ceil(Nt/2))
+    it = middleval
     tval = repr(float(t[it])).zfill(3)
     ax01.plot(x, pSol[it, :], "-b")
     ax01.set_title(r"$t =$ " + tval)
     ax01.set_xlabel(r"$x$")
+    ax01.set_xticks([0.0, 0.2, 0.4, 0.6, 0.8, 1.0])
+    
     it = Nt - 1
     tval = repr(float(t[it])).zfill(3)
     ax02.plot(x, pSol[it, :], "-b")
     ax02.set_title(r"$t =$ " + tval)
     ax02.set_xlabel(r"$x$")
+    ax02.set_xticks([0.0, 0.2, 0.4, 0.6, 0.8, 1.0])
     plt.savefig("populationModel_frames.png")
 
     plt.rc("font", size=15)
