@@ -144,7 +144,6 @@ public:
       Nt(10),
       T0(ZERO),
       Tf(10.0){};
-      // ARKODE_SSP_LSPUM_SDIRK_3_1_2
  
  }; // end ARKODEParameters
 
