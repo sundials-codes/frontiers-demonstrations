@@ -228,7 +228,8 @@ int main(int argc, char* argv[])
   }
   // flag = ARKStepWriteParameters(arkode_mem, stdout); //Sylvia
   // if (check_flag(&flag, "ARKStepWriteParameters", 1)) { return 1; } //Sylvia
-  
+  flag = ARKodeSetStopTime(arkode_mem, uopts.Tf);
+  if (check_flag(&flag, "ARKodeSetStopTime", 1)) { return 1; }
 
   /* Initialize PCG solver -- no preconditioning, with up to N iterations  */
   SUNLinearSolver LS = SUNLinSol_PCG(y, 0, udata.N, ctx);
@@ -262,8 +263,8 @@ int main(int argc, char* argv[])
   /* Main time-stepping loop: calls ARKodeEvolve to perform the integration, then
      prints results.  Stops when the final time has been reached */
   sunrealtype t = uopts.T0;
-  sunrealtype dTout = (uopts.Tf - uopts.T0) / uopts.Nt;
-  sunrealtype tout  = uopts.T0 + dTout;
+  // sunrealtype dTout = (uopts.Tf - uopts.T0) / uopts.Nt;
+  // sunrealtype tout  = uopts.T0 + dTout;
   // printf("        t      ||u||_rms\n");
   // printf("   -------------------------\n");
   // printf("  %10.6" FSYM "  %10.6f\n", t, sqrt(N_VDotProd(y, y) / udata.N));
@@ -296,7 +297,8 @@ int main(int argc, char* argv[])
   // fclose(UFID);
 
   ydata = N_VGetArrayPointer(y); //in order to extract the minimum element of the solution vector y
-   while (tout <= uopts.Tf)
+  // while (tout <= uopts.Tf)
+  while (t < uopts.Tf)
   {
     flag = ARKodeEvolve(arkode_mem, uopts.Tf, y, &t, ARK_ONE_STEP); /* call integrator */
     if (check_flag(&flag, "ARKodeEvolve", 1)) { break; }
@@ -317,7 +319,7 @@ int main(int argc, char* argv[])
     else {
       printf("The population has no negative value at time step t = %f. \n", tout);
     }
-    tout += dTout;
+    // tout += dTout;
     // printf("The minimum value of the numerical solution at time step t = %f is %f \n", tout, minVal);
     // N_VPrint(y); //print the solution vector
 
