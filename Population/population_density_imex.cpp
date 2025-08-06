@@ -229,13 +229,8 @@ int main(int argc, char* argv[])
     flag = ARKodeSetFixedStep(arkode_mem, uopts.fixed_h);
     if (check_flag(&flag, "ARKodeSetFixedStep", 1)) { return 1; }
   }
-<<<<<<< HEAD
-=======
   // flag = ARKStepWriteParameters(arkode_mem, stdout); //Sylvia
   // if (check_flag(&flag, "ARKStepWriteParameters", 1)) { return 1; } //Sylvia
-  flag = ARKodeSetStopTime(arkode_mem, uopts.Tf);
-  if (check_flag(&flag, "ARKodeSetStopTime", 1)) { return 1; }
->>>>>>> 8e80a7edcc2c9678245bf91b4683cc98a61783d6
 
   flag = ARKodeSetStopTime(arkode_mem, uopts.Tf);
   if (check_flag(&flag, "ARKodeSetStopTime", 1)) { return 1; }
@@ -259,10 +254,6 @@ int main(int argc, char* argv[])
   fprintf(UFID, "Number of Time Steps %d \n", uopts.Nt);
   fprintf(UFID, "Initial Time %f \n", uopts.T0);
   fprintf(UFID, "Final Time %f \n", uopts.Tf);
-<<<<<<< HEAD
-=======
-  // fprintf(UFID, "Spatial Dimension %lld \n", udata.N);
->>>>>>> 8e80a7edcc2c9678245bf91b4683cc98a61783d6
   fprintf(UFID, "Spatial Dimension %d \n", udata.N);
   fprintf(UFID, "Left endpoint %f \n", udata.xstart);
   fprintf(UFID, "Right endpoint %f \n", udata.xend);
@@ -275,9 +266,6 @@ int main(int argc, char* argv[])
   /* Main time-stepping loop: calls ARKodeEvolve to perform the integration, then
      prints results.  Stops when the final time has been reached */
   sunrealtype t = uopts.T0;
-<<<<<<< HEAD
-
-=======
   // sunrealtype dTout = (uopts.Tf - uopts.T0) / uopts.Nt;
   // sunrealtype tout  = uopts.T0 + dTout;
   // printf("        t      ||u||_rms\n");
@@ -311,7 +299,6 @@ int main(int argc, char* argv[])
   // printf("   -------------------------\n \n");
   // fclose(UFID);
 
->>>>>>> 8e80a7edcc2c9678245bf91b4683cc98a61783d6
   ydata = N_VGetArrayPointer(y); //in order to extract the minimum element of the solution vector y
   // while (tout <= uopts.Tf)
   while (t < uopts.Tf)
@@ -330,23 +317,12 @@ int main(int argc, char* argv[])
       }
     }
     if (minVal < 0.0){
-<<<<<<< HEAD
       printf("The population has a negative (minimum) value of %f at time step t = %.2f \n", minVal, t);
     }
     else {
       printf("The population has no negative value at time step t = %.2f. \n", t);
     }
     // tout += dTout;
-=======
-      printf("The population has a negative (minimum) value of %f at time step t = %f \n", minVal, tout);
-    }
-    else {
-      printf("The population has no negative value at time step t = %f. \n", tout);
-    }
-    // tout += dTout;
-    // printf("The minimum value of the numerical solution at time step t = %f is %f \n", tout, minVal);
-    // N_VPrint(y); //print the solution vector
->>>>>>> 8e80a7edcc2c9678245bf91b4683cc98a61783d6
 
     /* output results to disk */
     fprintf(UFID, "Time step: %.2" FSYM "\n", t); 
