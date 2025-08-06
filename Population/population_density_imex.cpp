@@ -268,36 +268,6 @@ int main(int argc, char* argv[])
   sunrealtype t = uopts.T0;
   // sunrealtype dTout = (uopts.Tf - uopts.T0) / uopts.Nt;
   // sunrealtype tout  = uopts.T0 + dTout;
-  // printf("        t      ||u||_rms\n");
-  // printf("   -------------------------\n");
-  // printf("  %10.6" FSYM "  %10.6f\n", t, sqrt(N_VDotProd(y, y) / udata.N));
-  // // printf("  %10.6" FSYM "  %10.6f\n", t, N_VGetSubvector_ManyVector(y, 0));//Sylvia
-
-  // for (int iout = 0; iout < uopts.Nt; iout++)
-  // {
-  //   flag = ARKodeEvolve(arkode_mem, tout, y, &t, ARK_NORMAL); /* call integrator */
-  //   if (check_flag(&flag, "ARKodeEvolve", 1)) { break; }
-  //   printf("  %10.6" FSYM "  %10.6f\n", t,
-  //          sqrt(N_VDotProd(y, y) / udata.N)); /* print solution stats */
-  //   if (flag >= 0)
-  //   { /* successful solve: update output time */
-  //     tout += dTout;
-  //     tout = (tout > uopts.Tf) ? uopts.Tf : tout;
-  //   }
-  //   else
-  //   { /* unsuccessful solve: break */
-  //     fprintf(stderr, "Solver failure, stopping integration\n");
-  //     break;
-  //   }
-
-  //   /* output results to disk */
-  //   fprintf(UFID, "Time step: %.2" FSYM "\n", t); 
-  //   // fprintf(UFID, "-------------------------------------------------------------------- \n");
-  //   for (int i = 0; i < udata.N; i++) { fprintf(UFID, " %.16" ESYM "", data[i]); }
-  //   fprintf(UFID, "\n \n");
-  // }
-  // printf("   -------------------------\n \n");
-  // fclose(UFID);
 
   ydata = N_VGetArrayPointer(y); //in order to extract the minimum element of the solution vector y
   // while (tout <= uopts.Tf)
@@ -326,7 +296,6 @@ int main(int argc, char* argv[])
 
     /* output results to disk */
     fprintf(UFID, "Time step: %.2" FSYM "\n", t); 
-    // fprintf(UFID, "-------------------------------------------------------------------- \n");
     for (int i = 0; i < udata.N; i++) { fprintf(UFID, " %.16" ESYM "", data[i]); }
     fprintf(UFID, "\n \n");
   }
