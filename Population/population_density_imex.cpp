@@ -229,8 +229,8 @@ int main(int argc, char* argv[])
     flag = ARKodeSetFixedStep(arkode_mem, uopts.fixed_h);
     if (check_flag(&flag, "ARKodeSetFixedStep", 1)) { return 1; }
   }
-  // flag = ARKStepWriteParameters(arkode_mem, stdout); //Sylvia
-  // if (check_flag(&flag, "ARKStepWriteParameters", 1)) { return 1; } //Sylvia
+  // flag = ARKStepWriteParameters(arkode_mem, stdout); // to know the ARKODE parameters used to run the test
+  // if (check_flag(&flag, "ARKStepWriteParameters", 1)) { return 1; } 
 
   flag = ARKodeSetStopTime(arkode_mem, uopts.Tf);
   if (check_flag(&flag, "ARKodeSetStopTime", 1)) { return 1; }
