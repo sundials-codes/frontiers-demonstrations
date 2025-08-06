@@ -506,7 +506,6 @@ static int ReadInputs(std::vector<std::string>& args, UserData& udata,
  find_arg(args,  "--Nt", uopts.Nt);
 
  // Recompute mesh spacing and [re]allocate flux array
-//  udata.dx = SUN_RCONST(1.0) / (udata.N - 1);
  udata.dx = (udata.xend - udata.xstart) / (udata.N);
 
 return 0;
