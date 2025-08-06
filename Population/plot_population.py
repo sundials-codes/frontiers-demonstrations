@@ -39,8 +39,8 @@ with open(datafile, "r") as file:
 
     # extract header information
     title = lines.pop(0)  # Title
-    Nt = int(lines.pop(0).split()[4]) # number of time steps
-    # print(Nt)
+    # Nt = int(lines.pop(0).split()[4]) # number of time steps
+    # # print(Nt)
     T0 = float(lines.pop(0).split()[2])  # initial time
     # print(T0)
     Tf = float(lines.pop(0).split()[2]) # final time
@@ -53,13 +53,16 @@ with open(datafile, "r") as file:
     # print(xr)
     x = np.linspace(xl, xr, N)
 
+    lastline = (lines[-1])
+    nsteps = int(lastline.strip()[-2:]) #total number of steps taken
+    # print(nsteps)
 
     # allocate solution data as 2D Python arrays
-    t = np.zeros((Nt), dtype=float)
-    pSol = np.zeros((Nt, N), dtype=float)
+    t = np.zeros((nsteps), dtype=float)
+    pSol = np.zeros((nsteps, N), dtype=float)
 
     # store remaining data into numpy arrays
-    dt = (Tf-T0)/Nt
+    dt = (Tf-T0)/nsteps
     # print(dt)
     
     it  = 0
@@ -68,24 +71,7 @@ with open(datafile, "r") as file:
             i=i+1
             pSol[it,:] = np.array(list(map(float, lines[i].split()))) #to remove single quotes around the vectors since each vector is a line
             t[it] = (it + 1) * dt
-            it = it +1
-    # print(len(pSol))
-    # print(pSol)
-
-    ##Alternatively
-    # for it in range(Nt): #1 is added in order to include the last time step
-    #     t[it] = (it + 1) * dt
-    # # print(t)
-    # all_pSol = []
-    # for i in range(0, len(lines)):
-    #     if "Time step" in lines[i]:
-    #         # print(lines[i])
-    #         i=i+1
-    #         pSol = list(map(float, lines[i].split()))
-    #         # print(pSol)
-    #         all_pSol.append(pSol)
-    # # print(len(all_pSol))
-    # # print(len(all_pSol[0]))
+            it = it + 1
     
     #   plot defaults: increase default font size, increase plot width, enable LaTeX rendering
     plt.rc("font", size=15)
@@ -107,7 +93,7 @@ with open(datafile, "r") as file:
     ax00.set_xlabel(r"$x$")
     ax00.set_xticks([0.0, 0.2, 0.4, 0.6, 0.8, 1.0])
 
-    middleval = int(np.ceil(Nt/2))
+    middleval = int(np.ceil(nsteps/2))
     it = middleval
     tval = repr(float(t[it])).zfill(3)
     ax01.plot(x, pSol[it, :], "-b")
@@ -115,7 +101,7 @@ with open(datafile, "r") as file:
     ax01.set_xlabel(r"$x$")
     ax01.set_xticks([0.0, 0.2, 0.4, 0.6, 0.8, 1.0])
     
-    it = Nt - 1
+    it = nsteps - 1
     tval = repr(float(t[it])).zfill(3)
     ax02.plot(x, pSol[it, :], "-b")
     ax02.set_title(r"$t =$ " + tval)

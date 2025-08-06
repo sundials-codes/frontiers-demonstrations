@@ -117,7 +117,7 @@ public:
    // Time Parameters
    sunrealtype T0;           // initial time
    sunrealtype Tf;           // end time
-   int Nt;                   // number of output times
+  //  int Nt;                   // number of output times
    
    // Output-related information
    int output;         // 0 = none, 1 = stats, 2 = disk, 3 = disk with tstop
@@ -132,7 +132,7 @@ public:
       fixed_h(ZERO),
       maxsteps(10000),
       output(1),
-      Nt(10),
+      // Nt(10),
       T0(ZERO),
       Tf(10.0){};
  
@@ -251,7 +251,7 @@ int main(int argc, char* argv[])
   /* Open output stream for results, access data array */
   FILE* UFID = fopen("population.txt", "w");
   fprintf(UFID, "Title: Population Model \n");
-  fprintf(UFID, "Number of Time Steps %d \n", uopts.Nt);
+  // fprintf(UFID, "Number of Time Steps %d \n", uopts.Nt);
   fprintf(UFID, "Initial Time %f \n", uopts.T0);
   fprintf(UFID, "Final Time %f \n", uopts.Tf);
   fprintf(UFID, "Spatial Dimension %d \n", udata.N);
@@ -299,6 +299,11 @@ int main(int argc, char* argv[])
     for (int i = 0; i < udata.N; i++) { fprintf(UFID, " %.16" ESYM "", data[i]); }
     fprintf(UFID, "\n \n");
   }
+  long int nsteps; //use the number of steps taken in the python plot
+  ARKodeGetNumSteps(arkode_mem, &nsteps);
+  // printf("Number of steps taken: %ld\n", nsteps);
+  fprintf(UFID, "Number of Time Steps Taken: %ld \n", nsteps);
+
   printf("   -------------------------\n \n");
   fclose(UFID);
 
@@ -503,7 +508,7 @@ static int ReadInputs(std::vector<std::string>& args, UserData& udata,
  find_arg(args,  "--output", uopts.output);
  find_arg(args,  "--T0", uopts.T0);
  find_arg(args,  "--Tf", uopts.Tf);
- find_arg(args,  "--Nt", uopts.Nt);
+//  find_arg(args,  "--Nt", uopts.Nt);
 
  // Recompute mesh spacing and [re]allocate flux array
  udata.dx = (udata.xend - udata.xstart) / (udata.N);
@@ -534,7 +539,7 @@ static void InputHelp()
    std::cout << "  --xend <real>     : right spatial end point  \n";
    std::cout << "  --T0 <real>       : initial time \n";
    std::cout << "  --Tf <real>       : end time\n";
-   std::cout << "  --Nt <int>        : number of outputs\n";
+  //  std::cout << "  --Nt <int>        : number of outputs\n";
    std::cout << "  --help            : print options and exit\n";
  }
 
@@ -550,7 +555,7 @@ static int PrintSetup(UserData& udata, ARKODEParameters& uopts)
   std::cout << "  dx           = " << udata.dx << std::endl;
   std::cout << "  xstart       = " << udata.xstart << std::endl;
   std::cout << "  xend         = " << udata.xend << std::endl;
-  std::cout << " swap_type    = " << udata.swap_type << std::endl;
+  std::cout << "  swap_type    = " << udata.swap_type << std::endl;
   std::cout << " --------------------------------- " << std::endl;
   std::cout << "  IMintegrator = " << uopts.IMintegrator << std::endl;
   std::cout << "  EXintegrator = " << uopts.EXintegrator << std::endl;
@@ -560,7 +565,7 @@ static int PrintSetup(UserData& udata, ARKODEParameters& uopts)
   std::cout << "  maxsteps     = " << uopts.maxsteps << std::endl;
   std::cout << "  T0           = " << uopts.T0 << std::endl;
   std::cout << "  Tf           = " << uopts.Tf << std::endl;
-  std::cout << "  Nt           = " << uopts.Nt << std::endl;
+  // std::cout << "  Nt           = " << uopts.Nt << std::endl;
   std::cout << " --------------------------------- " << std::endl;
   std::cout << "  output       = " << uopts.output << std::endl;
   std::cout << " --------------------------------- " << std::endl;
