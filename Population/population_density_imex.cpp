@@ -52,20 +52,17 @@
 
 
 /* Header files */
-#include <arkode/arkode_arkstep.h> /* prototypes for ARKStep fcts., consts */
-// #include <arkode/arkode_erkstep.h> //Sylvia
-// #include <arkode/arkode_butcher_erk.h> //Sylvia : ERK butcher tables
-// #include <arkode/arkode_butcher_dirk.h> //Sylvia : DIRK butcher tables 
 #include <math.h>
-#include <nvector/nvector_serial.h> /* serial N_Vector types, fcts., macros */
-#include "nvector/nvector_manyvector.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
+#include <nvector/nvector_serial.h> /* serial N_Vector types, fcts., macros */
+#include "nvector/nvector_manyvector.h"
+#include <arkode/arkode_arkstep.h> 
 #include "sundials/sundials_core.hpp"
 #include <sundials/sundials_types.h> /* defs. of sunrealtype, sunindextype, etc */
 #include <sunlinsol/sunlinsol_pcg.h> /* access to PCG SUNLinearSolver        */
-#include <time.h>
-// #include "population_density_imex.hpp"
+
 using namespace std;
 
 #if defined(SUNDIALS_EXTENDED_PRECISION)
@@ -80,14 +77,6 @@ using namespace std;
 
 #define ZERO SUN_RCONST(0.0)
 
-/* user data structure */
-// typedef struct
-// {
-//   sunindextype N; /* number of intervals   */
-//   sunrealtype dx; /* mesh spacing          */
-//   sunrealtype k;  /* diffusion coefficient */
-// }* UserData;
-
   class UserData
   {
   public:
@@ -96,6 +85,7 @@ using namespace std;
     sunrealtype k;  /* diffusion coefficient */
     sunrealtype xstart;  /* left endpoint on spatial grid */
     sunrealtype xend;  /* right endpoint on spatial grid */
+    string swap_type;  /* Swapping or Non-Swapping of b-vectors of the method and its embedding*/ 
 
   // constructor (with default values)
   UserData()
@@ -103,7 +93,8 @@ using namespace std;
     k(0.02),
     xstart(ZERO),
     xend(1.0),
-    dx(ZERO){};
+    dx(ZERO),
+    swap_type("nonswap"){};
   };
 
 class ARKODEParameters
@@ -126,14 +117,14 @@ public:
    // Time Parameters
    sunrealtype T0;           // initial time
    sunrealtype Tf;           // end time
-   int Nt;           // number of output times
+   int Nt;                   // number of output times
    
    // Output-related information
    int output;         // 0 = none, 1 = stats, 2 = disk, 3 = disk with tstop
-  std::ofstream uout; // output file stream
+   std::ofstream uout; // output file stream
  
    // constructor (with default values)
-  ARKODEParameters()
+   ARKODEParameters()
     : IMintegrator("ARKODE_SSP_SDIRK_2_1_2"),
       EXintegrator("ARKODE_SSP_ERK_2_1_2"),
       rtol(SUN_RCONST(1.e-4)),
@@ -145,7 +136,7 @@ public:
       T0(ZERO),
       Tf(10.0){};
  
- }; // end ARKODEParameters
+  }; // end ARKODEParameters
 
 /* User-supplied Functions Called by the Solver */
 static int fe(sunrealtype t, N_Vector y, N_Vector ydot, void* user_data); //Explicit RHS
@@ -159,7 +150,6 @@ static int PrintSetup(UserData& udata,ARKODEParameters& uopts);
 static int check_flag(void* flagvalue, const char* funcname, int opt);
 
 /* Main Program */
-// int main(void)
 int main(int argc, char* argv[])
 {
   sunrealtype* ydata; //in order to extract the minimum element of the solution vector y
@@ -175,23 +165,6 @@ int main(int argc, char* argv[])
   int flag = ReadInputs(args, udata, uopts, ctx);
   if (check_flag(&flag, "ReadInputs", 1)) { return 1; }
   if (flag > 0) { return 0; }
-
-
-
-  /* general problem parameters */
-  // const sunrealtype T0 = SUN_RCONST(0.0); /* initial time */
-  // const sunrealtype Tf = SUN_RCONST(1.0); /* final time */
-  // const int Nt         = 100;              /* total number of output times */
-  // const sunrealtype rtol = 1.e-6;         /* relative tolerance */
-  // const sunrealtype atol = 1.e-10;        /* absolute tolerance */
-  // const sunindextype N = 201; //udata->N;             /* spatial mesh size */
-  // const sunrealtype k  = 0.02; //udata->k;//0.02; // d = 0.02, 0.04 or 0 /* diffusion coefficient */
-
-  /* fill udata structure */
-  // UserData udata = (UserData)malloc(sizeof(*udata));
-  // udata->N  = N;
-  // udata->k  = k;
-  // udata->dx = SUN_RCONST(1.0) / (N - 1); /* mesh spacing */
 
   /* Initial problem output */
   printf("\n1D Population Density test problem:\n");
@@ -219,17 +192,47 @@ int main(int argc, char* argv[])
   if (check_flag(&flag, "ARKodeSetMaxNumSteps", 1)) { return 1; }
   flag = ARKodeSStolerances(arkode_mem, uopts.rtol, uopts.atol);
   if (check_flag(&flag, "ARKodeSStolerances", 1)) { return 1; }
-  flag = ARKStepSetTableName(arkode_mem, uopts.IMintegrator.c_str(), uopts.EXintegrator.c_str()); //Sylvia: new embedded imex-ssp methods
-  if (check_flag(&flag, "ARKStepSetTableName", 1)) { return 1; } //Sylvia
+
+  /*Keep original butcher tableau or swap b-vectors of method and its embedding*/
+  if (udata.swap_type == "nonswap"){
+    flag = ARKStepSetTableName(arkode_mem, uopts.IMintegrator.c_str(), uopts.EXintegrator.c_str()); 
+    if (check_flag(&flag, "ARKStepSetTableName", 1)) { return 1; } 
+  }
+  else if (udata.swap_type == "swap") {
+    ARKodeButcherTable Be = ARKodeButcherTable_LoadERKByName(uopts.EXintegrator.c_str());
+    ARKodeButcherTable Bi = ARKodeButcherTable_LoadDIRKByName(uopts.IMintegrator.c_str());
+
+    int s = Bi->stages;
+    sunrealtype* A_new = (sunrealtype*) malloc(s * s * sizeof(sunrealtype));
+    for (int i = 0; i < s; i++) {
+      for (int j = 0; j < s; j++) { A_new[i * s + j] = Bi->A[i][j]; }
+    }
+    ARKodeButcherTable Bi_swap = ARKodeButcherTable_Create(Bi->stages, Bi->p, Bi->q, Bi->c, A_new, Bi->d, Bi->b);
+    if (check_flag((void*)Bi_swap, "ARKodeButcherTable_Create", 0)) { return 1; }
+
+    for (int i = 0; i < s; i++) {
+      for (int j = 0; j < s; j++) { A_new[i * s + j] = Be->A[i][j]; }
+    }
+    ARKodeButcherTable Be_swap = ARKodeButcherTable_Create(Be->stages, Be->p, Be->q, Be->c, A_new, Be->d, Be->b);
+    if (check_flag((void*)Be_swap, "ARKodeButcherTable_Create", 0)) { return 1; }
+    free(A_new);
+    flag = ARKStepSetTables(arkode_mem, Bi_swap->q, Bi_swap->p, Bi_swap, Be_swap);
+    if (check_flag(&flag, "ARKStepSetTables", 1)) { return 1; }
+    ARKodeButcherTable_Free(Be);
+    ARKodeButcherTable_Free(Bi); 
+    ARKodeButcherTable_Free(Be_swap);
+    ARKodeButcherTable_Free(Bi_swap);
+  }
+
   if (uopts.fixed_h > 0.0)
   {
     flag = ARKodeSetFixedStep(arkode_mem, uopts.fixed_h);
     if (check_flag(&flag, "ARKodeSetFixedStep", 1)) { return 1; }
   }
-  // flag = ARKStepWriteParameters(arkode_mem, stdout); //Sylvia
-  // if (check_flag(&flag, "ARKStepWriteParameters", 1)) { return 1; } //Sylvia
-  
 
+  flag = ARKodeSetStopTime(arkode_mem, uopts.Tf);
+  if (check_flag(&flag, "ARKodeSetStopTime", 1)) { return 1; }
+  
   /* Initialize PCG solver -- no preconditioning, with up to N iterations  */
   SUNLinearSolver LS = SUNLinSol_PCG(y, 0, udata.N, ctx);
   if (check_flag((void*)LS, "SUNLinSol_PCG", 0)) { return 1; }
@@ -249,7 +252,6 @@ int main(int argc, char* argv[])
   fprintf(UFID, "Number of Time Steps %d \n", uopts.Nt);
   fprintf(UFID, "Initial Time %f \n", uopts.T0);
   fprintf(UFID, "Final Time %f \n", uopts.Tf);
-  // fprintf(UFID, "Spatial Dimension %lld \n", udata.N);
   fprintf(UFID, "Spatial Dimension %d \n", udata.N);
   fprintf(UFID, "Left endpoint %f \n", udata.xstart);
   fprintf(UFID, "Right endpoint %f \n", udata.xend);
@@ -262,41 +264,10 @@ int main(int argc, char* argv[])
   /* Main time-stepping loop: calls ARKodeEvolve to perform the integration, then
      prints results.  Stops when the final time has been reached */
   sunrealtype t = uopts.T0;
-  sunrealtype dTout = (uopts.Tf - uopts.T0) / uopts.Nt;
-  sunrealtype tout  = uopts.T0 + dTout;
-  // printf("        t      ||u||_rms\n");
-  // printf("   -------------------------\n");
-  // printf("  %10.6" FSYM "  %10.6f\n", t, sqrt(N_VDotProd(y, y) / udata.N));
-  // // printf("  %10.6" FSYM "  %10.6f\n", t, N_VGetSubvector_ManyVector(y, 0));//Sylvia
-
-  // for (int iout = 0; iout < uopts.Nt; iout++)
-  // {
-  //   flag = ARKodeEvolve(arkode_mem, tout, y, &t, ARK_NORMAL); /* call integrator */
-  //   if (check_flag(&flag, "ARKodeEvolve", 1)) { break; }
-  //   printf("  %10.6" FSYM "  %10.6f\n", t,
-  //          sqrt(N_VDotProd(y, y) / udata.N)); /* print solution stats */
-  //   if (flag >= 0)
-  //   { /* successful solve: update output time */
-  //     tout += dTout;
-  //     tout = (tout > uopts.Tf) ? uopts.Tf : tout;
-  //   }
-  //   else
-  //   { /* unsuccessful solve: break */
-  //     fprintf(stderr, "Solver failure, stopping integration\n");
-  //     break;
-  //   }
-
-  //   /* output results to disk */
-  //   fprintf(UFID, "Time step: %.2" FSYM "\n", t); 
-  //   // fprintf(UFID, "-------------------------------------------------------------------- \n");
-  //   for (int i = 0; i < udata.N; i++) { fprintf(UFID, " %.16" ESYM "", data[i]); }
-  //   fprintf(UFID, "\n \n");
-  // }
-  // printf("   -------------------------\n \n");
-  // fclose(UFID);
 
   ydata = N_VGetArrayPointer(y); //in order to extract the minimum element of the solution vector y
-   while (tout <= uopts.Tf)
+  // while (tout <= uopts.Tf)
+  while (t < uopts.Tf)
   {
     flag = ARKodeEvolve(arkode_mem, uopts.Tf, y, &t, ARK_ONE_STEP); /* call integrator */
     if (check_flag(&flag, "ARKodeEvolve", 1)) { break; }
@@ -312,14 +283,12 @@ int main(int argc, char* argv[])
       }
     }
     if (minVal < 0.0){
-      printf("The population has a negative (minimum) value of %f at time step t = %f \n", minVal, tout);
+      printf("The population has a negative (minimum) value of %f at time step t = %.2f \n", minVal, t);
     }
     else {
-      printf("The population has no negative value at time step t = %f. \n", tout);
+      printf("The population has no negative value at time step t = %.2f. \n", t);
     }
-    tout += dTout;
-    // printf("The minimum value of the numerical solution at time step t = %f is %f \n", tout, minVal);
-    // N_VPrint(y); //print the solution vector
+    // tout += dTout;
 
     /* output results to disk */
     fprintf(UFID, "Time step: %.2" FSYM "\n", t); 
@@ -518,13 +487,14 @@ static int ReadInputs(std::vector<std::string>& args, UserData& udata,
  find_arg(args, "--k", udata.k);
  find_arg(args, "--xstart", udata.xstart);
  find_arg(args, "--xend", udata.xend);
+ find_arg(args, "--swap_type", udata.swap_type);
 
 
 // Integrator options
-  find_arg(args, "--IMintegrator", uopts.IMintegrator);
-  find_arg(args, "--EXintegrator", uopts.EXintegrator);
-  find_arg(args, "--rtol", uopts.rtol);
-  find_arg(args, "--atol", uopts.atol);
+ find_arg(args, "--IMintegrator", uopts.IMintegrator);
+ find_arg(args, "--EXintegrator", uopts.EXintegrator);
+ find_arg(args, "--rtol", uopts.rtol);
+ find_arg(args, "--atol", uopts.atol);
  find_arg(args,  "--fixed_h", uopts.fixed_h);
  find_arg(args,  "--maxsteps", uopts.maxsteps);
  find_arg(args,  "--output", uopts.output);
@@ -550,6 +520,7 @@ static void InputHelp()
    std::cout << "  --EXintegrator <str> : method (ARKODE_SSP_ERK_2_1_2, "
                 "ARKODE_SSP_ERK_3_1_2, " 
                 "ARKODE_SSP_LSPUM_ERK_3_1_2, or ARKODE_SSP_ERK_4_2_3)\n";
+   std::cout << "  --swap_type <str> : swap, nonswap  \n";
    std::cout << "  --N <int>         : dimension\n";
    std::cout << "  --k <real>        : diffusion coefficient: (0.0, 0.02 or 0.04)\n";
    std::cout << "  --rtol <real>     : relative tolerance\n";
@@ -577,6 +548,7 @@ static int PrintSetup(UserData& udata, ARKODEParameters& uopts)
   std::cout << "  dx           = " << udata.dx << std::endl;
   std::cout << "  xstart       = " << udata.xstart << std::endl;
   std::cout << "  xend         = " << udata.xend << std::endl;
+  std::cout << " swap_type    = " << udata.swap_type << std::endl;
   std::cout << " --------------------------------- " << std::endl;
   std::cout << "  IMintegrator = " << uopts.IMintegrator << std::endl;
   std::cout << "  EXintegrator = " << uopts.EXintegrator << std::endl;
