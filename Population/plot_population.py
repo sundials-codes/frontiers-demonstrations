@@ -54,7 +54,9 @@ with open(datafile, "r") as file:
     x = np.linspace(xl, xr, N)
 
     lastline = (lines[-1])
-    nsteps = int(lastline.strip()[-2:]) #total number of steps taken
+    # print(lastline)
+    num_steps = lastline.split(':')
+    nsteps = int(num_steps[1].strip()) #total number of steps taken
     # print(nsteps)
 
     # allocate solution data as 2D Python arrays
@@ -68,9 +70,13 @@ with open(datafile, "r") as file:
     it  = 0
     for i in range(0, len(lines)):
         if "Time step" in lines[i]:
+            # print(lines[i])
+            get_t = lines[i].split(':')
+            time_t = get_t[1].strip()
+            # print(time_t)
             i=i+1
             pSol[it,:] = np.array(list(map(float, lines[i].split()))) #to remove single quotes around the vectors since each vector is a line
-            t[it] = (it + 1) * dt
+            t[it] = time_t #(it + 1) * dt
             it = it + 1
     
     #   plot defaults: increase default font size, increase plot width, enable LaTeX rendering
@@ -94,7 +100,7 @@ with open(datafile, "r") as file:
     ax00.set_xticks([0.0, 0.2, 0.4, 0.6, 0.8, 1.0])
 
     middleval = int(np.ceil(nsteps/2))
-    it = middleval
+    it = 250 #middleval
     tval = repr(float(t[it])).zfill(3)
     ax01.plot(x, pSol[it, :], "-b")
     ax01.set_title(r"$t =$ " + tval)

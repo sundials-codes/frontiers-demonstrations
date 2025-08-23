@@ -224,7 +224,7 @@ int main(int argc, char* argv[])
     ARKodeButcherTable_Free(Bi_swap);
   }
 
-  if (uopts.fixed_h > 0.0)
+  if (uopts.fixed_h > ZERO)
   {
     flag = ARKodeSetFixedStep(arkode_mem, uopts.fixed_h);
     if (check_flag(&flag, "ARKodeSetFixedStep", 1)) { return 1; }
@@ -287,10 +287,10 @@ int main(int argc, char* argv[])
       }
     }
     if (minVal < 0.0){
-      printf("The population has a negative (minimum) value of %f at time step t = %.2f \n", minVal, t);
+      printf("Model has a negative (min) value of %f at time step t = %.14f \n", minVal, t);
     }
     else {
-      printf("The population has no negative value at time step t = %.2f. \n", t);
+      printf("Model has no negative value at time step t = %.14f. \n", t);
     }
     // tout += dTout;
 
