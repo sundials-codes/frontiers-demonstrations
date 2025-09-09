@@ -17,8 +17,7 @@ import sys
 def runtest(solver, rtol, nx, commonargs, showcommand=True, sspcommand=True):
     stats = {'ReturnCode': 0, 'method': solver['name'], 'nx': nx, 'rtol': rtol,
              'dx': 0.0, 'CurrentTime': 0.0, 'Steps': 0, 'StepAttempts': 0, 'ErrTestFails': 0,
-             'RHSFE': 0, 'InitialDT': 0.0, 'CurrentDT': 0.0, 'LastDT': 0.0, 'AvgStepSize':0.0, 'args': commonargs, 
-             'sspCondition': " "}
+             'RHSFE': 0, 'InitialDT': 0.0, 'CurrentDT': 0.0, 'LastDT': 0.0, 'AvgStepSize':0.0, 'sspCondition': " "}
     
     runcommand = " %s --nx %i --rtol %e %s" % (solver['exe'], nx, rtol, commonargs)
     result = subprocess.run(shlex.split(runcommand), stdout=subprocess.PIPE)
