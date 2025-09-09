@@ -62,6 +62,7 @@
 #include "sundials/sundials_core.hpp"
 #include <sundials/sundials_types.h> /* defs. of sunrealtype, sunindextype, etc */
 #include <sunlinsol/sunlinsol_pcg.h> /* access to PCG SUNLinearSolver        */
+#include <sundials/sundials_logger.h>
 
 using namespace std;
 
@@ -287,7 +288,7 @@ int main(int argc, char* argv[])
       }
     }
     if (minVal < 0.0){
-      printf("Model has a negative (min) value of %f at time step t = %.14f \n", minVal, t);
+      printf("Model has a negative (min) value of %.14f at time step t = %.14f \n", minVal, t);
     }
     else {
       printf("Model has no negative value at time step t = %.14f. \n", t);
