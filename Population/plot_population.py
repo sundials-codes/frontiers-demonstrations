@@ -100,7 +100,7 @@ with open(datafile, "r") as file:
     ax00.set_xticks([0.0, 0.2, 0.4, 0.6, 0.8, 1.0])
 
     middleval = int(np.ceil(nsteps/2))
-    it = 250 #middleval
+    it = middleval
     tval = repr(float(t[it])).zfill(3)
     ax01.plot(x, pSol[it, :], "-b")
     ax01.set_title(r"$t =$ " + tval)
