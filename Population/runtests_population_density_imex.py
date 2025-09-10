@@ -15,6 +15,8 @@ import sys
 import sys, os
 import numpy as np
 import matplotlib.pyplot as plt
+import itertools
+from itertools import cycle
 from matplotlib.gridspec import GridSpec
 
 # utility routine to run a test, storing the run options and solver statistics
@@ -89,10 +91,15 @@ print(RunStatsDf)
 print("Saving as Excel")
 RunStatsDf.to_excel(fname + '.xlsx', index=False)
 
+
 ##---------------------------------------------- Efficiency Plots ---------------------------------------------
 df = pd.read_excel('population_density_imex.xlsx') # excel file
 
 diff_coeff = [0, 0.02, 0.04] #diffusion coefficients
+
+marker     = itertools.cycle(('s', 'v', 'o', '*')) #different markers for each method
+lines      = ["-","--","-.",":"]                   #different linestyles for each method
+linecycler = cycle(lines)
 
 ## plot the different rtols against the number of RHS function evaluations for both the implicit and explicit methods
 for dck in diff_coeff:
@@ -104,7 +111,7 @@ for dck in diff_coeff:
     data_implicit = df[(df["diff_coef"] == dck)][["IMEX_method", "diff_coef", "rtol", "Implicit_RHS"]]
     for IMmethod in data_implicit['IMEX_method'].unique():
         IMmethod_data = data_implicit[data_implicit['IMEX_method'] == IMmethod]
-        ax00.plot(IMmethod_data['rtol'], IMmethod_data['Implicit_RHS'], marker='o',label=IMmethod)
+        ax00.plot(IMmethod_data['rtol'], IMmethod_data['Implicit_RHS'], marker=next(marker), linestyle=next(linecycler), linewidth = '2', label=IMmethod)
         ax00.set_xscale('log')
         ax00.set_yscale('log')
         ax00.set_xlabel('rtol')
@@ -115,7 +122,7 @@ for dck in diff_coeff:
     data_explicit = df[(df["diff_coef"] == dck)][["IMEX_method", "diff_coef", "rtol", "Explicit_RHS"]]
     for EXmethod in data_explicit['IMEX_method'].unique():
         EXmethod_data = data_explicit[data_explicit['IMEX_method'] == EXmethod]
-        ax01.plot(EXmethod_data['rtol'], EXmethod_data['Explicit_RHS'], marker='x',label=EXmethod)
+        ax01.plot(EXmethod_data['rtol'], EXmethod_data['Explicit_RHS'], marker=next(marker), linestyle=next(linecycler), linewidth = '2', label=EXmethod)
         ax01.set_xscale('log')
         ax01.set_yscale('log')
         ax01.set_xlabel('rtol')
