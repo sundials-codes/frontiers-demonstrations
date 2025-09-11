@@ -20,11 +20,11 @@ from itertools import cycle
 from matplotlib.gridspec import GridSpec
 
 # utility routine to run a test, storing the run options and solver statistics
-def runtest(solver, rtol, k, commonargs, showcommand=True):
-    stats = {'ReturnCode': 0, 'IMEX_method': solver['name'], 'diff_coef': k, 'rtol': rtol,
+def runtest(solver, rtolN, rtolV, kName, kVal, commonargs, showcommand=True, sspcommand=True):
+    stats = {'ReturnCode': 0, 'IMEX_method': solver['name'], 'diff_coef': kVal, 'rtol': rtolV,
              'Steps': 0, 'StepAttempts': 0, 'ErrTestFails': 0, 'Explicit_RHS': 0, 'Implicit_RHS': 0}
     
-    runcommand = " %s  --rtol %e  --k %.2f" % (solver['exe'], rtol, k)
+    runcommand = " %s  --rtol %e  --k %.2f" % (solver['exe'], rtolV, kVal)
     result = subprocess.run(shlex.split(runcommand), stdout=subprocess.PIPE)
     stats['ReturnCode'] = result.returncode
 
@@ -47,6 +47,22 @@ def runtest(solver, rtol, k, commonargs, showcommand=True):
                 stats['Explicit_RHS'] = int(txt[5])       #right hand side evaluations for explicit method
             elif (("Implicit" in txt) and ("RHS" in txt)):
                 stats['Implicit_RHS'] = int(txt[5])       #right hand side evaluations for implicit method
+
+
+    ## running python file to determine the if the graph is smooth and positive or not (ssp condition)
+    sspcommand = " python ./plot_population.py"
+    if (sspcommand):
+        print("Run solution graph: " + sspcommand )
+        subprocess.run(shlex.split(sspcommand), stdout=subprocess.PIPE)
+        new_fileName = f"soln_graph_{solver['name']}_{rtolN}_{kName}.pdf"
+        if os.path.exists("populationModel_frames.pdf"):
+            os.rename("populationModel_frames.pdf", new_fileName)
+            print(f"Plot saved as: {new_fileName}")
+        else:
+            print("Warning: populationModel_frames.pdf not found.")
+        #end if-else block 
+    #end if statement
+
         
     return stats
 
@@ -64,10 +80,10 @@ ARKODE_SSP_4_2_3       = "./population_density_imex  --IMintegrator ARKODE_SSP_E
 common = " --output 2"
 
 ## Relative tolerances
-rtols = [1.e-1, 1.e-2, 1.e-3, 1.e-4, 1.e-5]
+rtols = {'r1':1.e-1, 'r2':1.e-2, 'r3':1.e-3, 'r4':1.e-4, 'r5':1.e-5}
 
 ## Diffusion coefficients
-diff_coef = [0.00, 0.02, 0.04]
+diff_coef = {'k0':0.00, 'kpt02':0.02, 'kpt04':0.04}
 
 ## Integrator types
 solvertype = [{'name': 'IMEX_SSP_212',       'exe': ARKODE_SSP_2_1_2},
@@ -77,10 +93,10 @@ solvertype = [{'name': 'IMEX_SSP_212',       'exe': ARKODE_SSP_2_1_2},
 
 # run tests and collect results as a pandas data frame
 RunStats = []
-for k in diff_coef:
-    for rtol in rtols:
+for k_name, k_val in diff_coef.items():
+    for rtol_name, rtol_val in rtols.items():
         for solver in solvertype:
-            stat = runtest(solver, rtol, k, common)
+            stat = runtest(solver, rtol_name, rtol_val, k_name, k_val, common, showcommand=True, sspcommand=True)
             RunStats.append(stat)
 RunStatsDf = pd.DataFrame.from_records(RunStats)
 
