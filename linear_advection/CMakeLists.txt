@@ -5,10 +5,9 @@
 set(sources linear_advection.cpp)
 
 #   extra installation files
-set(extras plot_advection.py)
-
-#   extra installation files
-set(extras runtests_linear_advection.py)
+set(extras 
+    plot_advection.py
+    runtests_linear_advection.py)
 
 #   set the target name
 set(target linear_advection)

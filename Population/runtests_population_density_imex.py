@@ -54,12 +54,12 @@ def runtest(solver, rtolN, rtolV, kName, kVal, commonargs, showcommand=True, ssp
     if (sspcommand):
         print("Run solution graph: " + sspcommand )
         subprocess.run(shlex.split(sspcommand), stdout=subprocess.PIPE)
-        new_fileName = f"soln_graph_{solver['name']}_{rtolN}_{kName}.pdf"
-        if os.path.exists("populationModel_frames.pdf"):
-            os.rename("populationModel_frames.pdf", new_fileName)
+        new_fileName = f"soln_graph_{solver['name']}_{rtolN}_{kName}.png"
+        if os.path.exists("populationModel_frames.png"):
+            os.rename("populationModel_frames.png", new_fileName)
             print(f"Plot saved as: {new_fileName}")
         else:
-            print("Warning: populationModel_frames.pdf not found.")
+            print("Warning: populationModel_frames.png not found.")
         #end if-else block 
     #end if statement
 

@@ -5,10 +5,9 @@
 set(sources population_density.cpp)
 
 #   extra installation files
-set(extras plot_population.py)
-
-#   extra installation files
-set(extras runtests_population_density_imex.py)
+set(extras 
+    plot_population.py
+    runtests_population_density_imex.py)
 
 #   set the target name
 set(target population_density)

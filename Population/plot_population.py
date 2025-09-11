@@ -113,13 +113,13 @@ with open(datafile, "r") as file:
     ax02.set_title(r"$t =$ " + tval)
     ax02.set_xlabel(r"$x$")
     ax02.set_xticks([0.0, 0.2, 0.4, 0.6, 0.8, 1.0])
-    plt.savefig("populationModel_frames.pdf")
+    plt.savefig("populationModel_frames.png")
 
     plt.rc("font", size=15)
     plt.rcParams["figure.figsize"] = [7.2, 4.8]
     plt.rcParams["text.usetex"] = True
     plt.rcParams["figure.constrained_layout.use"] = True
 
-    plt.show()
+    plt.close()
 
 ##### end of script #####
