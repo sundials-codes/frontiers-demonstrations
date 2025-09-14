@@ -18,7 +18,7 @@ import matplotlib.pyplot as plt
 import itertools
 from itertools import cycle
 from matplotlib.gridspec import GridSpec
-# fixedRun=False,
+
 # utility routine to run a test, storing the run options and solver statistics
 def runtest(solver, runN, runV, kName, kVal, commonargs, showcommand=True, sspcommand=True, adaptiveRun=False, fixedRun=True):
     stats = {'ReturnCode': 0, 'IMEX_method': solver['name'], 'diff_coef': kVal, 'runVal': runV,
@@ -66,11 +66,6 @@ def runtest(solver, runN, runV, kName, kVal, commonargs, showcommand=True, sspco
         print("Run solution graph: " + sspcommand )
         subprocess.run(shlex.split(sspcommand), stdout=subprocess.PIPE)
         new_fileName = f"soln_graph_{solver['name']}_{runN}_{kName}.png"
-        # if (adaptiveRun):
-        #     new_fileName = f"soln_graph_{solver['name']}_{runN}_{kName}.png"
-        # elif(fixedRun):
-        #     new_fileName = f"soln_graph_{solver['name']}_{runN}_{kName}.png"
-        #end if-else statement
 
         #rename plot file
         if os.path.exists("populationModel_frames.png"):
@@ -154,11 +149,10 @@ for dck in diff_coeff:
     data_implicit = df[(df["diff_coef"] == dck)][["IMEX_method", "diff_coef", "runVal", "Nonlinear_Solves", "Negative_model"]]
     for IMmethod in data_implicit['IMEX_method'].unique():
         IMmethod_data = data_implicit[data_implicit['IMEX_method'] == IMmethod]
-        # ax00.plot(IMmethod_data['runVal'], IMmethod_data['Nonlinear_Solves'], marker=next(marker), linestyle=next(linecycler), linewidth = '2', label=IMmethod)
         if (IMmethod_data['Negative_model'] == 1).any():
-            marker = '*'
-        else:
-            marker = 'o'
+            marker = 'x'
+        # else:
+        #     marker = '.'
         #end if-else statement
         ax00.plot(IMmethod_data['runVal'], IMmethod_data['Nonlinear_Solves'], marker=marker, label=IMmethod)
         ax00.set_xscale('log')
@@ -171,11 +165,10 @@ for dck in diff_coeff:
     data_explicit = df[(df["diff_coef"] == dck)][["IMEX_method", "diff_coef", "runVal", "Explicit_RHS", "Negative_model"]]
     for EXmethod in data_explicit['IMEX_method'].unique():
         EXmethod_data = data_explicit[data_explicit['IMEX_method'] == EXmethod]
-        # ax01.plot(EXmethod_data['runVal'], EXmethod_data['Explicit_RHS'], marker=next(marker), linestyle=next(linecycler), linewidth = '2', label=EXmethod)
         if (EXmethod_data['Negative_model'] == 1).any():
-            marker = '*'
-        else:
-            marker = 'o'
+            marker = 'x'
+        # else:
+        #     marker = '.'
         #end if-else statement
         ax01.plot(EXmethod_data['runVal'], EXmethod_data['Explicit_RHS'], marker=marker, label=EXmethod)
         ax01.set_xscale('log')
