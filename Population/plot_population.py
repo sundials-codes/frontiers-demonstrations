@@ -83,7 +83,7 @@ with open(datafile, "r") as file:
             lmax = pSol_xi
         # end if statement
     #end for loop
-    print(lmax)
+    print("lmax at final time step: %.6f" %lmax)
 
 
     

@@ -22,7 +22,7 @@ from matplotlib.gridspec import GridSpec
 def runtest(solver, runN, runV, kName, kVal, commonargs, showcommand=True, sspcommand=True, adaptiveRun=False, fixedRun=True):
     stats = {'ReturnCode': 0, 'IMEX_method': solver['name'], 'diff_coef': kVal, 'runVal': runV,
              'Steps': 0, 'StepAttempts': 0, 'ErrTestFails': 0, 'Explicit_RHS': 0, 'Implicit_RHS': 0,
-             'Nonlinear_Solves':0, 'Negative_model': 0}
+             'Nonlinear_Solves':0, 'Negative_model': 0, 'lmax': 0.0, 'sspCondition': " "}
     
     if (adaptiveRun):
         runcommand = " %s  --rtol %e  --k %.2f" % (solver['exe'], runV, kVal)
@@ -61,21 +61,47 @@ def runtest(solver, runN, runV, kName, kVal, commonargs, showcommand=True, sspco
 
     ## running python file to determine the if the graph is smooth and positive or not (ssp condition)
     sspcommand = " python ./plot_population.py"
+    ssp_result = subprocess.run(shlex.split(sspcommand), stdout=subprocess.PIPE)
     if (sspcommand):
-        print("Run solution graph: " + sspcommand )
-        subprocess.run(shlex.split(sspcommand), stdout=subprocess.PIPE)
+        print("Run solution graph: " + sspcommand + " SUCCESS")
         new_fileName = f"soln_graph_{solver['name']}_{runN}_{kName}.png"
-    ###comment: after we complete the ssp condition, we can say that if the ssp condiiton passes and the final time step is not zero
-    #### then the method is ssp. We will declare the sspness here, the python plot on the other file is just to determine smoothness
 
-        #rename plot file
+        ## rename plot file
         if os.path.exists("populationModel_frames.png"):
             os.rename("populationModel_frames.png", new_fileName)
             print(f"Plot saved as: {new_fileName}")
         else:
             print("Warning: populationModel_frames.png not found.")
-        #end if-else statement 
-    #end if statement
+        ## end if-else statement 
+    ## end if statement
+    pylines = str(ssp_result.stdout).split('\n')
+    # print(pylines)
+
+    for pyline in pylines:
+        txt = pyline.split()
+        # print(txt)
+        if txt:
+            lmaxV = txt[-1].strip("b'\\n")
+            lmax_val = float(lmaxV)
+            stats['lmax'] = lmax_val
+        ## end if statement
+    ## end for statement
+
+    if (kVal==0.02) and (lmax_val >= 1.2) and (lmax_val <= 1.7) and (stats['Negative_model'] == 0):
+        stats['sspCondition'] = str('ssp')
+    elif (kVal==0.04) and (lmax_val >= 0.7) and (lmax_val <= 1.5) and (stats['Negative_model'] == 0):
+        stats['sspCondition'] = str('ssp')
+    else:
+        stats['sspCondition'] = str('not ssp')
+    ##end if else statement
+
+
+        
+        
+    ###comment: after we complete the ssp condition, we can say that if the ssp condiiton passes and the final time step is not zero
+    #### then the method is ssp. We will declare the sspness here, the python plot on the other file is just to determine smoothness
+
+        
         
     return stats
 ## end of function
@@ -85,10 +111,10 @@ def runtest(solver, runN, runV, kName, kVal, commonargs, showcommand=True, sspco
 fname = "population_density_imex"
 
 # shortcuts to executable/configuration of different embedded IMEX SSP methods
-ARKODE_SSP_2_1_2       = "./population_density_imex  --IMintegrator ARKODE_SSP_SDIRK_2_1_2        --EXintegrator ARKODE_SSP_ERK_2_1_2" 
-ARKODE_SSP_3_1_2       = "./population_density_imex  --IMintegrator ARKODE_SSP_DIRK_3_1_2         --EXintegrator ARKODE_SSP_ERK_3_1_2"           
-ARKODE_SSP_LSPUM_3_1_2 = "./population_density_imex  --IMintegrator ARKODE_SSP_LSPUM_SDIRK_3_1_2  --EXintegrator ARKODE_SSP_LSPUM_ERK_3_1_2"  
-ARKODE_SSP_4_2_3       = "./population_density_imex  --IMintegrator ARKODE_SSP_ESDIRK_4_2_3       --EXintegrator ARKODE_SSP_ERK_4_2_3"            
+ARKODE_SSP_212       = "./population_density_imex  --IMintegrator ARKODE_SSP_SDIRK_2_1_2        --EXintegrator ARKODE_SSP_ERK_2_1_2" 
+ARKODE_SSP_312       = "./population_density_imex  --IMintegrator ARKODE_SSP_DIRK_3_1_2         --EXintegrator ARKODE_SSP_ERK_3_1_2"           
+ARKODE_SSP_LSPUM_312 = "./population_density_imex  --IMintegrator ARKODE_SSP_LSPUM_SDIRK_3_1_2  --EXintegrator ARKODE_SSP_LSPUM_ERK_3_1_2"  
+ARKODE_SSP_423       = "./population_density_imex  --IMintegrator ARKODE_SSP_ESDIRK_4_2_3       --EXintegrator ARKODE_SSP_ERK_4_2_3"            
 
 ## common testing parameters
 common = " --output 2"
@@ -101,18 +127,18 @@ if (adaptRun):
     runParams = {'r1':1.e-1, 'r2':1.e-2, 'r3':1.e-3, 'r4':1.e-4, 'r5':1.e-5}
 elif(fixh_Run):
     ## fixed time step sizes
-    runParams = {'h1':0.25, 'h2':0.50,  'h3':0.75,  'h4':1.00,  'h5':1.25,  'h6':1.50,  'h7':1.75,  'h8':2.00, 
-                 'h9':2.25, 'h10':2.50, 'h11':2.75, 'h12':3.00, 'h13':3.25, 'h14':3.50, 'h15':3.75, 'h16':4.00}
+    runParams = {'h1':0.25, 'h2':0.50, 'h3':0.75, 'h4':1.00,  'h5':1.25,  'h6':1.50, 
+                 'h7':1.75, 'h8':2.00, 'h9':2.25, 'h10':2.50, 'h11':2.75, 'h12':3.00}
 ##end if-else statement
 
 ## Diffusion coefficients
 diff_coef = {'k0':0.00, 'kpt02':0.02, 'kpt04':0.04}
 
 ## Integrator types
-solvertype = [{'name': 'IMEX_SSP_212',       'exe': ARKODE_SSP_2_1_2},
-              {'name': 'IMEX_SSP_312',       'exe': ARKODE_SSP_3_1_2},
-              {'name': 'IMEX_SSP_LSPUM_312', 'exe': ARKODE_SSP_LSPUM_3_1_2},
-              {'name': 'IMEX_SSP_423',       'exe': ARKODE_SSP_4_2_3}]
+solvertype = [{'name': 'IMEX_SSP_212',       'exe': ARKODE_SSP_212},
+              {'name': 'IMEX_SSP_312',       'exe': ARKODE_SSP_312},
+              {'name': 'IMEX_SSP_LSPUM_312', 'exe': ARKODE_SSP_LSPUM_312},
+              {'name': 'IMEX_SSP_423',       'exe': ARKODE_SSP_423}]
 
 # run tests and collect results as a pandas data frame
 RunStats = []
