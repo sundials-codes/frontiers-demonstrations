@@ -39,46 +39,56 @@ with open(datafile, "r") as file:
 
     # extract header information
     title = lines.pop(0)  # Title
-    # Nt = int(lines.pop(0).split()[4]) # number of time steps
+    # Nt = int(lines.pop(0).split()[4])   # number of time steps
     # # print(Nt)
-    T0 = float(lines.pop(0).split()[2])  # initial time
-    # print(T0)
-    Tf = float(lines.pop(0).split()[2]) # final time
-    # print(Tf)
-    N = int(lines.pop(0).split()[2]) # spatial dimension
-    # print(N)
-    xl = float(lines.pop(0).split()[2]) # spatial dimension
-    # print(xl)
-    xr = float(lines.pop(0).split()[2]) # spatial dimension
-    # print(xr)
-    x = np.linspace(xl, xr, N)
+    T0 = float(lines.pop(0).split()[2])   # initial time
+    Tf = float(lines.pop(0).split()[2])   # final time
+    N  = int(lines.pop(0).split()[2])     # spatial dimension
+    xl = float(lines.pop(0).split()[2])   # spatial dimension
+    xr = float(lines.pop(0).split()[2])   # spatial dimension
+    x  = np.linspace(xl, xr, N)
 
-    lastline = (lines[-1])
-    # print(lastline)
+    lastline  = (lines[-1])
     num_steps = lastline.split(':')
-    nsteps = int(num_steps[1].strip()) #total number of steps taken
-    # print(nsteps)
+    nsteps    = int(num_steps[1].strip()) # total number of steps taken
 
+    dt = (Tf-T0)/nsteps                   # temporal step size
+    dx = (xr - xl)/N                      # spatial step size
+    
     # allocate solution data as 2D Python arrays
-    t = np.zeros((nsteps), dtype=float)
+    t    = np.zeros((nsteps), dtype=float)
     pSol = np.zeros((nsteps, N), dtype=float)
 
     # store remaining data into numpy arrays
-    dt = (Tf-T0)/nsteps
-    # print(dt)
-    
     it  = 0
     for i in range(0, len(lines)):
         if "Time step" in lines[i]:
-            # print(lines[i])
-            get_t = lines[i].split(':')
+            get_t  = lines[i].split(':')
             time_t = get_t[1].strip()
-            # print(time_t)
-            i=i+1
+            i = i + 1
             pSol[it,:] = np.array(list(map(float, lines[i].split()))) #to remove single quotes around the vectors since each vector is a line
             t[it] = time_t #(it + 1) * dt
             it = it + 1
     
+    # store pSol_x as a column vector
+    pSol_x = np.zeros((N), dtype=float)
+    for i in range(len(pSol[nsteps-1,:])):
+        pSol_x[i] = pSol[nsteps-1,i]
+    #end for loop
+
+    lmax = 0.0
+    for i in range(len(pSol_x-1)-1):
+        pSol_xi = (pSol_x[i+1] - pSol_x[i])/dx
+        if pSol_xi > lmax:
+            lmax = pSol_xi
+        # end if statement
+    #end for loop
+    print(lmax)
+
+
+    
+
+   
     #   plot defaults: increase default font size, increase plot width, enable LaTeX rendering
     plt.rc("font", size=15)
     plt.rcParams["figure.figsize"] = [7.2, 4.8]

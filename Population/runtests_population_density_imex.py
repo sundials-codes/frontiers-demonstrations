@@ -11,7 +11,6 @@
 import pandas as pd
 import subprocess
 import shlex
-import sys
 import sys, os
 import numpy as np
 import matplotlib.pyplot as plt
@@ -66,6 +65,8 @@ def runtest(solver, runN, runV, kName, kVal, commonargs, showcommand=True, sspco
         print("Run solution graph: " + sspcommand )
         subprocess.run(shlex.split(sspcommand), stdout=subprocess.PIPE)
         new_fileName = f"soln_graph_{solver['name']}_{runN}_{kName}.png"
+    ###comment: after we complete the ssp condition, we can say that if the ssp condiiton passes and the final time step is not zero
+    #### then the method is ssp. We will declare the sspness here, the python plot on the other file is just to determine smoothness
 
         #rename plot file
         if os.path.exists("populationModel_frames.png"):
