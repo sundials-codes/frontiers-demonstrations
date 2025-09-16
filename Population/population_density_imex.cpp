@@ -252,12 +252,12 @@ int main(int argc, char* argv[])
   /* Open output stream for results, access data array */
   FILE* UFID = fopen("population.txt", "w");
   fprintf(UFID, "Title: Population Model \n");
-  // fprintf(UFID, "Number of Time Steps %d \n", uopts.Nt);
   fprintf(UFID, "Initial Time %f \n", uopts.T0);
   fprintf(UFID, "Final Time %f \n", uopts.Tf);
   fprintf(UFID, "Spatial Dimension %d \n", udata.N);
   fprintf(UFID, "Left endpoint %f \n", udata.xstart);
   fprintf(UFID, "Right endpoint %f \n", udata.xend);
+  fprintf(UFID, "Diffusion Coefficient %.2f \n", udata.k);
   sunrealtype* data = N_VGetArrayPointer(y);
 
   /* output initial condition to disk */
