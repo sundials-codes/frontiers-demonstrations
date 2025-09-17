@@ -22,6 +22,11 @@
 #         Also, ensure that AdaptiveRun = True (1 location) in the script, plot_population.py . 
 #         This means that fixedRun = False (2 locations) and fixhRun = False (1 location) in the script, 
 #         runtests_population_density_imex.py and, FixedRun = False (1 location) in this script plot_population.py 
+#
+#         Ensure that the reference solutions are generated and stored in the textfiles:
+#         refSoln_k0pt02_h0pt01_ssp423.txt and refSoln_k0pt04_h0pt01_ssp423.txt for fixed temporal step sizes for k=0.02 and k=0.04,
+#         respectively and, refSoln_k0pt02_rtol1en8_ssp423.txt and refSoln_k0pt04_rtol1en8_ssp423.txt for adaptive step sizes, for 
+#         k=0.02 and k=0.04, respectively.
 #-----------------------------------------------------------------------------------------------------------------------------------
 
 # imports
@@ -38,13 +43,6 @@ datafile = "population.txt"
 if not os.path.isfile(datafile):
     msg = "Error: file " + datafile + " does not exist"
     sys.exit(msg)
-
-
-# # data file name for reference solution using SSP423 and k = 0.04
-# datafile_refkpt04 = "refSoln_k0pt04_h0pt01_ssp423.txt"
-# if not os.path.isfile(datafile_refkpt04):
-#     msg = "Error: file " + datafile_refkpt04 + " does not exist"
-#     sys.exit(msg)
 
 # read solution file, storing each line as a string in a list
 with open(datafile, "r") as file:
