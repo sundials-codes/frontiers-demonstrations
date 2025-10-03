@@ -30,7 +30,7 @@ from itertools import cycle
 from matplotlib.gridspec import GridSpec
 
 # utility routine to run a test, storing the run options and solver statistics
-def runtest(solver, runN, runV, kName, kVal, commonargs, showcommand=True, sspcommand=True, adaptiveRun=True, fixedRun=False):
+def runtest(solver, runN, runV, kName, kVal, commonargs, showcommand=True, sspcommand=True, adaptiveRun=False, fixedRun=True):
     stats = {'ReturnCode': 0, 'IMEX_method': solver['name'], 'diff_coef': kVal, 'runVal': runV,
              'Steps': 0, 'StepAttempts': 0, 'ErrTestFails': 0, 'Explicit_RHS': 0, 'Implicit_RHS': 0,
              'Nonlinear_Solves':0, 'Negative_model': 0, 'lmax_1dev': 0.0, 'error': 0.0, 'sspCondition': " "}
@@ -66,8 +66,14 @@ def runtest(solver, runN, runV, kName, kVal, commonargs, showcommand=True, sspco
                 stats['Implicit_RHS'] = int(txt[5])       #right hand side evaluations for implicit method
             elif (("NLS" in txt) and ("iters" in txt) and ("per" not in txt) and ("step" not in txt)):
                 stats['Nonlinear_Solves'] = int(txt[3])   #right hand side evaluations for implicit method
-            elif (("Model" in txt) and ("has" in txt) and ("a" in txt) and ("negative" in txt) and ("time" in txt) and ("step" in txt) and ("t" in txt) and ("10.00" in txt)):
-                stats['Negative_model'] = 1               #right hand side evaluations for implicit method
+            # elif (("Model" in txt) and ("has" in txt) and ("a" in txt) and ("negative" in txt) and ("time" in txt) and ("step" in txt) and ("t" in txt)):# and ("10.00" in txt)):
+            #     stats['Negative_model'] = 1               #right hand side evaluations for implicit method
+        sum_negLines = 0
+        for line in lines:
+            txt = line.split()
+            if (("Model" in txt) and ("has" in txt) and ("a" in txt) and ("negative" in txt) and ("time" in txt) and ("step" in txt) and ("t" in txt)):
+                sum_negLines += 1
+        stats['Negative_model'] = sum_negLines               #right hand side evaluations for implicit method
 
 
     ## running python file to determine the if the graph is smooth and positive or not (ssp condition)
@@ -116,8 +122,8 @@ ARKODE_SSP_423       = "./population_density_imex  --IMintegrator ARKODE_SSP_ESD
 ## common testing parameters
 common = " --output 2"
 
-adaptRun = True  #if True ensure that adaptiveRun is True and vice versa
-fixhRun  = False #if True ensure that fixedRun is True and vice versa
+adaptRun = False  #if True ensure that adaptiveRun is True and vice versa
+fixhRun  = True #if True ensure that fixedRun is True and vice versa
 
 if (adaptRun):
     runParams = {'r1':1.e-1, 'r2':1.e-2, 'r3':1.e-3, 'r4':1.e-4, 'r5':1.e-5} ## Relative tolerances
@@ -146,7 +152,7 @@ RunStats = []
 for k_name, k_val in diff_coef.items():
     for runV_name, runV_val in runParams.items():
             for solver_adapt in solvertype:
-              stat = runtest(solver_adapt, runV_name, runV_val, k_name, k_val, common, showcommand=True, sspcommand=True, adaptiveRun=True, fixedRun=False)
+              stat = runtest(solver_adapt, runV_name, runV_val, k_name, k_val, common, showcommand=True, sspcommand=True, adaptiveRun=False, fixedRun=True)
               RunStats.append(stat)
 RunStatsDf = pd.DataFrame.from_records(RunStats)
 
@@ -175,37 +181,39 @@ for dck in diff_coeff:
     # ax01 = fig.add_subplot(gs[0, 1])  # explicit method
 
     if (adaptRun):
-        data_adaptive = df[(df["diff_coef"] == dck)][["IMEX_method", "diff_coef", "runVal", "Nonlinear_Solves", "error", "Negative_model"]]
+        data_adaptive = df[(df["diff_coef"] == dck)][["IMEX_method", "diff_coef", "runVal", "Nonlinear_Solves", "error", "Negative_model", "sspCondition"]]
         for SSPmethodAdt in data_adaptive['IMEX_method'].unique():
             SSPmethodAdt_data = data_adaptive[data_adaptive['IMEX_method'] == SSPmethodAdt]
             # Plot the whole method line with '.' markers
             plt.plot(SSPmethodAdt_data['runVal'], SSPmethodAdt_data['error'], marker='.', linestyle='-', label=SSPmethodAdt)
-            # Overlay red 'x' markers where Negative_model == 1
-            negative_model = SSPmethodAdt_data[SSPmethodAdt_data['Negative_model'] == 1]
-            plt.plot(negative_model['runVal'], negative_model['error'], marker='x', linestyle='none', color='red')
+            # Overlay red 'x' markers where Negative_model == 1 or "not ssp"
+            sspness = SSPmethodAdt_data[SSPmethodAdt_data['sspCondition'] == "not ssp"]
+            # negative_model = SSPmethodAdt_data[(SSPmethodAdt_data['Negative_model'] == 1) & (SSPmethodAdt_data['sspCondition'] == "not ssp")]
+            plt.plot(sspness['runVal'], sspness['error'], marker='x', linestyle='none', color='red')
             plt.xscale('log')
             plt.yscale('log')
             plt.xlabel(xlabel_name)
-            plt.ylabel('error')
-            plt.title('rtol vs error for k = %.2f' %dck)
+            plt.ylabel('$L_{\\infty}$ error')
+            # plt.title('rtol vs error for d = %.2f' %dck)
             plt.legend()
     elif (fixhRun):
-        data_fixed = df[(df["diff_coef"] == dck)][["IMEX_method", "diff_coef", "runVal", "Explicit_RHS", "error", "Negative_model"]]
+        data_fixed = df[(df["diff_coef"] == dck)][["IMEX_method", "diff_coef", "runVal", "Explicit_RHS", "error", "Negative_model", "sspCondition"]]
         for SSPmethodFix in data_fixed['IMEX_method'].unique():
             SSPmethodFix_data = data_fixed[data_fixed['IMEX_method'] == SSPmethodFix]
             # Plot the whole method line with '.' markers
             plt.plot(SSPmethodFix_data['runVal'], SSPmethodFix_data['error'],marker='.', linestyle='-', label=SSPmethodFix)
-            # Overlay red 'x' markers where Negative_model == 1
-            negative_model = SSPmethodFix_data[SSPmethodFix_data['Negative_model'] == 1]
-            plt.plot(negative_model['runVal'], negative_model['error'], marker='x', linestyle='none', color='red')
+            # Overlay red 'x' markers where Negative_model == 1 or "not ssp"
+            sspness = SSPmethodFix_data[SSPmethodFix_data['sspCondition'] == "not ssp"]
+            # negative_model = SSPmethodFix_data[(SSPmethodFix_data['Negative_model'] == 1) & (SSPmethodFix_data['sspCondition'] == "not ssp")]
+            plt.plot(sspness['runVal'], sspness['error'], marker='x', linestyle='none', color='red')
             # plt.xscale('log')
             plt.yscale('log')
-            plt.xlabel(xlabel_name)
-            plt.ylabel('error')
-            plt.title('cost vs error for k = %.2f' %dck)
+            plt.xlabel('h')
+            plt.ylabel('$L_{\\infty}$ error')
+            # plt.title('cost vs error for d = %.2f' %dck)
             plt.legend()
 
-    plt.savefig("Plot for k = %.2f.pdf"%dck)
+    plt.savefig("Plot for d = %.2f.pdf"%dck)
     plt.show()
 
 

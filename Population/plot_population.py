@@ -284,8 +284,8 @@ with open(datafile_adtkpt04, "r") as file_adtkpt04:
 
 
 ## find the lmax error if k = 0.02 or k = 0.04 using the reference solution
-AdaptiveRun = True
-FixedRun    = False
+AdaptiveRun = False
+FixedRun    = True
 elmax       = 0.0 #l-infinity error
 if (FixedRun):
     if (diff_k==0.02):
