@@ -114,10 +114,10 @@ def runtest(solver, runN, runV, kName, kVal, commonargs, showcommand=True, sspco
 
 
 # shortcuts to executable/configuration of different embedded IMEX SSP methods
-ARKODE_SSP_212       = "./population_density_imex  --IMintegrator ARKODE_SSP_SDIRK_2_1_2        --EXintegrator ARKODE_SSP_ERK_2_1_2" 
-ARKODE_SSP_312       = "./population_density_imex  --IMintegrator ARKODE_SSP_DIRK_3_1_2         --EXintegrator ARKODE_SSP_ERK_3_1_2"           
-ARKODE_SSP_LSPUM_312 = "./population_density_imex  --IMintegrator ARKODE_SSP_LSPUM_SDIRK_3_1_2  --EXintegrator ARKODE_SSP_LSPUM_ERK_3_1_2"  
-ARKODE_SSP_423       = "./population_density_imex  --IMintegrator ARKODE_SSP_ESDIRK_4_2_3       --EXintegrator ARKODE_SSP_ERK_4_2_3"            
+SSP_ARK_212     = "./population_density_imex  --IMintegrator ARKODE_SSP_SDIRK_2_1_2        --EXintegrator ARKODE_SSP_ERK_2_1_2" 
+SSP_ARK_312       = "./population_density_imex  --IMintegrator ARKODE_SSP_DIRK_3_1_2         --EXintegrator ARKODE_SSP_ERK_3_1_2"           
+SSP_LSPUM_ARK_312 = "./population_density_imex  --IMintegrator ARKODE_SSP_LSPUM_SDIRK_3_1_2  --EXintegrator ARKODE_SSP_LSPUM_ERK_3_1_2"  
+SSP_ARK_423       = "./population_density_imex  --IMintegrator ARKODE_SSP_ESDIRK_4_2_3       --EXintegrator ARKODE_SSP_ERK_4_2_3"            
 
 ## common testing parameters
 common = " --output 2"
@@ -140,10 +140,10 @@ elif(fixhRun):
 diff_coef = {'kpt02':0.02, 'kpt04':0.04}
 
 ## Integrator types
-solvertype = [{'name': 'IMEX_SSP_212',       'exe': ARKODE_SSP_212},
-              {'name': 'IMEX_SSP_312',       'exe': ARKODE_SSP_312},
-              {'name': 'IMEX_SSP_LSPUM_312', 'exe': ARKODE_SSP_LSPUM_312},
-              {'name': 'IMEX_SSP_423',       'exe': ARKODE_SSP_423}]
+solvertype = [{'name': 'SSP-ARK-2-1-2',       'exe': SSP_ARK_212},
+              {'name': 'SSP-ARK-3-1-2',       'exe': SSP_ARK_312},
+              {'name': 'SSP-LSPUM-ARK-3-1-2', 'exe': SSP_LSPUM_ARK_312},
+              {'name': 'SSP-ARK-4-2-3',       'exe': SSP_ARK_423}]
 
 # run tests and collect results as a pandas data frame
 
