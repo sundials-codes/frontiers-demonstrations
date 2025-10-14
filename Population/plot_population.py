@@ -12,15 +12,15 @@
 # SPDX-License-Identifier: BSD-3-Clause
 # SUNDIALS Copyright End
 #----------------------------------------------------------------------------------------------------------------------------------
-# ReadME: If running fixed step sizes, ensure that fixedRun = True (2 locations) and fixhRun = True (1 location) 
+# ReadME: If running fixed step sizes, ensure that fixedRun = True (1 location) and fixhRun = True (1 location) 
 #         in the script,runtests_population_density_imex.py Also, ensure that FixedRun = True (1 location) in this script,
-#         plot_population.py . This means that adaptiveRun = False (2 locations) and adaptRun = False (1 location) in 
+#         plot_population.py . This means that adaptiveRun = False (1 location) and adaptRun = False (1 location) in 
 #         the script, runtests_population_density_imex.py and, AdaptiveRun = False (1 location) in this script plot_population.py 
 #
-#         Similarly, if running adaptive step sizes, ensure that adaptiveRun = True (2 locations) and
+#         Similarly, if running adaptive step sizes, ensure that adaptiveRun = True (1 location) and
 #         adaptRun = True (1 location) in the script, runtests_population_density_imex.py 
 #         Also, ensure that AdaptiveRun = True (1 location) in the script, plot_population.py . 
-#         This means that fixedRun = False (2 locations) and fixhRun = False (1 location) in the script, 
+#         This means that fixedRun = False (1 location) and fixhRun = False (1 location) in the script, 
 #         runtests_population_density_imex.py and, FixedRun = False (1 location) in this script plot_population.py 
 #
 #         Ensure that the reference solutions are generated and stored in the textfiles:
@@ -284,7 +284,7 @@ with open(datafile_adtkpt04, "r") as file_adtkpt04:
 
 
 ## find the lmax error if k = 0.02 or k = 0.04 using the reference solution
-AdaptiveRun = False
+AdaptiveRun = True
 FixedRun    = True
 elmax       = 0.0 #l-infinity error
 if (FixedRun):
@@ -302,7 +302,7 @@ if (FixedRun):
                 elmax = errV
             # end
         # end
-elif (AdaptiveRun):
+if (AdaptiveRun):
     if (diff_k==0.02):
         for i in range(N):
             errV = np.abs(pSol_adtkpt02_lastStep[i] - pSol_lastStep[i])
