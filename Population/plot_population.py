@@ -24,8 +24,8 @@
 #         runtests_population_density_imex.py and, FixedRun = False (1 location) in this script plot_population.py 
 #
 #         Ensure that the reference solutions are generated and stored in the textfiles:
-#         refSoln_k0pt02_h0pt01_ssp423.txt and refSoln_k0pt04_h0pt01_ssp423.txt for fixed temporal step sizes for k=0.02 and k=0.04,
-#         respectively and, refSoln_k0pt02_rtol1en8_ssp423.txt and refSoln_k0pt04_rtol1en8_ssp423.txt for adaptive step sizes, for 
+#         refSoln_k0pt02_h0pt001_ssp423.txt and refSoln_k0pt04_h0pt001_ssp423.txt for fixed temporal step sizes for k=0.02 and k=0.04,
+#         respectively and, refSoln_k0pt02_rtol1en10_ssp423.txt and refSoln_k0pt04_rtol1en10_ssp423.txt for adaptive step sizes, for 
 #         k=0.02 and k=0.04, respectively.
 #-----------------------------------------------------------------------------------------------------------------------------------
 
@@ -144,7 +144,7 @@ with open(datafile, "r") as file:
 
 ## ------------------ Fixed Step Size Reference Solution for k = 0.02 using SSP 423 -----------------------
 # data file name for reference solution 
-datafile_refkpt02 = "refSoln_k0pt02_h0pt01_ssp423.txt"
+datafile_refkpt02 = "refSoln_k0pt02_h0pt001_ssp423.txt"
 if not os.path.isfile(datafile_refkpt02):
     msg = "Error: file " + datafile_refkpt02 + " does not exist"
     sys.exit(msg)
@@ -180,7 +180,7 @@ with open(datafile_refkpt02, "r") as file_refkpt02:
 
 ## ----------------------- Fixed Step Size Reference Solution for k = 0.04 using SSP 423 ------------------------
 # data file name for reference solution 
-datafile_refkpt04 = "refSoln_k0pt04_h0pt01_ssp423.txt"
+datafile_refkpt04 = "refSoln_k0pt04_h0pt001_ssp423.txt"
 if not os.path.isfile(datafile_refkpt04):
     msg = "Error: file " + datafile_refkpt04 + " does not exist"
     sys.exit(msg)
@@ -215,7 +215,7 @@ with open(datafile_refkpt04, "r") as file_refkpt04:
 
 ## ------------------ Adaptive Step Size Reference Solution for k = 0.02 using SSP 423 -----------------------
 # data file name for reference solution 
-datafile_adtkpt02 = "refSoln_k0pt02_rtol1en8_ssp423.txt"
+datafile_adtkpt02 = "refSoln_k0pt02_rtol1en10_ssp423.txt"
 if not os.path.isfile(datafile_adtkpt02):
     msg = "Error: file " + datafile_adtkpt02 + " does not exist"
     sys.exit(msg)
@@ -250,7 +250,7 @@ with open(datafile_adtkpt02, "r") as file_adtkpt02:
 
 ## ------------- Adaptive Step Size Reference Solution for k = 0.04 using SSP 423 ------------
 # data file name for reference solution 
-datafile_adtkpt04 = "refSoln_k0pt04_rtol1en8_ssp423.txt"
+datafile_adtkpt04 = "refSoln_k0pt04_rtol1en10_ssp423.txt"
 if not os.path.isfile(datafile_adtkpt04):
     msg = "Error: file " + datafile_adtkpt04 + " does not exist"
     sys.exit(msg)

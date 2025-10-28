@@ -267,11 +267,12 @@ int main(int argc, char* argv[])
   /* Main time-stepping loop: calls ARKodeEvolve to perform the integration, then
      prints results.  Stops when the final time has been reached */
   sunrealtype t = uopts.T0;
-  // sunrealtype dTout = (uopts.Tf - uopts.T0) / uopts.Nt;
-  // sunrealtype tout  = uopts.T0 + dTout;
 
   ydata = N_VGetArrayPointer(y); //in order to extract the minimum element of the solution vector y
-  // while (tout <= uopts.Tf)
+
+  sunrealtype maxIntStep = 0.0, hcur;
+  long int nsteps;
+
   while (t < uopts.Tf)
   {
     flag = ARKodeEvolve(arkode_mem, uopts.Tf, y, &t, ARK_ONE_STEP); /* call integrator */
@@ -281,6 +282,11 @@ int main(int argc, char* argv[])
       fprintf(stderr, "Solver failure, stopping integration\n");
       break;
     }
+    flag = ARKodeGetCurrentStep(arkode_mem, &hcur);
+    if (check_flag(&flag, "ARKodeGetCurrentStep", 1)) {return 1; }
+    if (hcur > maxIntStep){maxIntStep=hcur;}
+    // printf(" internal time step size (hmax): %.14" ESYM "\n", hcur);
+
     float minVal = ydata[0];
     for (int i = 0; i<udata.N; i++){
       if (ydata[i] < minVal){
@@ -293,17 +299,19 @@ int main(int argc, char* argv[])
     else {
       printf("Model has no negative value at time step t = %.2f. \n", t);
     }
-    // tout += dTout;
 
     /* output results to disk */
     fprintf(UFID, "Time step: %.2" FSYM "\n", t); 
     for (int i = 0; i < udata.N; i++) { fprintf(UFID, " %.16" ESYM "", data[i]); }
     fprintf(UFID, "\n \n");
   }
-  long int nsteps; //use the number of steps taken in the python plot
+
+  /* use the number of steps taken in the python plot */
   ARKodeGetNumSteps(arkode_mem, &nsteps);
-  // printf("Number of steps taken: %ld\n", nsteps);
   fprintf(UFID, "Number of Time Steps Taken: %ld \n", nsteps);
+
+  /* Print the maximum internal step size */
+  printf("Maximum internal time step size = %.2" GSYM "\n", maxIntStep);
 
   printf("   -------------------------\n \n");
   fclose(UFID);

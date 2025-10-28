@@ -34,8 +34,8 @@ from matplotlib.gridspec import GridSpec
 def runtest(solver, runN, runV, kName, kVal, commonargs, showcommand=True, sspcommand=True):
     def runtype(modetype):
         stats = {'Runtype': modetype,'ReturnCode': 0, 'IMEX_method': solver['name'], 'diff_coef': kVal, 'runVal': runV,
-                'Steps': 0, 'StepAttempts': 0, 'ErrTestFails': 0, 'Explicit_RHS': 0, 'Implicit_RHS': 0,
-                'Nonlinear_Solves':0, 'Negative_model': 0, 'runtime':0.0, 'lmax_1dev': 0.0, 'error': 0.0,
+                'Steps': 0, 'StepAttempts': 0, 'ErrTestFails': 0, 'Explicit_RHS': 0, 'Implicit_RHS': 0, 'Total Func Eval':0,
+                'maxIntStep': 0.0, 'Nonlinear_Solves':0, 'Negative_model': 0, 'runtime':0.0, 'lmax_1dev': 0.0, 'error': 0.0,
                 'sspCondition': " "}
 
         if (modetype == "adaptive"):
@@ -50,26 +50,6 @@ def runtest(solver, runN, runV, kName, kVal, commonargs, showcommand=True, sspco
         stats['Runtype']    = modetype
         stats['ReturnCode'] = result.returncode
         stats['runtime']    = length_time
-        
-        # if (adaptiveRun):
-        #     runcommand = " %s  --rtol %e  --k %.2f" % (solver['exe'], runV, kVal)
-        #     start_time = time.time()
-        #     result = subprocess.run(shlex.split(runcommand), stdout=subprocess.PIPE)
-        #     end_time = time.time()
-        #     length_time = end_time - start_time
-        #     print("Time taken: %.2e" %length_time, " seconds")
-        #     stats['ReturnCode'] = result.returncode
-        #     stats['runtime']    = length_time
-        # elif (fixedRun):
-        #     runcommand = " %s  --fixed_h %.2f  --k %.2f" % (solver['exe'], runV, kVal)
-        #     start_time = time.time()
-        #     result = subprocess.run(shlex.split(runcommand), stdout=subprocess.PIPE)
-        #     end_time = time.time()
-        #     length_time = end_time - start_time
-        #     print("Time taken: %.2e", length_time, " seconds")
-        #     stats['ReturnCode'] = result.returncode
-        #     stats['runtime']    = length_time
-        # ## end if-else statement
 
         if (result.returncode != 0):
             print("Run command " + runcommand + " FAILURE: " + str(result.returncode))
@@ -92,14 +72,15 @@ def runtest(solver, runN, runV, kName, kVal, commonargs, showcommand=True, sspco
                     stats['Implicit_RHS'] = int(txt[5])       #right hand side evaluations for implicit method
                 elif (("NLS" in txt) and ("iters" in txt) and ("per" not in txt) and ("step" not in txt)):
                     stats['Nonlinear_Solves'] = int(txt[3])   #right hand side evaluations for implicit method
-                # elif (("Model" in txt) and ("has" in txt) and ("a" in txt) and ("negative" in txt) and ("time" in txt) and ("step" in txt) and ("t" in txt)):# and ("10.00" in txt)):
-                #     stats['Negative_model'] = 1               #right hand side evaluations for implicit method
+                elif (("Maximum" in txt) and ("internal" in txt) and ("step" in txt) and ("size" in txt)):
+                    stats['maxIntStep'] = float(txt[6])         #last internal step size used in adaptive run
             sum_negLines = 0
             for line in lines:
                 txt = line.split()
                 if (("Model" in txt) and ("has" in txt) and ("a" in txt) and ("negative" in txt) and ("time" in txt) and ("step" in txt) and ("t" in txt)):
                     sum_negLines += 1
             stats['Negative_model'] = sum_negLines               #right hand side evaluations for implicit method
+            stats['Total Func Eval'] = stats['Implicit_RHS'] + stats['Explicit_RHS']
 
 
         ## running python file to determine the if the graph is smooth and positive or not (ssp condition)
@@ -115,12 +96,10 @@ def runtest(solver, runN, runV, kName, kVal, commonargs, showcommand=True, sspco
                 print(f"Plot saved as: {new_fileName}")
             else:
                 print("Warning: populationModel_frames.png not found.")
-            ## end if-else statement 
-        ## end if statement
+
         pylines = str(ssp_result.stdout).split()
         lmax_1dev = float(pylines[8].replace('\\nLmax', ''))
         lmax_error = float(pylines[13].replace("\\n'", ''))
-        # lmax_error = f"{lmax_error:e}"
 
         stats['lmax_1dev'] = lmax_1dev #lmax val for first derivative
         stats['error']     = lmax_error # lmax error after comparing solution at final time step with reference solution
@@ -130,8 +109,7 @@ def runtest(solver, runN, runV, kName, kVal, commonargs, showcommand=True, sspco
         elif (kVal==0.04) and (lmax_1dev >= 0.7) and (lmax_1dev <= 1.5) and (stats['Negative_model'] == 0):
             stats['sspCondition'] = str('ssp')
         else:
-            stats['sspCondition'] = str('not ssp')
-        ## end if else statement        
+            stats['sspCondition'] = str('not ssp')       
             
         return stats
     
@@ -151,8 +129,8 @@ SSP_ARK_423       = "./population_density_imex  --IMintegrator ARKODE_SSP_ESDIRK
 common = " --output 2"
 
 adaptive_params = {'r1':1.e-1, 'r2':1.e-2, 'r3':1.e-3, 'r4':1.e-4, 'r5':1.e-5} ## Relative tolerances
-fixed_params    = {'h1':0.25, 'h2':0.50, 'h3':0.75, 'h4':1.00,  'h5':1.25,  'h6':1.50, 
-                   'h7':1.75, 'h8':2.00, 'h9':2.25, 'h10':2.50, 'h11':2.75, 'h12':3.00} ## fixed time step sizes
+fixed_params    = {'h1':0.25*(2**-4), 'h2':0.25*(2**-3), 'h3':0.25*(2**-2), 'h4':0.25*(2**-1),  'h5':0.25*(2**0), 
+                   'h6':0.25*(2**1), 'h7':0.25*(2**2), 'h8':0.25*(2**3), 'h9':0.25*(2**4)} ## fixed time step sizes
 
 ## Diffusion coefficients
 diff_coef = {'kpt02':0.02, 'kpt04':0.04}
@@ -199,7 +177,8 @@ fixed_efficiency_time  = True
 
 for dck in diff_coeff:    
 # # --------------------------------------------------- Run Adaptive Time Steps --------------------------------------------------------------------------------  
-    data_adaptive = df[(df["diff_coef"] == dck) & (df["Runtype"] == "adaptive")][["Runtype", "IMEX_method", "diff_coef", "runVal", "Nonlinear_Solves", "Explicit_RHS", "error", "Negative_model", "sspCondition", "runtime", "Steps"]]
+    data_adaptive = df[(df["diff_coef"] == dck) & (df["Runtype"] == "adaptive")][["Runtype", "IMEX_method", "diff_coef", "runVal", "Nonlinear_Solves", "Explicit_RHS", 
+                                                                                  "Total Func Eval", "maxIntStep", "error", "Negative_model", "sspCondition", "runtime", "Steps"]]
     if (adapt_accuracy):
         plt.figure()
         for SSPmethodAdt in data_adaptive['IMEX_method'].unique():
@@ -209,7 +188,6 @@ for dck in diff_coeff:
             method_line_color = method_line[0].get_color()
             # Overlay red 'x' markers where Negative_model == 1 or "not ssp"
             sspness = SSPmethodAdt_data[SSPmethodAdt_data['sspCondition'] == "not ssp"]
-            # negative_model = SSPmethodAdt_data[(SSPmethodAdt_data['Negative_model'] == 1) & (SSPmethodAdt_data['sspCondition'] == "not ssp")]
             plt.plot(sspness['runVal'], sspness['error'], marker='x', linewidth=2, linestyle='none', color=method_line_color)
         plt.xscale('log')
         plt.yscale('log')
@@ -258,7 +236,8 @@ for dck in diff_coeff:
         plt.show()
 
 # # ------------------------------------------------ Run Fixed Time Steps ---------------------------------------------------------------------------            
-    data_fixed = df[(df["diff_coef"] == dck) & (df["Runtype"] == "fixed")][["Runtype", "IMEX_method", "diff_coef", "runVal", "Nonlinear_Solves", "Explicit_RHS", "error", "Negative_model", "sspCondition", "runtime", "Steps"]]
+    data_fixed = df[(df["diff_coef"] == dck) & (df["Runtype"] == "fixed")][["Runtype", "IMEX_method", "diff_coef", "runVal", "Nonlinear_Solves", "Explicit_RHS", 
+                                                                            "Total Func Eval", "error", "maxIntStep", "Negative_model", "sspCondition", "runtime", "Steps"]]
     if (fixed_convergence):
         plt.figure()
         for SSPmethodFix in data_fixed['IMEX_method'].unique():
@@ -302,15 +281,15 @@ for dck in diff_coeff:
         for SSPmethodFix in data_fixed['IMEX_method'].unique():
             SSPmethodFix_data = data_fixed[data_fixed['IMEX_method'] == SSPmethodFix]
             # Plot the whole method line with '.' markers
-            method_line = plt.plot(SSPmethodFix_data['Explicit_RHS'], SSPmethodFix_data['error'],marker='.', linestyle='-', label=SSPmethodFix)
+            method_line = plt.plot(SSPmethodFix_data['Total Func Eval'], SSPmethodFix_data['error'],marker='.', linestyle='-', label=SSPmethodFix)
             method_line_color = method_line[0].get_color()
             # Overlay red 'x' markers where Negative_model == 1 or "not ssp"
             sspness = SSPmethodFix_data[SSPmethodFix_data['sspCondition'] == "not ssp"]
             # negative_model = SSPmethodFix_data[(SSPmethodFix_data['Negative_model'] == 1) & (SSPmethodFix_data['sspCondition'] == "not ssp")]
-            plt.plot(sspness['Explicit_RHS'], sspness['error'], marker='x', linewidth=2, linestyle='none', color=method_line_color)
+            plt.plot(sspness['Total Func Eval'], sspness['error'], marker='x', linewidth=2, linestyle='none', color=method_line_color)
         plt.xscale('log')
         plt.yscale('log')
-        plt.xlabel('RHS evals')
+        plt.xlabel('Total Num of Func Evals')
         plt.ylabel('$L_{\\infty}$ error')
         plt.legend()
         plt.savefig("Fixed effciency work for d = %.2f.pdf"%dck)

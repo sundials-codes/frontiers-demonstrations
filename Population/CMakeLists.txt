@@ -6,12 +6,13 @@ set(sources population_density.cpp)
 
 #   extra installation files
 set(extras 
-    refSoln_k0pt02_h0pt01_ssp423.txt
-    refSoln_k0pt02_rtol1en8_ssp423.txt
-    refSoln_k0pt04_h0pt01_ssp423.txt
-    refSoln_k0pt04_rtol1en8_ssp423.txt
+    refSoln_k0pt02_h0pt001_ssp423.txt
+    refSoln_k0pt02_rtol1en10_ssp423.txt
+    refSoln_k0pt04_h0pt001_ssp423.txt
+    refSoln_k0pt04_rtol1en10_ssp423.txt
     plot_population.py
-    runtests_population_density_imex.py)
+    runtests_population_density_imex.py
+    runtests_population_adaptiveLog.py)
 
 #   set the target name
 set(target population_density)
