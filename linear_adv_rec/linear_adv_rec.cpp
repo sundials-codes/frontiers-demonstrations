@@ -482,7 +482,6 @@ static int ReadInputs(std::vector<std::string>& args, UserData& udata,
 
 // Problem parameters
  find_arg(args, "--N", udata.N);
-//  find_arg(args, "--k", udata.k);
  find_arg(args, "--xstart", udata.xstart);
  find_arg(args, "--xend", udata.xend);
  find_arg(args, "--swap_type", udata.swap_type);
@@ -519,7 +518,6 @@ static void InputHelp()
                 "ARKODE_SSP_LSPUM_ERK_3_1_2, or ARKODE_SSP_ERK_4_2_3)\n";
    std::cout << "  --swap_type <str> : swap, nonswap  \n";
    std::cout << "  --N <int>         : dimension\n";
-  //  std::cout << "  --k <real>        : diffusion coefficient: (0.0, 0.02 or 0.04)\n";
    std::cout << "  --rtol <real>     : relative tolerance\n";
    std::cout << "  --atol <real>     : absolute tolerance\n";
    std::cout << "  --fixed_h <real>  : fixed step size\n";
@@ -541,7 +539,6 @@ static int PrintSetup(UserData& udata, ARKODEParameters& uopts)
   std::cout << "Problem parameters and options:" << std::endl;
   std::cout << " --------------------------------- " << std::endl;
   std::cout << "  N            = " << udata.N << std::endl;
-  // std::cout << "  k            = " << udata.k << std::endl;
   std::cout << "  dx           = " << udata.dx << std::endl;
   std::cout << "  xstart       = " << udata.xstart << std::endl;
   std::cout << "  xend         = " << udata.xend << std::endl;
