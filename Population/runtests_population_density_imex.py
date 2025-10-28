@@ -206,7 +206,6 @@ for dck in diff_coeff:
             method_line_color = method_line[0].get_color()
             # Overlay red 'x' markers where Negative_model == 1 or "not ssp"
             sspness = SSPmethodAdt_data[SSPmethodAdt_data['sspCondition'] == "not ssp"]
-            # negative_model = SSPmethodAdt_data[(SSPmethodAdt_data['Negative_model'] == 1) & (SSPmethodAdt_data['sspCondition'] == "not ssp")]
             plt.plot(sspness['runtime'], sspness['error'], marker='x', linewidth=2, linestyle='none', color=method_line_color)
         plt.xscale('log')
         plt.yscale('log')
@@ -225,7 +224,6 @@ for dck in diff_coeff:
             method_line_color = method_line[0].get_color()
             # Overlay red 'x' markers where Negative_model == 1 or "not ssp"
             sspness = SSPmethodAdt_data[SSPmethodAdt_data['sspCondition'] == "not ssp"]
-            # negative_model = SSPmethodAdt_data[(SSPmethodAdt_data['Negative_model'] == 1) & (SSPmethodAdt_data['sspCondition'] == "not ssp")]
             plt.plot(sspness['Steps'], sspness['error'], marker='x', linewidth=2, linestyle='none', color=method_line_color)
         plt.xscale('log')
         plt.yscale('log')
@@ -247,7 +245,6 @@ for dck in diff_coeff:
             method_line_color = method_line[0].get_color()
             # Overlay red 'x' markers where Negative_model == 1 or "not ssp"
             sspness = SSPmethodFix_data[SSPmethodFix_data['sspCondition'] == "not ssp"]
-            # negative_model = SSPmethodFix_data[(SSPmethodFix_data['Negative_model'] == 1) & (SSPmethodFix_data['sspCondition'] == "not ssp")]
             plt.plot(sspness['runVal'], sspness['error'], marker='x', linewidth=2, linestyle='none', color=method_line_color)
         plt.xscale('log')
         plt.yscale('log')
@@ -266,7 +263,6 @@ for dck in diff_coeff:
             method_line_color = method_line[0].get_color()
             # Overlay red 'x' markers where Negative_model == 1 or "not ssp"
             sspness = SSPmethodFix_data[SSPmethodFix_data['sspCondition'] == "not ssp"]
-            # negative_model = SSPmethodFix_data[(SSPmethodFix_data['Negative_model'] == 1) & (SSPmethodFix_data['sspCondition'] == "not ssp")]
             plt.plot(sspness['runtime'], sspness['error'], marker='x', linewidth=2, linestyle='none', color=method_line_color)
         plt.xscale('log')
         plt.yscale('log')
@@ -285,7 +281,6 @@ for dck in diff_coeff:
             method_line_color = method_line[0].get_color()
             # Overlay red 'x' markers where Negative_model == 1 or "not ssp"
             sspness = SSPmethodFix_data[SSPmethodFix_data['sspCondition'] == "not ssp"]
-            # negative_model = SSPmethodFix_data[(SSPmethodFix_data['Negative_model'] == 1) & (SSPmethodFix_data['sspCondition'] == "not ssp")]
             plt.plot(sspness['Total Func Eval'], sspness['error'], marker='x', linewidth=2, linestyle='none', color=method_line_color)
         plt.xscale('log')
         plt.yscale('log')
