@@ -270,7 +270,7 @@ int main(int argc, char* argv[])
 
   ydata = N_VGetArrayPointer(y); //in order to extract the minimum element of the solution vector y
 
-  sunrealtype maxIntStep = 0.0, hcur;
+  sunrealtype sumIntStep = 0.0, hcur;
   long int nsteps;
 
   while (t < uopts.Tf)
@@ -284,7 +284,7 @@ int main(int argc, char* argv[])
     }
     flag = ARKodeGetCurrentStep(arkode_mem, &hcur);
     if (check_flag(&flag, "ARKodeGetCurrentStep", 1)) {return 1; }
-    if (hcur > maxIntStep){maxIntStep=hcur;}
+    sumIntStep = sumIntStep + hcur;
     // printf(" internal time step size (hmax): %.14" ESYM "\n", hcur);
 
     float minVal = ydata[0];
@@ -311,7 +311,7 @@ int main(int argc, char* argv[])
   fprintf(UFID, "Number of Time Steps Taken: %ld \n", nsteps);
 
   /* Print the maximum internal step size */
-  printf("Maximum internal time step size = %.2" GSYM "\n", maxIntStep);
+  printf("Largest average internal time step size = %.2" GSYM "\n", (sumIntStep/nsteps));
 
   printf("   -------------------------\n \n");
   fclose(UFID);

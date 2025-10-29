@@ -72,8 +72,8 @@ def runtest(solver, runN, runV, kName, kVal, commonargs, showcommand=True, sspco
                     stats['Implicit_RHS'] = int(txt[5])       #right hand side evaluations for implicit method
                 elif (("NLS" in txt) and ("iters" in txt) and ("per" not in txt) and ("step" not in txt)):
                     stats['Nonlinear_Solves'] = int(txt[3])   #right hand side evaluations for implicit method
-                elif (("Maximum" in txt) and ("internal" in txt) and ("step" in txt) and ("size" in txt)):
-                    stats['maxIntStep'] = float(txt[6])         #last internal step size used in adaptive run
+                elif (("Largest" in txt) and ("average" in txt) and ("step" in txt) and ("size" in txt)):
+                    stats['maxIntStep'] = float(txt[7])         #last internal step size used in adaptive run
             sum_negLines = 0
             for line in lines:
                 txt = line.split()
