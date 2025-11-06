@@ -29,93 +29,81 @@ import matplotlib.pyplot as plt
 import itertools
 from itertools import cycle
 from matplotlib.gridspec import GridSpec
+from math import log10, floor
 
 # utility routine to run a test, storing the run options and solver statistics
-def runtest(solver, runN, runV, kName, kVal, commonargs, showcommand=True, sspcommand=True):
-    def runtype(modetype):
-        stats = {'Runtype': modetype,'ReturnCode': 0, 'IMEX_method': solver['name'], 'diff_coef': kVal, 'runVal': runV,
-                'Steps': 0, 'StepAttempts': 0, 'ErrTestFails': 0, 'Explicit_RHS': 0, 'Implicit_RHS': 0, 'Total Func Eval':0,
-                'maxIntStep': 0.0, 'Nonlinear_Solves':0, 'Negative_model': 0, 'runtime':0.0, 'lmax_1dev': 0.0, 'error': 0.0,
-                'sspCondition': " "}
+def runtest(solver, modetype, runV, kVal, showcommand=True, sspcommand=True):
+    stats = {'Runtype': modetype,'ReturnCode': 0, 'IMEX_method': solver['name'], 'diff_coef': kVal, 'runVal': runV,
+            'Steps': 0, 'StepAttempts': 0, 'ErrTestFails': 0, 'Explicit_RHS': 0, 'Implicit_RHS': 0, 'Total Func Eval':0,
+            'maxIntStep': 0.0, 'Nonlinear_Solves':0, 'Negative_model': 0, 'runtime':0.0, 'lmax_1dev': 0.0, 'error': 0.0,
+            'sspCondition': " "}
 
-        if (modetype == "adaptive"):
-            runcommand = " %s  --rtol %e  --k %.2f" % (solver['exe'], runV, kVal)
-        elif (modetype == "fixed"):
-            runcommand = " %s  --fixed_h %.2f  --k %.2f" % (solver['exe'], runV, kVal)
-        
-        start_time = time.time()
-        result = subprocess.run(shlex.split(runcommand), stdout=subprocess.PIPE)
-        end_time = time.time()
-        length_time = end_time - start_time
-        stats['Runtype']    = modetype
-        stats['ReturnCode'] = result.returncode
-        stats['runtime']    = length_time
-
-        if (result.returncode != 0):
-            print("Run command " + runcommand + " FAILURE: " + str(result.returncode))
-            print(result.stderr)
-        else:
-            if (showcommand):
-                print("Run command " + runcommand + " SUCCESS")
-            lines = str(result.stdout).split('\\n')
-            for line in lines:
-                txt = line.split()
-                if ("Steps" in txt):
-                    stats['Steps'] = int(txt[2])
-                elif (("Step" in txt) and ("attempts" in txt)):
-                    stats['StepAttempts'] = int(txt[3])
-                elif (("Error" in txt) and ("Fails" in txt)):
-                    stats['ErrTestFails'] = float(txt[4])
-                elif (("Explicit" in txt) and ("RHS" in txt)):
-                    stats['Explicit_RHS'] = int(txt[5])       #right hand side evaluations for explicit method
-                elif (("Implicit" in txt) and ("RHS" in txt)):
-                    stats['Implicit_RHS'] = int(txt[5])       #right hand side evaluations for implicit method
-                elif (("NLS" in txt) and ("iters" in txt) and ("per" not in txt) and ("step" not in txt)):
-                    stats['Nonlinear_Solves'] = int(txt[3])   #right hand side evaluations for implicit method
-                elif (("Largest" in txt) and ("average" in txt) and ("step" in txt) and ("size" in txt)):
-                    stats['maxIntStep'] = float(txt[7])         #last internal step size used in adaptive run
-            sum_negLines = 0
-            for line in lines:
-                txt = line.split()
-                if (("Model" in txt) and ("has" in txt) and ("a" in txt) and ("negative" in txt) and ("time" in txt) and ("step" in txt) and ("t" in txt)):
-                    sum_negLines += 1
-            stats['Negative_model'] = sum_negLines               #right hand side evaluations for implicit method
-            stats['Total Func Eval'] = stats['Implicit_RHS'] + stats['Explicit_RHS']
-
-
-        ## running python file to determine the if the graph is smooth and positive or not (ssp condition)
-        sspcommand = " python ./plot_population.py"
-        ssp_result = subprocess.run(shlex.split(sspcommand), stdout=subprocess.PIPE)
-        if (sspcommand):
-            print("Run solution graph: " + sspcommand + " SUCCESS")
-            new_fileName = f"soln_graph_{solver['name']}_{runN}_{kName}.png"
-
-            ## rename plot file
-            if os.path.exists("populationModel_frames.png"):
-                os.rename("populationModel_frames.png", new_fileName)
-                print(f"Plot saved as: {new_fileName}")
-            else:
-                print("Warning: populationModel_frames.png not found.")
-
-        pylines = str(ssp_result.stdout).split()
-        lmax_1dev = float(pylines[8].replace('\\nLmax', ''))
-        lmax_error = float(pylines[13].replace("\\n'", ''))
-
-        stats['lmax_1dev'] = lmax_1dev #lmax val for first derivative
-        stats['error']     = lmax_error # lmax error after comparing solution at final time step with reference solution
-
-        if (kVal==0.02) and (lmax_1dev >= 1.2) and (lmax_1dev <= 1.7) and (stats['Negative_model'] == 0):
-            stats['sspCondition'] = str('ssp')
-        elif (kVal==0.04) and (lmax_1dev >= 0.7) and (lmax_1dev <= 1.5) and (stats['Negative_model'] == 0):
-            stats['sspCondition'] = str('ssp')
-        else:
-            stats['sspCondition'] = str('not ssp')       
-            
-        return stats
+    if (modetype == "adaptive"):
+        runcommand = " %s  --rtol %.6f   --k %.2f" % (solver['exe'], runV, kVal)
+    elif (modetype == "fixed"):
+        runcommand = " %s  --fixed_h %.6f  --k %.2f" % (solver['exe'], runV, kVal)
     
-    adaptive_stats = runtype("adaptive")
-    fixed_stats    = runtype("fixed")
-    return adaptive_stats, fixed_stats
+    start_time = time.time()
+    result = subprocess.run(shlex.split(runcommand), stdout=subprocess.PIPE)
+    end_time = time.time()
+    length_time = end_time - start_time
+    stats['Runtype']    = modetype
+    stats['ReturnCode'] = result.returncode
+    stats['runtime']    = length_time
+
+    if (result.returncode != 0):
+        print("Running: " + runcommand + " FAILURE: \n" + str(result.returncode))
+        print(result.stderr)
+    else:
+        if (showcommand):
+            print("Running: " + runcommand + " SUCCESS")
+        lines = str(result.stdout).split('\\n')
+        for line in lines:
+            txt = line.split()
+            if ("Steps" in txt):
+                stats['Steps'] = int(txt[2])
+            elif (("Step" in txt) and ("attempts" in txt)):
+                stats['StepAttempts'] = int(txt[3])
+            elif (("Error" in txt) and ("Fails" in txt)):
+                stats['ErrTestFails'] = float(txt[4])
+            elif (("Explicit" in txt) and ("RHS" in txt)):
+                stats['Explicit_RHS'] = int(txt[5])       #right hand side evaluations for explicit method
+            elif (("Implicit" in txt) and ("RHS" in txt)):
+                stats['Implicit_RHS'] = int(txt[5])       #right hand side evaluations for implicit method
+            elif (("NLS" in txt) and ("iters" in txt) and ("per" not in txt) and ("step" not in txt)):
+                stats['Nonlinear_Solves'] = int(txt[3])   #right hand side evaluations for implicit method
+            elif (("Largest" in txt) and ("average" in txt) and ("step" in txt) and ("size" in txt)):
+                stats['maxIntStep'] = float(txt[7])         #last internal step size used in adaptive run
+        sum_negLines = 0
+        for line in lines:
+            txt = line.split()
+            if (("Model" in txt) and ("has" in txt) and ("a" in txt) and ("negative" in txt) and ("time" in txt) and ("step" in txt) and ("t" in txt)):
+                sum_negLines += 1
+        stats['Negative_model'] = sum_negLines               #right hand side evaluations for implicit method
+        stats['Total Func Eval'] = stats['Implicit_RHS'] + stats['Explicit_RHS']
+
+    ## running python file to determine the if the graph is smooth and positive or not (ssp condition)
+    sspcommand = " python ./plot_population.py"
+    ssp_result = subprocess.run(shlex.split(sspcommand), stdout=subprocess.PIPE)
+
+    pylines = str(ssp_result.stdout).split()
+    lmax_1dev = float(pylines[8].replace('\\nLmax', ''))
+    lmax_error = float(pylines[13].replace("\\n'", ''))
+
+    stats['lmax_1dev'] = lmax_1dev #lmax val for first derivative
+    stats['error']     = lmax_error # lmax error after comparing solution at final time step with reference solution
+
+    if (kVal==0.02) and (lmax_1dev >= 1.2) and (lmax_1dev <= 1.7) and (stats['Negative_model'] == 0):
+        stats['sspCondition'] = str('ssp')
+        ssp_cond = 0
+    elif (kVal==0.04) and (lmax_1dev >= 0.7) and (lmax_1dev <= 1.5) and (stats['Negative_model'] == 0):
+        stats['sspCondition'] = str('ssp')
+        ssp_cond = 0
+    else:
+        stats['sspCondition'] = str('not ssp')  
+        ssp_cond = 1     
+        
+    return stats, ssp_cond
 ## end of function
 
 
@@ -123,14 +111,127 @@ def runtest(solver, runN, runV, kName, kVal, commonargs, showcommand=True, sspco
 SSP_ARK_212       = "./population_density_imex  --IMintegrator ARKODE_SSP_SDIRK_2_1_2        --EXintegrator ARKODE_SSP_ERK_2_1_2" 
 SSP_ARK_312       = "./population_density_imex  --IMintegrator ARKODE_SSP_DIRK_3_1_2         --EXintegrator ARKODE_SSP_ERK_3_1_2"           
 SSP_LSPUM_ARK_312 = "./population_density_imex  --IMintegrator ARKODE_SSP_LSPUM_SDIRK_3_1_2  --EXintegrator ARKODE_SSP_LSPUM_ERK_3_1_2"  
-SSP_ARK_423       = "./population_density_imex  --IMintegrator ARKODE_SSP_ESDIRK_4_2_3       --EXintegrator ARKODE_SSP_ERK_4_2_3"            
+SSP_ARK_423       = "./population_density_imex  --IMintegrator ARKODE_SSP_ESDIRK_4_2_3       --EXintegrator ARKODE_SSP_ERK_4_2_3"     
 
-## common testing parameters
-common = " --output 2"
+adaptive_params = [1e-5, 1e-4, 1e-3, 1e-2, 5e-2, 1e-1, 5e-1, 1.0] ## Relative tolerances
+fixed_params    = [0.25*(2**-5),  0.25*(2**-4), 0.25*(2**-3), 0.25*(2**-2), 0.25*(2**-1),
+                   0.25*(2**0),   0.25*(2**1),  0.25*(2**2),  0.25*(2**3),  0.25*(2**4)] ## fixed time step sizes
 
-adaptive_params = {'r1':1.e-1, 'r2':1.e-2, 'r3':1.e-3, 'r4':1.e-4, 'r5':1.e-5} ## Relative tolerances
-fixed_params    = {'h1':0.25*(2**-4), 'h2':0.25*(2**-3), 'h3':0.25*(2**-2), 'h4':0.25*(2**-1),  'h5':0.25*(2**0), 
-                   'h6':0.25*(2**1), 'h7':0.25*(2**2), 'h8':0.25*(2**3), 'h9':0.25*(2**4)} ## fixed time step sizes
+
+## ----------------------------------------------------------------------------------------------------
+# This section uses the Bisection Method to compute the step size or rtol at which the method
+# switches from ssp to nonssp. The step size or rtol values are rounded to 3 significant figures.
+# The values computed in this section are then appended to the run values (rtol or step sizes)
+# to generate the plots. The next section was computed first to determine the interval to bisect 
+# before this section was run. You would not need to that.
+## ----------------------------------------------------------------------------------------------------
+def round_to_3sf(x, sf=3):
+    """
+    Converts a number to three significant figures
+
+    Args:
+        x : the number to round
+        sf is the number of significant figures to run the number to.
+    """
+    return round(x,-int(floor(log10(abs(x)))) + (sf - 1))
+
+
+def bisection_midval(solvers, runtype, paramList):
+    """
+    Use bisection method to determine values at which methods switch between SSP and Non-SSP.
+
+    Args:
+        solvers (list[dict]): List of solvers with 'name', 'exe', 'sspVal', 'nonsspVal', and 'kvalue'.
+        runtype (str): Type of run ('adaptive' or 'fixed').
+        param_list (list): List to collect final mid-values.
+    """
+     
+    for solver in solvers:
+        name = solver['name']
+        kval = solver['kvalue']
+
+        _,condLow = runtest(solver, runtype, solver['sspVal'], kval, showcommand=True, sspcommand=True)
+        _,condHigh = runtest(solver, runtype,solver['nonsspVal'], kval, showcommand=True, sspcommand=True)
+
+        iter = 0
+        preMidVal = None
+        second_to_preMidVal = None
+        while True:
+            midVal = (solver['sspVal'] + solver['nonsspVal'])/2.0
+            midVal = round_to_3sf(midVal,sf=3)
+
+            # end run if midpoint value is the same as previous one and store the last midpoint point value 
+            # as well as the previous distinct midpoint value
+            if midVal == preMidVal:
+                if second_to_preMidVal is not None:
+                    paramList.append(second_to_preMidVal)
+                paramList.append(midVal)
+                print("Mid value did not change after rounding.")
+                break
+            
+            # update midpoint values
+            second_to_preMidVal = preMidVal
+            preMidVal           = midVal
+
+            # the bisection method
+            _,condMid =  runtest(solver, runtype, midVal, kval, showcommand=True, sspcommand=True)
+            if (condMid==0):
+                solver['sspVal'] = midVal
+            elif (condMid==1):
+                solver['nonsspVal'] = midVal
+
+            # end run both values have the same ssp condition and store the last midpoint point value 
+            # as well as the previous distinct midpoint value
+            _,condLow  = runtest(solver, runtype, solver['sspVal'], kval, showcommand=True, sspcommand=True)
+            _,condHigh = runtest(solver, runtype, solver['nonsspVal'], kval, showcommand=True, sspcommand=True)
+            if (condLow==condHigh):
+                if second_to_preMidVal is not None:
+                    paramList.append(second_to_preMidVal)
+                paramList.append(midVal)
+                print(f"Both values have the same SSP condition ({condLow}).")
+                break
+            iter += 1
+
+        # print results
+        print(f"{runtype} run with {name}, {kval}, iter {iter} : SSP-value & cond = {solver['sspVal'],condLow}, NonSSP-value & cond = {solver['nonsspVal'], condHigh}")
+
+# -------------------------------------- adaptive runs -----------------------------------------
+solvernames_adaptK2 = [{'name': 'SSP-ARK-2-1-2', 'exe': SSP_ARK_212, 'sspVal': 1e-2, 'nonsspVal': 5e-2, 'kvalue': 0.02},
+                       {'name': 'SSP-ARK-3-1-2', 'exe': SSP_ARK_312, 'sspVal': 1e-1, 'nonsspVal': 5e-1, 'kvalue': 0.02},
+                       {'name': 'SSP-LSPUM-ARK-3-1-2', 'exe': SSP_LSPUM_ARK_312, 'sspVal': 5e-2, 'nonsspVal': 1e-1, 'kvalue': 0.02},
+                       {'name': 'SSP-ARK-4-2-3', 'exe': SSP_ARK_423, 'sspVal': 1e-3, 'nonsspVal': 1e-2, 'kvalue': 0.02} ]
+
+solvernames_adaptK4 = [{'name': 'SSP-ARK-2-1-2', 'exe': SSP_ARK_212, 'sspVal': 5e-2, 'nonsspVal': 1e-1, 'kvalue': 0.04},
+                    #    {'name': 'SSP-ARK-3-1-2', 'exe': SSP_ARK_312, 'sspVal': 1e-1, 'nonsspVal': 5e-1, 'kvalue': 0.04},
+                       {'name': 'SSP-LSPUM-ARK-3-1-2', 'exe': SSP_LSPUM_ARK_312, 'sspVal': 5e-2, 'nonsspVal': 1e-1, 'kvalue': 0.04},
+                       {'name': 'SSP-ARK-4-2-3', 'exe': SSP_ARK_423, 'sspVal': 1e-1, 'nonsspVal': 5e-1, 'kvalue': 0.04} ]
+
+bisection_midval(solvernames_adaptK2, "adaptive", paramList = adaptive_params)
+bisection_midval(solvernames_adaptK4, "adaptive", paramList = adaptive_params)
+
+
+# -------------------------------------- fixed runs -----------------------------------------
+solvernames_fixedK2 = [{'name': 'SSP-ARK-2-1-2', 'exe': SSP_ARK_212, 'sspVal': 0.25*(2**-3), 'nonsspVal': 0.25*(2**-2), 'kvalue': 0.02},
+                       {'name': 'SSP-ARK-3-1-2', 'exe': SSP_ARK_312, 'sspVal': 0.25*(2**2), 'nonsspVal': 0.25*(2**3), 'kvalue': 0.02},
+                       {'name': 'SSP-LSPUM-ARK-3-1-2', 'exe': SSP_LSPUM_ARK_312, 'sspVal': 0.25*(2**2), 'nonsspVal': 0.25*(2**3), 'kvalue': 0.02},
+                       {'name': 'SSP-ARK-4-2-3', 'exe': SSP_ARK_423, 'sspVal': 0.25*(2**0), 'nonsspVal': 0.25*(2**1), 'kvalue': 0.02} ]
+
+solvernames_fixedK4 = [{'name': 'SSP-ARK-2-1-2', 'exe': SSP_ARK_212, 'sspVal': 0.25*(2**-1), 'nonsspVal': 0.25*(2**0), 'kvalue': 0.04},
+                       {'name': 'SSP-ARK-3-1-2', 'exe': SSP_ARK_312, 'sspVal': 0.25*(2**2), 'nonsspVal': 0.25*(2**3), 'kvalue': 0.04},
+                       {'name': 'SSP-LSPUM-ARK-3-1-2', 'exe': SSP_LSPUM_ARK_312, 'sspVal': 0.25*(2**2), 'nonsspVal': 0.25*(2**3), 'kvalue': 0.04},
+                       {'name': 'SSP-ARK-4-2-3', 'exe': SSP_ARK_423, 'sspVal': 0.25*(2**0), 'nonsspVal': 0.25*(2**1), 'kvalue': 0.04} ]
+
+bisection_midval(solvernames_fixedK2, "fixed", paramList = fixed_params)
+bisection_midval(solvernames_fixedK4, "fixed", paramList = fixed_params)
+
+
+## ----------------------------------------------------------------------------------------------------
+# This section generates the data for each method, diffusion coefficient with different fixed step
+# sizes and rtols
+## ----------------------------------------------------------------------------------------------------
+sorted_adaptive_params = sorted(adaptive_params) ## Relative tolerances
+sorted_fixed_params    = sorted(fixed_params) ## fixed time step sizes
+# print(sorted_adaptive_params)
 
 ## Diffusion coefficients
 diff_coef = {'kpt02':0.02, 'kpt04':0.04}
@@ -145,15 +246,15 @@ solvertype = [{'name': 'SSP-ARK-2-1-2',       'exe': SSP_ARK_212},
 fname = 'population_density_imex_stats' 
 RunStats = []
 for k_name, k_val in diff_coef.items():
-    for runV_name, runV_val in adaptive_params.items():
-            for solver_adapt in solvertype:
-              adaptive_result, _ = runtest(solver_adapt, runV_name, runV_val, k_name, k_val, common, showcommand=True, sspcommand=True)
-              RunStats.append(adaptive_result)
+    for runV_val in sorted_adaptive_params:
+        for solver_adapt in solvertype:
+            adaptive_stat, _ = runtest(solver_adapt, "adaptive", runV_val, k_val, showcommand=True, sspcommand=True)
+            RunStats.append(adaptive_stat)
 
-    for runV_name, runV_val in fixed_params.items():
-            for solver_adapt in solvertype:
-              _, fixed_result = runtest(solver_adapt, runV_name, runV_val, k_name, k_val, common, showcommand=True, sspcommand=True)
-              RunStats.append(fixed_result)
+    for runV_val in sorted_fixed_params:
+        for solver_adapt in solvertype:
+            fixed_stat, _ = runtest(solver_adapt, "fixed", runV_val, k_val, showcommand=True, sspcommand=True)
+            RunStats.append(fixed_stat)
 RunStatsDf = pd.DataFrame.from_records(RunStats)
 
 # save dataframe as Excel file
@@ -163,7 +264,11 @@ print("Saving as Excel")
 RunStatsDf.to_excel(fname + '.xlsx', index=False)
 
 
-##---------------------------------------------- Efficiency Plots ---------------------------------------------
+
+# -----------------------------------------------------------------------------------------
+# This section generates accuracy, convergence and efficiency plots
+# -----------------------------------------------------------------------------------------
+
 df = pd.read_excel('population_density_imex_stats' + '.xlsx') # excel file
 
 diff_coeff = [0.02, 0.04] #diffusion coefficients
