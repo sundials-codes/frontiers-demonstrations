@@ -5,23 +5,20 @@
 set(sources population_density.cpp)
 
 #   extra installation files
-set(extras 
-    refSoln_k0pt02_h0pt0001_ssp423.txt
-    refSoln_k0pt02_rtol1en10_ssp423.txt
-    refSoln_k0pt04_h0pt0001_ssp423.txt
-    refSoln_k0pt04_rtol1en10_ssp423.txt
+set(extras
+    runtest_population_refSol.py
+    runtest_population_imex.py
     plot_population.py
-    runtests_population_density_imex.py
-    runtests_population_adaptiveLog.py)
+    runtest_population_adaptLog.py)
 
 #   set the target name
-set(target population_density)
+set(target population)
 
 #   source files
-set(sources population_density_imex.cpp)
+set(sources population_imex.cpp)
 
 #   set the target name
-set(target population_density_imex)
+set(target population_imex)
 
 #   set the executable, listing the source files on which it depends
 add_executable(${target} ${sources})

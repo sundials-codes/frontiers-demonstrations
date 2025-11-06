@@ -12,21 +12,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 # SUNDIALS Copyright End
 #----------------------------------------------------------------------------------------------------------------------------------
-# ReadME: If running fixed step sizes, ensure that fixedRun = True (1 location) and fixhRun = True (1 location) 
-#         in the script,runtests_population_density_imex.py Also, ensure that FixedRun = True (1 location) in this script,
-#         plot_population.py . This means that adaptiveRun = False (1 location) and adaptRun = False (1 location) in 
-#         the script, runtests_population_density_imex.py and, AdaptiveRun = False (1 location) in this script plot_population.py 
-#
-#         Similarly, if running adaptive step sizes, ensure that adaptiveRun = True (1 location) and
-#         adaptRun = True (1 location) in the script, runtests_population_density_imex.py 
-#         Also, ensure that AdaptiveRun = True (1 location) in the script, plot_population.py . 
-#         This means that fixedRun = False (1 location) and fixhRun = False (1 location) in the script, 
-#         runtests_population_density_imex.py and, FixedRun = False (1 location) in this script plot_population.py 
-#
-#         Ensure that the reference solutions are generated and stored in the textfiles:
-#         refSoln_k0pt02_h0pt00001_ssp423.txt and refSoln_k0pt04_h0pt00001_ssp423.txt for fixed temporal step sizes for k=0.02 and k=0.04,
-#         respectively and, refSoln_k0pt02_rtol1en10_ssp423.txt and refSoln_k0pt04_rtol1en10_ssp423.txt for adaptive step sizes, for 
-#         k=0.02 and k=0.04, respectively.
+# ReadME: Run the "runtest_referenceSolution.py" script to generate the reference solutions to be used in this script.
 #-----------------------------------------------------------------------------------------------------------------------------------
 
 # imports
@@ -144,6 +130,15 @@ with open(datafile, "r") as file:
 
 ## ------------------ Extract Reference Solution at Final Time Step -----------------------
 def read_ref_solution(filename, N):
+    """
+    This script extract the solution at the final time step of the reference solution 
+    required to compute the error norm at the final time step.
+
+    Input: filename: reference solution filename
+           N : the length of the solution at the final time step
+
+    Output: returns the solution vector at the final time step
+    """
     if not os.path.isfile(filename):
         msg = "Error: file " + filename + " does not exist"
         sys.exit(msg)
@@ -176,10 +171,10 @@ def read_ref_solution(filename, N):
             pSol_ref_lastStep[i] = pSol_ref[nsteps_ref-1, i]
     return pSol_ref_lastStep
 
-pSol_refkpt02_lastStep = read_ref_solution("refSoln_k0pt02_h0pt0001_ssp423.txt", N)
-pSol_refkpt04_lastStep = read_ref_solution("refSoln_k0pt04_h0pt0001_ssp423.txt", N)
-pSol_adtkpt02_lastStep = read_ref_solution("refSoln_k0pt02_rtol1en10_ssp423.txt", N)
-pSol_adtkpt04_lastStep = read_ref_solution("refSoln_k0pt04_rtol1en10_ssp423.txt", N)
+fixedk2_refSoln_lastStep = read_ref_solution("fixed_referenceSoln_k2.txt", N)
+fixedk4_refSoln_lastStep = read_ref_solution("fixed_referenceSoln_k4.txt", N)
+adaptk2_refSoln_lastStep = read_ref_solution("adaptive_referenceSoln_k2.txt", N)
+adaptk4_refSoln_lastStep = read_ref_solution("adaptive_referenceSoln_k4.txt", N)
 
 
 ## -------------------- Compute L-infinty norm using the reference solution -----------------------
@@ -189,14 +184,14 @@ elmax       = 0.0 #l-infinity error
 if (FixedRun):
     if (diff_k==0.02):
         for i in range(N):
-            errV = np.abs(pSol_refkpt02_lastStep[i] - pSol_lastStep[i])
+            errV = np.abs(fixedk2_refSoln_lastStep[i] - pSol_lastStep[i])
             if (errV > elmax):
                 elmax = errV
             # end
         # end
     elif (diff_k==0.04):
         for i in range(N):
-            errV = np.abs(pSol_refkpt04_lastStep[i] - pSol_lastStep[i])
+            errV = np.abs(fixedk4_refSoln_lastStep[i] - pSol_lastStep[i])
             if (errV > elmax):
                 elmax = errV
             # end
@@ -204,14 +199,14 @@ if (FixedRun):
 if (AdaptiveRun):
     if (diff_k==0.02):
         for i in range(N):
-            errV = np.abs(pSol_adtkpt02_lastStep[i] - pSol_lastStep[i])
+            errV = np.abs(adaptk2_refSoln_lastStep[i] - pSol_lastStep[i])
             if (errV > elmax):
                 elmax = errV
             # end
         # end
     elif (diff_k==0.04):
         for i in range(N):
-            errV = np.abs(pSol_adtkpt04_lastStep[i] - pSol_lastStep[i])
+            errV = np.abs(adaptk4_refSoln_lastStep[i] - pSol_lastStep[i])
             if (errV > elmax):
                 elmax = errV
             # end
