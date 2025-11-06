@@ -47,7 +47,7 @@ SSP_LSPUM_ARK_312 = "./population_imex  --IMintegrator ARKODE_SSP_LSPUM_SDIRK_3_
 SSP_ARK_423       = "./population_imex  --IMintegrator ARKODE_SSP_ESDIRK_4_2_3       --EXintegrator ARKODE_SSP_ERK_4_2_3"            
 
 ## common testing parameters
-adaptive_params = {'r1':1.e-1, 'r2':1.e-2, 'r3':1.e-3, 'r4':1.e-4, 'r5':1.e-5} ## Relative tolerances
+adaptive_params = {'r1':1.e-1, 'r2':1.e-2, 'r3':1.e-3, 'r4':1.e-4, 'r5':1.e-5} ## relative tolerances
 
 ## Diffusion coefficients
 diff_coef = {'k2':0.02, 'k4':0.04}

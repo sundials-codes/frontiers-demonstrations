@@ -65,7 +65,7 @@ def refSoln(solver, modetype, runV, kval, kname, showcommand=True):
 # method to generate reference solution
 SSP_ARK_423 = "./population_imex  --IMintegrator ARKODE_SSP_ESDIRK_4_2_3  --EXintegrator ARKODE_SSP_ERK_4_2_3"     
 
-adaptive_params = [1e-10] ## Relative tolerance for reference solution
+adaptive_params = [1e-10] ## relative tolerance for reference solution
 fixed_params    = [1e-4] ## fixed time step size for reference solution
 
 ## Diffusion coefficients

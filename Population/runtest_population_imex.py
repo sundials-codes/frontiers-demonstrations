@@ -116,7 +116,7 @@ SSP_ARK_312       = "./population_imex  --IMintegrator ARKODE_SSP_DIRK_3_1_2    
 SSP_LSPUM_ARK_312 = "./population_imex  --IMintegrator ARKODE_SSP_LSPUM_SDIRK_3_1_2  --EXintegrator ARKODE_SSP_LSPUM_ERK_3_1_2"  
 SSP_ARK_423       = "./population_imex  --IMintegrator ARKODE_SSP_ESDIRK_4_2_3       --EXintegrator ARKODE_SSP_ERK_4_2_3"     
 
-adaptive_params = [1e-5, 1e-4, 1e-3, 1e-2, 5e-2, 1e-1, 5e-1, 1.0] ## Relative tolerances
+adaptive_params = [1e-5, 1e-4, 1e-3, 1e-2, 5e-2, 1e-1, 5e-1, 1.0] ## relative tolerances
 fixed_params    = [0.25*(2**-5),  0.25*(2**-4), 0.25*(2**-3), 0.25*(2**-2), 0.25*(2**-1),
                    0.25*(2**0),   0.25*(2**1),  0.25*(2**2),  0.25*(2**3),  0.25*(2**4)] ## fixed time step sizes
 
@@ -236,7 +236,7 @@ bisection_midval(solvernames_fixedK4, "fixed", paramList = fixed_params)
 # This section generates the data for each method, diffusion coefficient with different fixed step
 # sizes and rtols
 ## ----------------------------------------------------------------------------------------------------
-sorted_adaptive_params = sorted(adaptive_params) ## Relative tolerances
+sorted_adaptive_params = sorted(adaptive_params) ## relative tolerances
 sorted_fixed_params    = sorted(fixed_params) ## fixed time step sizes
 
 ## Diffusion coefficients
@@ -277,7 +277,7 @@ RunStatsDf.to_excel(fname + '.xlsx', index=False)
 
 df = pd.read_excel('population_density_imex_stats' + '.xlsx') # excel file
 
-diff_coeff = [0.02, 0.04] #diffusion coefficients
+diff_coeff = {'k2':0.02, 'k4':0.04} #diffusion coefficients
 
 adapt_accuracy         = True
 adapt_efficiency_time  = True
@@ -286,9 +286,9 @@ fixed_convergence      = True
 fixed_efficiency_work  = True
 fixed_efficiency_time  = True
 
-for dck in diff_coeff:    
-# # --------------------------------------------------- Run Adaptive Time Steps --------------------------------------------------------------------------------  
-    data_adaptive = df[(df["diff_coef"] == dck) & (df["Runtype"] == "adaptive")][["Runtype", "IMEX_method", "diff_coef", "runVal", "Nonlinear_Solves", "Explicit_RHS", 
+for kval, kname in diff_coeff.items():    
+# ------------ adaptive run ---------------  
+    data_adaptive = df[(df["diff_coef"] == kval) & (df["Runtype"] == "adaptive")][["Runtype", "IMEX_method", "diff_coef", "runVal", "Nonlinear_Solves", "Explicit_RHS", 
                                                                                   "Total Func Eval", "maxIntStep", "error", "Negative_model", "sspCondition", "runtime", "Steps"]]
     if (adapt_accuracy):
         plt.figure()
@@ -305,7 +305,7 @@ for dck in diff_coeff:
         plt.xlabel('rtol')
         plt.ylabel('$L_{\\infty}$ error')
         plt.legend()
-        plt.savefig("Adaptive accuracy plot with d = %.2f.pdf"%dck)
+        plt.savefig(f"adaptive_accuracy_{kname}.pdf")
         plt.show()
 
     if (adapt_efficiency_time):
@@ -323,7 +323,7 @@ for dck in diff_coeff:
         plt.xlabel('runtime')
         plt.ylabel('$L_{\\infty}$ error')
         plt.legend()
-        plt.savefig("Adaptive efficiency time plot with d = %.2f.pdf"%dck)
+        plt.savefig(f"adaptive_efficiency_time_{kname}.pdf")
         plt.show()
 
     if (adapt_efficiency_steps):
@@ -341,11 +341,11 @@ for dck in diff_coeff:
         plt.xlabel('number of steps')
         plt.ylabel('$L_{\\infty}$ error')
         plt.legend()
-        plt.savefig("Adaptive efficiency steps plot with d = %.2f.pdf"%dck)
+        plt.savefig(f"adaptive_efficiency_steps_{kname}.pdf")
         plt.show()
 
-# # ------------------------------------------------ Run Fixed Time Steps ---------------------------------------------------------------------------            
-    data_fixed = df[(df["diff_coef"] == dck) & (df["Runtype"] == "fixed")][["Runtype", "IMEX_method", "diff_coef", "runVal", "Nonlinear_Solves", "Explicit_RHS", 
+# --------------- fixed run ----------------            
+    data_fixed = df[(df["diff_coef"] == kval) & (df["Runtype"] == "fixed")][["Runtype", "IMEX_method", "diff_coef", "runVal", "Nonlinear_Solves", "Explicit_RHS", 
                                                                             "Total Func Eval", "error", "maxIntStep", "Negative_model", "sspCondition", "runtime", "Steps"]]
     if (fixed_convergence):
         plt.figure()
@@ -362,7 +362,7 @@ for dck in diff_coeff:
         plt.xlabel('h')
         plt.ylabel('$L_{\\infty}$ error')
         plt.legend()
-        plt.savefig("Fixed convergence plot with d = %.2f.pdf"%dck)
+        plt.savefig(f"fixed_convergence_{kname}.pdf")
         plt.show()
 
     if (fixed_efficiency_time):
@@ -380,7 +380,7 @@ for dck in diff_coeff:
         plt.xlabel('runtime')
         plt.ylabel('$L_{\\infty}$ error')
         plt.legend()
-        plt.savefig("Fixed effciency time plot for d = %.2f.pdf"%dck)
+        plt.savefig(f"fixed_efficiency_time_{kname}.pdf")
         plt.show()
 
     if (fixed_efficiency_work):
@@ -398,7 +398,7 @@ for dck in diff_coeff:
         plt.xlabel('Total Num of Func Evals')
         plt.ylabel('$L_{\\infty}$ error')
         plt.legend()
-        plt.savefig("Fixed effciency work for d = %.2f.pdf"%dck)
+        plt.savefig(f"fixed_efficiency_work_{kname}.pdf")
         plt.show()
 
 
