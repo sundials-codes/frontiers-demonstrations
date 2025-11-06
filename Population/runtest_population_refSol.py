@@ -6,16 +6,7 @@
 # All rights reserved.
 # For details, see the LICENSE file.
 #------------------------------------------------------------------------------------------------------------------------------------
-# ReadME: If running fixed step sizes, ensure that fixedRun = True (1 location) and fixhRun = True (1 location) 
-#         in this script,runtests_population_density_imex.py Also, ensure that FixedRun = True (1 location) in the script,
-#         plot_population.py . This means that adaptiveRun = False (1 location) and adaptRun = False (1 location) in 
-#         this script, runtests_population_density_imex.py and, AdaptiveRun = False (1 location) in the script plot_population.py 
-#
-#         Similarly, if running adaptive step sizes, ensure that adaptiveRun = True (1 location) and
-#         adaptRun = True (1 location) in this script, runtests_population_density_imex.py . Also, ensure that 
-#         AdaptiveRun = True (1 location) in the script, plot_population.py . This means that fixedRun = False (1 location) and 
-#         fixhRun = False (1 location) in this script, runtests_population_density_imex.py and, FixedRun = False (1 location) 
-#         in the script plot_population.py 
+# ReadME: This script generates the reference solutions needed to compute the error norm for the populatin density model.
 #-------------------------------------------------------------------------------------------------------------------------------------
 
 # imports
