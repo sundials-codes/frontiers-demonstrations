@@ -69,7 +69,7 @@ adaptive_params = [1e-10] ## relative tolerance for reference solution
 fixed_params    = [1e-4] ## fixed time step size for reference solution
 
 ## Diffusion coefficients
-diff_coef = {'k2':0.02, 'k4':0.04}
+diff_coef = {'k0':0.0, 'k2':0.02, 'k4':0.04}
 
 ## Integrator types
 solvertype = [{'name': 'SSP-ARK-4-2-3', 'exe': SSP_ARK_423}]

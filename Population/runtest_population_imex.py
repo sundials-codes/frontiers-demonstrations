@@ -42,9 +42,9 @@ def runtest(solver, modetype, runV, kVal, showcommand=True, sspcommand=True):
             'sspCondition': " "}
 
     if (modetype == "adaptive"):
-        runcommand = " %s  --rtol %.6f   --k %.2f" % (solver['exe'], runV, kVal)
+        runcommand = " %s  --rtol %.6f --k %.2f" % (solver['exe'], runV, kVal)
     elif (modetype == "fixed"):
-        runcommand = " %s  --fixed_h %.6f  --k %.2f" % (solver['exe'], runV, kVal)
+        runcommand = " %s  --fixed_h %.6f --k %.2f" % (solver['exe'], runV, kVal)
     
     start_time = time.time()
     result = subprocess.run(shlex.split(runcommand), stdout=subprocess.PIPE)
@@ -88,6 +88,16 @@ def runtest(solver, modetype, runV, kVal, showcommand=True, sspcommand=True):
     ## running python file to determine the if the graph is smooth and positive or not (ssp condition)
     sspcommand = " python ./plot_population.py"
     ssp_result = subprocess.run(shlex.split(sspcommand), stdout=subprocess.PIPE)
+    # if (sspcommand):
+    #         print("Run solution graph: " + sspcommand + " SUCCESS")
+    #         new_fileName = f"soln_graph_{solver['name']}_{runN}_{kName}.png"
+
+    #         ## rename plot file
+    #         if os.path.exists("populationModel_frames.png"):
+    #             os.rename("populationModel_frames.png", new_fileName)
+    #             print(f"Plot saved as: {new_fileName}")
+    #         else:
+    #             print("Warning: populationModel_frames.png not found.")
 
     pylines = str(ssp_result.stdout).split()
     lmax_1dev = float(pylines[8].replace('\\nLmax', ''))
@@ -96,15 +106,24 @@ def runtest(solver, modetype, runV, kVal, showcommand=True, sspcommand=True):
     stats['lmax_1dev'] = lmax_1dev #lmax val for first derivative
     stats['error']     = lmax_error # lmax error after comparing solution at final time step with reference solution
 
-    if (kVal==0.02) and (lmax_1dev >= 1.2) and (lmax_1dev <= 1.7) and (stats['Negative_model'] == 0):
-        stats['sspCondition'] = str('ssp')
-        ssp_cond = 0
-    elif (kVal==0.04) and (lmax_1dev >= 0.7) and (lmax_1dev <= 1.5) and (stats['Negative_model'] == 0):
+    # # assessing SSPness based on positivity at all time steps and smooth profile at final time step
+    # if (kVal==0.02) and (lmax_1dev >= 1.2) and (lmax_1dev <= 1.7) and (stats['Negative_model'] == 0):
+    #     stats['sspCondition'] = str('ssp')
+    #     ssp_cond = 0
+    # elif (kVal==0.04) and (lmax_1dev >= 0.7) and (lmax_1dev <= 1.5) and (stats['Negative_model'] == 0):
+    #     stats['sspCondition'] = str('ssp')
+    #     ssp_cond = 0
+    # else:
+    #     stats['sspCondition'] = str('not ssp')  
+    #     ssp_cond = 1   
+
+    # assessing SSPness based on positivity at all time steps
+    if (stats['Negative_model'] == 0):
         stats['sspCondition'] = str('ssp')
         ssp_cond = 0
     else:
         stats['sspCondition'] = str('not ssp')  
-        ssp_cond = 1     
+        ssp_cond = 1      
         
     return stats, ssp_cond
 ## end of function
@@ -128,7 +147,7 @@ fixed_params    = [0.25*(2**-5),  0.25*(2**-4), 0.25*(2**-3), 0.25*(2**-2), 0.25
 # to generate the plots. The next section was computed first to determine the interval to bisect 
 # before this section was run. You would not need to that.
 ## ----------------------------------------------------------------------------------------------------
-def round_to_3sf(x, sf=3):
+def round_to_sf(x, sf):
     """
     Converts a number to three significant figures
 
@@ -165,7 +184,7 @@ def bisection_midval(solvers, runtype, paramList):
         second_to_preMidVal = None
         while True:
             midVal = (solver['sspVal'] + solver['nonsspVal'])/2.0
-            midVal = round_to_3sf(midVal,sf=3)
+            midVal = round_to_sf(midVal,4)
 
             # end run if midpoint value is the same as previous one and store the last midpoint point value 
             # as well as the previous distinct midpoint value
@@ -203,31 +222,44 @@ def bisection_midval(solvers, runtype, paramList):
         print(f"{runtype} run with {name}, {kval}, iter {iter} : SSP-value & cond = {solver['sspVal'],condLow}, NonSSP-value & cond = {solver['nonsspVal'], condHigh}")
 
 # -------------------------------------- adaptive runs -----------------------------------------
-solvernames_adaptK2 = [{'name': 'SSP-ARK-2-1-2', 'exe': SSP_ARK_212, 'sspVal': 1e-2, 'nonsspVal': 5e-2, 'kvalue': 0.02},
-                       {'name': 'SSP-ARK-3-1-2', 'exe': SSP_ARK_312, 'sspVal': 1e-1, 'nonsspVal': 5e-1, 'kvalue': 0.02},
+solvernames_adaptK0 = [#{'name': 'SSP-ARK-2-1-2', 'exe': SSP_ARK_212,             'sspVal': 1e-2, 'nonsspVal': 5e-2, 'kvalue': 0.0},
+                       #{'name': 'SSP-ARK-3-1-2', 'exe': SSP_ARK_312,             'sspVal': 1e-1, 'nonsspVal': 5e-1, 'kvalue': 0.0},
+                       {'name': 'SSP-LSPUM-ARK-3-1-2', 'exe': SSP_LSPUM_ARK_312, 'sspVal': 1e-1, 'nonsspVal': 5e-1, 'kvalue': 0.0}
+                       #{'name': 'SSP-ARK-4-2-3', 'exe': SSP_ARK_423,             'sspVal': 1e-3, 'nonsspVal': 1e-2, 'kvalue': 0.0} 
+                       ]
+
+solvernames_adaptK2 = [{'name': 'SSP-ARK-2-1-2', 'exe': SSP_ARK_212,             'sspVal': 1e-1, 'nonsspVal': 5e-1, 'kvalue': 0.02},
+                       {'name': 'SSP-ARK-3-1-2', 'exe': SSP_ARK_312,             'sspVal': 1e-1, 'nonsspVal': 5e-1, 'kvalue': 0.02},
                        {'name': 'SSP-LSPUM-ARK-3-1-2', 'exe': SSP_LSPUM_ARK_312, 'sspVal': 5e-2, 'nonsspVal': 1e-1, 'kvalue': 0.02},
-                       {'name': 'SSP-ARK-4-2-3', 'exe': SSP_ARK_423, 'sspVal': 1e-3, 'nonsspVal': 1e-2, 'kvalue': 0.02} ]
+                       {'name': 'SSP-ARK-4-2-3', 'exe': SSP_ARK_423,             'sspVal': 1e-3, 'nonsspVal': 1e-2, 'kvalue': 0.02} ]
 
-solvernames_adaptK4 = [{'name': 'SSP-ARK-2-1-2', 'exe': SSP_ARK_212, 'sspVal': 5e-2, 'nonsspVal': 1e-1, 'kvalue': 0.04},
-                    #    {'name': 'SSP-ARK-3-1-2', 'exe': SSP_ARK_312, 'sspVal': 1e-1, 'nonsspVal': 5e-1, 'kvalue': 0.04},
+solvernames_adaptK4 = [{'name': 'SSP-ARK-2-1-2', 'exe': SSP_ARK_212,             'sspVal': 1e-1, 'nonsspVal': 5e-1, 'kvalue': 0.04},
+                    #    {'name': 'SSP-ARK-3-1-2', 'exe': SSP_ARK_312,           'sspVal': 1e-1, 'nonsspVal': 5e-1, 'kvalue': 0.04},
                        {'name': 'SSP-LSPUM-ARK-3-1-2', 'exe': SSP_LSPUM_ARK_312, 'sspVal': 5e-2, 'nonsspVal': 1e-1, 'kvalue': 0.04},
-                       {'name': 'SSP-ARK-4-2-3', 'exe': SSP_ARK_423, 'sspVal': 1e-1, 'nonsspVal': 5e-1, 'kvalue': 0.04} ]
+                       {'name': 'SSP-ARK-4-2-3', 'exe': SSP_ARK_423,             'sspVal': 1e-1, 'nonsspVal': 5e-1, 'kvalue': 0.04} ]
 
+bisection_midval(solvernames_adaptK0, "adaptive", paramList = adaptive_params)
 bisection_midval(solvernames_adaptK2, "adaptive", paramList = adaptive_params)
 bisection_midval(solvernames_adaptK4, "adaptive", paramList = adaptive_params)
 
 
 # -------------------------------------- fixed runs -----------------------------------------
-solvernames_fixedK2 = [{'name': 'SSP-ARK-2-1-2', 'exe': SSP_ARK_212, 'sspVal': 0.25*(2**-3), 'nonsspVal': 0.25*(2**-2), 'kvalue': 0.02},
-                       {'name': 'SSP-ARK-3-1-2', 'exe': SSP_ARK_312, 'sspVal': 0.25*(2**2), 'nonsspVal': 0.25*(2**3), 'kvalue': 0.02},
+solvernames_fixedK0 = [{'name': 'SSP-ARK-2-1-2', 'exe': SSP_ARK_212,             'sspVal': 0.25*(2**2), 'nonsspVal': 0.25*(2**3), 'kvalue': 0.0},
+                       {'name': 'SSP-ARK-3-1-2', 'exe': SSP_ARK_312,             'sspVal': 0.25*(2**3), 'nonsspVal': 0.25*(2**4), 'kvalue': 0.0},
+                       {'name': 'SSP-LSPUM-ARK-3-1-2', 'exe': SSP_LSPUM_ARK_312, 'sspVal': 0.25*(2**2), 'nonsspVal': 0.25*(2**3), 'kvalue': 0.0},
+                       {'name': 'SSP-ARK-4-2-3', 'exe': SSP_ARK_423,             'sspVal': 0.25*(2**3), 'nonsspVal': 0.25*(2**4), 'kvalue': 0.0} ]
+
+solvernames_fixedK2 = [{'name': 'SSP-ARK-2-1-2', 'exe': SSP_ARK_212,             'sspVal': 0.25*(2**1), 'nonsspVal': 0.25*(2**2), 'kvalue': 0.02},
+                       {'name': 'SSP-ARK-3-1-2', 'exe': SSP_ARK_312,             'sspVal': 0.25*(2**2), 'nonsspVal': 0.25*(2**3), 'kvalue': 0.02},
                        {'name': 'SSP-LSPUM-ARK-3-1-2', 'exe': SSP_LSPUM_ARK_312, 'sspVal': 0.25*(2**2), 'nonsspVal': 0.25*(2**3), 'kvalue': 0.02},
-                       {'name': 'SSP-ARK-4-2-3', 'exe': SSP_ARK_423, 'sspVal': 0.25*(2**0), 'nonsspVal': 0.25*(2**1), 'kvalue': 0.02} ]
+                       {'name': 'SSP-ARK-4-2-3', 'exe': SSP_ARK_423,             'sspVal': 0.25*(2**0), 'nonsspVal': 0.25*(2**1), 'kvalue': 0.02} ]
 
-solvernames_fixedK4 = [{'name': 'SSP-ARK-2-1-2', 'exe': SSP_ARK_212, 'sspVal': 0.25*(2**-1), 'nonsspVal': 0.25*(2**0), 'kvalue': 0.04},
-                       {'name': 'SSP-ARK-3-1-2', 'exe': SSP_ARK_312, 'sspVal': 0.25*(2**2), 'nonsspVal': 0.25*(2**3), 'kvalue': 0.04},
+solvernames_fixedK4 = [{'name': 'SSP-ARK-2-1-2', 'exe': SSP_ARK_212,             'sspVal': 0.25*(2**1), 'nonsspVal': 0.25*(2**2), 'kvalue': 0.04},
+                       {'name': 'SSP-ARK-3-1-2', 'exe': SSP_ARK_312,             'sspVal': 0.25*(2**2), 'nonsspVal': 0.25*(2**3), 'kvalue': 0.04},
                        {'name': 'SSP-LSPUM-ARK-3-1-2', 'exe': SSP_LSPUM_ARK_312, 'sspVal': 0.25*(2**2), 'nonsspVal': 0.25*(2**3), 'kvalue': 0.04},
-                       {'name': 'SSP-ARK-4-2-3', 'exe': SSP_ARK_423, 'sspVal': 0.25*(2**0), 'nonsspVal': 0.25*(2**1), 'kvalue': 0.04} ]
+                       {'name': 'SSP-ARK-4-2-3', 'exe': SSP_ARK_423,             'sspVal': 0.25*(2**0), 'nonsspVal': 0.25*(2**1), 'kvalue': 0.04} ]
 
+bisection_midval(solvernames_fixedK0, "fixed", paramList = fixed_params)
 bisection_midval(solvernames_fixedK2, "fixed", paramList = fixed_params)
 bisection_midval(solvernames_fixedK4, "fixed", paramList = fixed_params)
 
@@ -240,7 +272,7 @@ sorted_adaptive_params = sorted(adaptive_params) ## relative tolerances
 sorted_fixed_params    = sorted(fixed_params) ## fixed time step sizes
 
 ## Diffusion coefficients
-diff_coef = {'k2':0.02, 'k4':0.04}
+diff_coef = {'k0':0.0, 'k2':0.02, 'k4':0.04}
 
 ## Integrator types
 solvertype = [{'name': 'SSP-ARK-2-1-2',       'exe': SSP_ARK_212},
@@ -277,7 +309,7 @@ RunStatsDf.to_excel(fname + '.xlsx', index=False)
 
 df = pd.read_excel('population_density_imex_stats' + '.xlsx') # excel file
 
-diff_coeff = {'k2':0.02, 'k4':0.04} #diffusion coefficients
+diff_coeff = {'k0':0.0,'k2':0.02, 'k4':0.04} #diffusion coefficients
 
 adapt_accuracy         = True
 adapt_efficiency_time  = True
@@ -286,7 +318,7 @@ fixed_convergence      = True
 fixed_efficiency_work  = True
 fixed_efficiency_time  = True
 
-for kval, kname in diff_coeff.items():    
+for kname, kval in diff_coeff.items():    
 # ------------ adaptive run ---------------  
     data_adaptive = df[(df["diff_coef"] == kval) & (df["Runtype"] == "adaptive")][["Runtype", "IMEX_method", "diff_coef", "runVal", "Nonlinear_Solves", "Explicit_RHS", 
                                                                                   "Total Func Eval", "maxIntStep", "error", "Negative_model", "sspCondition", "runtime", "Steps"]]
@@ -305,7 +337,7 @@ for kval, kname in diff_coeff.items():
         plt.xlabel('rtol')
         plt.ylabel('$L_{\\infty}$ error')
         plt.legend()
-        plt.savefig(f"adaptive_accuracy_{kname}.pdf")
+        plt.savefig(f"popu_adaptive_accuracy_{kname}.pdf")
         plt.show()
 
     if (adapt_efficiency_time):
@@ -323,7 +355,7 @@ for kval, kname in diff_coeff.items():
         plt.xlabel('runtime')
         plt.ylabel('$L_{\\infty}$ error')
         plt.legend()
-        plt.savefig(f"adaptive_efficiency_time_{kname}.pdf")
+        plt.savefig(f"popu_adaptive_efficiency_time_{kname}.pdf")
         plt.show()
 
     if (adapt_efficiency_steps):
@@ -341,7 +373,7 @@ for kval, kname in diff_coeff.items():
         plt.xlabel('number of steps')
         plt.ylabel('$L_{\\infty}$ error')
         plt.legend()
-        plt.savefig(f"adaptive_efficiency_steps_{kname}.pdf")
+        plt.savefig(f"popu_adaptive_efficiency_steps_{kname}.pdf")
         plt.show()
 
 # --------------- fixed run ----------------            
@@ -362,7 +394,7 @@ for kval, kname in diff_coeff.items():
         plt.xlabel('h')
         plt.ylabel('$L_{\\infty}$ error')
         plt.legend()
-        plt.savefig(f"fixed_convergence_{kname}.pdf")
+        plt.savefig(f"popu_fixed_convergence_{kname}.pdf")
         plt.show()
 
     if (fixed_efficiency_time):
@@ -380,7 +412,7 @@ for kval, kname in diff_coeff.items():
         plt.xlabel('runtime')
         plt.ylabel('$L_{\\infty}$ error')
         plt.legend()
-        plt.savefig(f"fixed_efficiency_time_{kname}.pdf")
+        plt.savefig(f"popu_fixed_efficiency_time_{kname}.pdf")
         plt.show()
 
     if (fixed_efficiency_work):
@@ -398,7 +430,7 @@ for kval, kname in diff_coeff.items():
         plt.xlabel('Total Num of Func Evals')
         plt.ylabel('$L_{\\infty}$ error')
         plt.legend()
-        plt.savefig(f"fixed_efficiency_work_{kname}.pdf")
+        plt.savefig(f"popu_fixed_efficiency_work_{kname}.pdf")
         plt.show()
 
 

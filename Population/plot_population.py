@@ -84,48 +84,48 @@ with open(datafile, "r") as file:
     print("lmax of first derivative at final time step: %.6f" %lmax_pSol_xi)
    
 
-    # ## plot defaults: increase default font size, increase plot width, enable LaTeX rendering
-    # plt.rc("font", size=15)
-    # plt.rcParams["figure.figsize"] = [7.2, 4.8]
-    # plt.rcParams["text.usetex"] = True
-    # plt.rcParams["figure.constrained_layout.use"] = True
+    ## plot defaults: increase default font size, increase plot width, enable LaTeX rendering
+    plt.rc("font", size=15)
+    plt.rcParams["figure.figsize"] = [7.2, 4.8]
+    plt.rcParams["text.usetex"] = True
+    plt.rcParams["figure.constrained_layout.use"] = True
 
-    # ## subplots with time snapshots of the density, x-velocity, and pressure
-    # fig = plt.figure(figsize=(10, 5))
-    # gs = GridSpec(1, 3, figure=fig)
-    # ax00 = fig.add_subplot(gs[0, 0])  # left column
-    # ax01 = fig.add_subplot(gs[0, 1])  # middle column
-    # ax02 = fig.add_subplot(gs[0, 2])  # right column
-    # it = 0
-    # tval = repr(float(t[it])).zfill(3)
-    # ax00.plot(x, pSol[it, :], "-b",)
-    # ax00.set_title(r"$t =$ " + tval)
-    # ax00.set_ylabel(r"$P(t,x)$")
-    # ax00.set_xlabel(r"$x$")
-    # ax00.set_xticks([0.0, 0.2, 0.4, 0.6, 0.8, 1.0])
+    ## subplots with time snapshots of the density, x-velocity, and pressure
+    fig = plt.figure(figsize=(10, 5))
+    gs = GridSpec(1, 3, figure=fig)
+    ax00 = fig.add_subplot(gs[0, 0])  # left column
+    ax01 = fig.add_subplot(gs[0, 1])  # middle column
+    ax02 = fig.add_subplot(gs[0, 2])  # right column
+    it = 0
+    tval = repr(float(t[it])).zfill(3)
+    ax00.plot(x, pSol[it, :], "-b",)
+    ax00.set_title(r"$t =$ " + tval)
+    ax00.set_ylabel(r"$P(t,x)$")
+    ax00.set_xlabel(r"$x$")
+    ax00.set_xticks([0.0, 0.2, 0.4, 0.6, 0.8, 1.0])
 
-    # middleval = int(np.ceil(nsteps/2))
-    # it = middleval
-    # tval = repr(float(t[it])).zfill(3)
-    # ax01.plot(x, pSol[it, :], "-b")
-    # ax01.set_title(r"$t =$ " + tval)
-    # ax01.set_xlabel(r"$x$")
-    # ax01.set_xticks([0.0, 0.2, 0.4, 0.6, 0.8, 1.0])
+    middleval = int(np.ceil(nsteps/2))
+    it = middleval
+    tval = repr(float(t[it])).zfill(3)
+    ax01.plot(x, pSol[it, :], "-b")
+    ax01.set_title(r"$t =$ " + tval)
+    ax01.set_xlabel(r"$x$")
+    ax01.set_xticks([0.0, 0.2, 0.4, 0.6, 0.8, 1.0])
     
-    # it = nsteps - 1
-    # tval = repr(float(t[it])).zfill(3)
-    # ax02.plot(x, pSol[it, :], "-b")
-    # ax02.set_title(r"$t =$ " + tval)
-    # ax02.set_xlabel(r"$x$")
-    # ax02.set_xticks([0.0, 0.2, 0.4, 0.6, 0.8, 1.0])
-    # plt.savefig("populationModel_frames.png")
+    it = nsteps - 1
+    tval = repr(float(t[it])).zfill(3)
+    ax02.plot(x, pSol[it, :], "-b")
+    ax02.set_title(r"$t =$ " + tval)
+    ax02.set_xlabel(r"$x$")
+    ax02.set_xticks([0.0, 0.2, 0.4, 0.6, 0.8, 1.0])
+    plt.savefig("populationModel_frames.png")
 
-    # plt.rc("font", size=15)
-    # plt.rcParams["figure.figsize"] = [7.2, 4.8]
-    # plt.rcParams["text.usetex"] = True
-    # plt.rcParams["figure.constrained_layout.use"] = True
+    plt.rc("font", size=15)
+    plt.rcParams["figure.figsize"] = [7.2, 4.8]
+    plt.rcParams["text.usetex"] = True
+    plt.rcParams["figure.constrained_layout.use"] = True
 
-    # plt.close()
+    plt.close()
 
 
 ## ------------------ Extract Reference Solution at Final Time Step -----------------------
@@ -171,8 +171,12 @@ def read_ref_solution(filename, N):
             pSol_ref_lastStep[i] = pSol_ref[nsteps_ref-1, i]
     return pSol_ref_lastStep
 
+# fixed runs
+fixedk0_refSoln_lastStep = read_ref_solution("fixed_referenceSoln_k0.txt", N)
 fixedk2_refSoln_lastStep = read_ref_solution("fixed_referenceSoln_k2.txt", N)
 fixedk4_refSoln_lastStep = read_ref_solution("fixed_referenceSoln_k4.txt", N)
+# adaptive runs
+adaptk0_refSoln_lastStep = read_ref_solution("adaptive_referenceSoln_k0.txt", N)
 adaptk2_refSoln_lastStep = read_ref_solution("adaptive_referenceSoln_k2.txt", N)
 adaptk4_refSoln_lastStep = read_ref_solution("adaptive_referenceSoln_k4.txt", N)
 
@@ -182,7 +186,14 @@ AdaptiveRun = True
 FixedRun    = True
 elmax       = 0.0 #l-infinity error
 if (FixedRun):
-    if (diff_k==0.02):
+    if (diff_k==0.0):
+        for i in range(N):
+            errV = np.abs(fixedk0_refSoln_lastStep[i] - pSol_lastStep[i])
+            if (errV > elmax):
+                elmax = errV
+            # end
+        # end
+    elif (diff_k==0.02):
         for i in range(N):
             errV = np.abs(fixedk2_refSoln_lastStep[i] - pSol_lastStep[i])
             if (errV > elmax):
@@ -197,7 +208,14 @@ if (FixedRun):
             # end
         # end
 if (AdaptiveRun):
-    if (diff_k==0.02):
+    if (diff_k==0.0):
+        for i in range(N):
+            errV = np.abs(adaptk0_refSoln_lastStep[i] - pSol_lastStep[i])
+            if (errV > elmax):
+                elmax = errV
+            # end
+        # end
+    elif (diff_k==0.02):
         for i in range(N):
             errV = np.abs(adaptk2_refSoln_lastStep[i] - pSol_lastStep[i])
             if (errV > elmax):
