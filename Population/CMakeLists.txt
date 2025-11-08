@@ -11,7 +11,7 @@ set(extras
     plot_population.py
     plot_population_finalStepSoln.py
     runtest_population_adaptLog.py
-    run-all-population_tests.sh)
+    run-all-population-tests.sh)
 
 #   set the target name
 set(target population)
