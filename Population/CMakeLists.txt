@@ -9,7 +9,9 @@ set(extras
     runtest_population_refSol.py
     runtest_population_imex.py
     plot_population.py
-    runtest_population_adaptLog.py)
+    plot_population_finalStepSoln.py
+    runtest_population_adaptLog.py
+    run-all-population_tests.sh)
 
 #   set the target name
 set(target population)

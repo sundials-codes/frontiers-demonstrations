@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # --------------------------------------------------------------------------------------------------------------------------------
-# Programmer(s):  Sylvia Amihere and Daniel R. Reynolds @ SMU
+# Programmer(s): Sylvia Amihere and Daniel R. Reynolds @ SMU
 # --------------------------------------------------------------------------------------------------------------------------------
 # SUNDIALS Copyright Start
 # Copyright (c) 2002-2024, Lawrence Livermore National Security
@@ -85,49 +85,49 @@ with open(datafile, "r") as file:
     print("lmax of first derivative at final time step: %.6f" %lmax_pSol_xi)
    
 
-    ## plot defaults: increase default font size, increase plot width, enable LaTeX rendering
-    plt.rc("font", size=15)
-    plt.rcParams["figure.figsize"] = [7.2, 4.8]
-    plt.rcParams["text.usetex"] = True
-    plt.rcParams["figure.constrained_layout.use"] = True
+    # ## plot defaults: increase default font size, increase plot width, enable LaTeX rendering
+    # plt.rc("font", size=15)
+    # plt.rcParams["figure.figsize"] = [7.2, 4.8]
+    # plt.rcParams["text.usetex"] = True
+    # plt.rcParams["figure.constrained_layout.use"] = True
 
-    ## subplots with time snapshots of the density, x-velocity, and pressure
-    fig = plt.figure(figsize=(10, 5))
-    gs = GridSpec(1, 3, figure=fig)
-    ax00 = fig.add_subplot(gs[0, 0])  # left column
-    ax01 = fig.add_subplot(gs[0, 1])  # middle column
-    ax02 = fig.add_subplot(gs[0, 2])  # right column
-    it = 0
-    tval = repr(float(t[it])).zfill(3)
-    ax00.plot(x, pSol[it, :], "-b",)
-    ax00.set_title(r"$t =$ " + tval)
-    ax00.set_ylabel(r"$P(t,x)$")
-    ax00.set_xlabel(r"$x$")
-    ax00.set_xticks([0.0, 0.2, 0.4, 0.6, 0.8, 1.0])
+    # ## subplots with time snapshots of the density, x-velocity, and pressure
+    # fig = plt.figure(figsize=(10, 5))
+    # gs = GridSpec(1, 3, figure=fig)
+    # ax00 = fig.add_subplot(gs[0, 0])  # left column
+    # ax01 = fig.add_subplot(gs[0, 1])  # middle column
+    # ax02 = fig.add_subplot(gs[0, 2])  # right column
+    # it = 0
+    # tval = repr(float(t[it])).zfill(3)
+    # ax00.plot(x, pSol[it, :], "-b",)
+    # ax00.set_title(r"$t =$ " + tval)
+    # ax00.set_ylabel(r"$P(t,x)$")
+    # ax00.set_xlabel(r"$x$")
+    # ax00.set_xticks([0.0, 0.2, 0.4, 0.6, 0.8, 1.0])
 
-    middleval = int(np.ceil(nsteps/2))
-    it = middleval
-    tval = repr(float(t[it])).zfill(3)
-    ax01.plot(x, pSol[it, :], "-b")
-    ax01.set_title(r"$t =$ " + tval)
-    ax01.set_xlabel(r"$x$")
-    ax01.set_xticks([0.0, 0.2, 0.4, 0.6, 0.8, 1.0])
+    # middleval = int(np.ceil(nsteps/2))
+    # it = middleval
+    # tval = repr(float(t[it])).zfill(3)
+    # ax01.plot(x, pSol[it, :], "-b")
+    # ax01.set_title(r"$t =$ " + tval)
+    # ax01.set_xlabel(r"$x$")
+    # ax01.set_xticks([0.0, 0.2, 0.4, 0.6, 0.8, 1.0])
     
-    it = nsteps - 1
-    tval = repr(float(t[it])).zfill(3)
-    ax02.plot(x, pSol[it, :], "-b")
-    ax02.set_title(r"$t =$ " + tval)
-    ax02.set_xlabel(r"$x$")
-    ax02.set_xticks([0.0, 0.2, 0.4, 0.6, 0.8, 1.0])
-    plt.savefig("populationModel_frames.png")
+    # it = -1
+    # tval = repr(float(t[it])).zfill(3)
+    # ax02.plot(x, pSol[it, :], "-b")
+    # ax02.set_title(r"$t =$ " + tval)
+    # ax02.set_xlabel(r"$x$")
+    # ax02.set_xticks([0.0, 0.2, 0.4, 0.6, 0.8, 1.0])
+    # plt.savefig("populationModel_frames.png")
 
-    plt.rc("font", size=15)
-    plt.rcParams["figure.figsize"] = [7.2, 4.8]
-    plt.rcParams["text.usetex"] = True
-    plt.rcParams["figure.constrained_layout.use"] = True
+    # plt.rc("font", size=15)
+    # plt.rcParams["figure.figsize"] = [7.2, 4.8]
+    # plt.rcParams["text.usetex"] = True
+    # plt.rcParams["figure.constrained_layout.use"] = True
 
-    # plt.close()
-    plt.show()
+    # # plt.close()
+    # plt.show()
 
 
 ## ------------------ Extract Reference Solution at Final Time Step -----------------------
