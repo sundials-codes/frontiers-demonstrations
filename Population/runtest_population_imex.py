@@ -313,10 +313,8 @@ diff_coeff = {'k0':0.0,'k2':0.02, 'k4':0.04} #diffusion coefficients
 
 adapt_accuracy         = True
 adapt_efficiency_time  = True
-adapt_efficiency_steps = True
 fixed_convergence      = True
 fixed_efficiency_work  = True
-fixed_efficiency_time  = True
 
 for kname, kval in diff_coeff.items():    
 # ------------ adaptive run ---------------  
@@ -338,7 +336,7 @@ for kname, kval in diff_coeff.items():
         plt.ylabel('$L_{\\infty}$ error')
         plt.legend()
         plt.savefig(f"popu_adaptive_accuracy_{kname}.pdf")
-        plt.show()
+        # plt.show()
 
     if (adapt_efficiency_time):
         plt.figure()
@@ -356,25 +354,7 @@ for kname, kval in diff_coeff.items():
         plt.ylabel('$L_{\\infty}$ error')
         plt.legend()
         plt.savefig(f"popu_adaptive_efficiency_time_{kname}.pdf")
-        plt.show()
-
-    if (adapt_efficiency_steps):
-        plt.figure()
-        for SSPmethodAdt in data_adaptive['IMEX_method'].unique():
-            SSPmethodAdt_data = data_adaptive[data_adaptive['IMEX_method'] == SSPmethodAdt]
-            # Plot the whole method line with '.' markers
-            method_line = plt.plot(SSPmethodAdt_data['Steps'], SSPmethodAdt_data['error'], marker='.', linestyle='-', label=SSPmethodAdt)
-            method_line_color = method_line[0].get_color()
-            # Overlay red 'x' markers where Negative_model == 1 or "not ssp"
-            sspness = SSPmethodAdt_data[SSPmethodAdt_data['sspCondition'] == "not ssp"]
-            plt.plot(sspness['Steps'], sspness['error'], marker='x', linewidth=2, linestyle='none', color=method_line_color)
-        plt.xscale('log')
-        plt.yscale('log')
-        plt.xlabel('number of steps')
-        plt.ylabel('$L_{\\infty}$ error')
-        plt.legend()
-        plt.savefig(f"popu_adaptive_efficiency_steps_{kname}.pdf")
-        plt.show()
+        # plt.show()
 
 # --------------- fixed run ----------------            
     data_fixed = df[(df["diff_coef"] == kval) & (df["Runtype"] == "fixed")][["Runtype", "IMEX_method", "diff_coef", "runVal", "Nonlinear_Solves", "Explicit_RHS", 
@@ -395,25 +375,7 @@ for kname, kval in diff_coeff.items():
         plt.ylabel('$L_{\\infty}$ error')
         plt.legend()
         plt.savefig(f"popu_fixed_convergence_{kname}.pdf")
-        plt.show()
-
-    if (fixed_efficiency_time):
-        plt.figure()
-        for SSPmethodFix in data_fixed['IMEX_method'].unique():
-            SSPmethodFix_data = data_fixed[data_fixed['IMEX_method'] == SSPmethodFix]
-            # Plot the whole method line with '.' markers
-            method_line = plt.plot(SSPmethodFix_data['runtime'], SSPmethodFix_data['error'],marker='.', linestyle='-', label=SSPmethodFix)
-            method_line_color = method_line[0].get_color()
-            # Overlay red 'x' markers where Negative_model == 1 or "not ssp"
-            sspness = SSPmethodFix_data[SSPmethodFix_data['sspCondition'] == "not ssp"]
-            plt.plot(sspness['runtime'], sspness['error'], marker='x', linewidth=2, linestyle='none', color=method_line_color)
-        plt.xscale('log')
-        plt.yscale('log')
-        plt.xlabel('runtime')
-        plt.ylabel('$L_{\\infty}$ error')
-        plt.legend()
-        plt.savefig(f"popu_fixed_efficiency_time_{kname}.pdf")
-        plt.show()
+        # plt.show()
 
     if (fixed_efficiency_work):
         plt.figure()
@@ -431,7 +393,7 @@ for kname, kval in diff_coeff.items():
         plt.ylabel('$L_{\\infty}$ error')
         plt.legend()
         plt.savefig(f"popu_fixed_efficiency_work_{kname}.pdf")
-        plt.show()
+        # plt.show()
 
 
 
