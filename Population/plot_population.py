@@ -12,7 +12,8 @@
 # SPDX-License-Identifier: BSD-3-Clause
 # SUNDIALS Copyright End
 #----------------------------------------------------------------------------------------------------------------------------------
-# ReadME: Run the "runtest_referenceSolution.py" script to generate the reference solutions to be used in this script.
+# ReadME: This script generates the L-infinity norm and plots at 3 time steps for a particular method.
+#         Run the "runtest_referenceSolution.py" script to generate the reference solutions to be used in this script.
 #-----------------------------------------------------------------------------------------------------------------------------------
 
 # imports
@@ -125,7 +126,8 @@ with open(datafile, "r") as file:
     plt.rcParams["text.usetex"] = True
     plt.rcParams["figure.constrained_layout.use"] = True
 
-    plt.close()
+    # plt.close()
+    plt.show()
 
 
 ## ------------------ Extract Reference Solution at Final Time Step -----------------------
