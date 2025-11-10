@@ -83,6 +83,11 @@ with open(datafile, "r") as file:
         if pSol_xi > lmax_pSol_xi:
             lmax_pSol_xi = pSol_xi
     print("lmax of first derivative at final time step: %.6f" %lmax_pSol_xi)
+
+    # ## plotting only the solution at the final time step 
+    # plt.xlabel(r"$x$")
+    # plt.ylabel(r"pSol")
+    # plt.plot(x, pSol[-1, :])
    
 
     # ## plot defaults: increase default font size, increase plot width, enable LaTeX rendering
@@ -126,7 +131,7 @@ with open(datafile, "r") as file:
     # plt.rcParams["text.usetex"] = True
     # plt.rcParams["figure.constrained_layout.use"] = True
 
-    # # plt.close()
+    # plt.close()
     # plt.show()
 
 
