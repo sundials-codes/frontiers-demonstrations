@@ -349,8 +349,8 @@ static int fe(sunrealtype t, N_Vector y, N_Vector ydot, void* user_data)
 
   //interior points
   for (int i = 1; i < N-1; i++){
-    udot[i] = -alpha1*(u[i+1] - u[i-1])/(2.0*dx);
-    vdot[i] = -alpha2*(v[i+1] - v[i-1])/(2.0*dx);
+    udot[i] = -alpha1*(u[i] - u[i-1])/(dx);
+    vdot[i] = -alpha2*(v[i] - v[i-1])/(dx);
   }
 
   return 0; /* Return with success */
