@@ -5,9 +5,10 @@
 set(sources linear_adv_rec.cpp)
 
 #   extra installation files
+set(extras runtest_linear_adv_rec.py)
 
 #   set the target name
-set(target population_density)
+set(target linear_advection_reaction)
 
 #   source files
 set(sources linear_adv_rec.cpp)
