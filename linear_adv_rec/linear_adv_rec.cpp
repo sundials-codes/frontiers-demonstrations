@@ -21,8 +21,8 @@
  * u(x,0) = 1 + s_2*x , v(x,0) = (k_1/k_2)*u(x,0) + (1/k_2)*s_2. 
  * The boundary condition is u(0,t) = gamma_1(t) = 1.
  *
- * The spatial derivatives are computed using second-order
- * centered differences, with the data distributed over N points
+ * The spatial derivatives are computed using upwind spatial discretization 
+ * (backward finite difference), with the data distributed over N = 100 points
  * on a uniform spatial grid.
  *
  * This program solves the problem with an ARK method. 
@@ -79,7 +79,7 @@ using namespace std;
     sunindextype N; /* number of intervals   */
     sunrealtype dx; /* mesh spacing          */
     sunrealtype alpha1, alpha2;  /* advection coefficients */
-    sunrealtype k1, k2;  
+    sunrealtype k1, k2;  /* reaction coefficients */
     sunrealtype s1, s2; 
     sunrealtype xstart;  /* left endpoint on spatial grid */
     sunrealtype xend;  /* right endpoint on spatial grid */
@@ -91,7 +91,7 @@ using namespace std;
     alpha1(1.0),
     alpha2(0.0),
     k1(1e6),
-    k2(2*1e6),
+    k2(2e6),
     s1(0.0),
     s2(1.0),
     xstart(ZERO),
@@ -148,6 +148,7 @@ static int Jac(N_Vector v, N_Vector Jv, sunrealtype t, N_Vector y, N_Vector fy, 
 static int ReadInputs(std::vector<std::string>& args, UserData& udata, ARKODEParameters& uopts, SUNContext ctx);
 static void InputHelp();
 static int PrintSetup(UserData& udata,ARKODEParameters& uopts);
+static int trueSol(sunrealtype t, N_Vector tSol, void* user_data); //Exact solution
 
 /* Private function to check function return values */
 static int check_flag(void* flagvalue, const char* funcname, int opt);
@@ -155,7 +156,6 @@ static int check_flag(void* flagvalue, const char* funcname, int opt);
 /* Main Program */
 int main(int argc, char* argv[])
 {
-  sunrealtype* ydata; //in order to extract the minimum element of the solution vector y
 
   // SUNDIALS context object for this simulation
   sundials::Context ctx;
@@ -169,6 +169,8 @@ int main(int argc, char* argv[])
   if (check_flag(&flag, "ReadInputs", 1)) { return 1; }
   if (flag > 0) { return 0; }
 
+  N_Vector tSol = NULL;
+
   /* Initial problem output */
   printf("\n1D Linear Advection Reaction problem:\n");
   printf("  N = %li\n", (long int)udata.N);
@@ -179,19 +181,25 @@ int main(int argc, char* argv[])
   /* Initialize data structures */
   N_Vector y = N_VNew_Serial(2*udata.N, ctx); /* Create serial vector for solution */
   if (check_flag((void*)y, "N_VNew_Serial", 0)) { return 1; }
+
+  /* compute the true solution */
+  tSol = N_VClone(y);
+  flag = trueSol(0.0, tSol, &udata);
+  if (check_flag(&flag, "trueSol", 1)) { return 1;}
+  // N_VPrint(tSol);
   
   /* Set initial conditions for u and v */
   sunrealtype* y_data = N_VGetArrayPointer(y);  
-  for (int i = 0; i < udata.N; i++){
+  y_data[0]           = 1.0; //boundary on the left for u
+  y_data[udata.N]     = (udata.k1/udata.k2)*1.0 + (1.0/udata.k2)*udata.s2; 
+  for (int i = 1; i < udata.N; i++){
     sunrealtype xi = udata.xstart + i * udata.dx;
-
-    sunrealtype u0 = 1.0 + udata.s1 * xi;
+    sunrealtype u0 = 1.0 + udata.s2 * xi;
     sunrealtype v0 = (udata.k1/udata.k2)*u0 + (1.0/udata.k2)*udata.s2;
 
     y_data[i]           = u0;
     y_data[udata.N + i] = v0;
   }
-  // N_VConst(1.0, y); /* Set initial conditions */
 
   /* Call ARKStepCreate to initialize the ARK timestepper module and
      specify the right-hand side function in y'=f(t,y), the initial time
@@ -271,6 +279,8 @@ int main(int argc, char* argv[])
   fprintf(UFID, "Left endpoint %f \n", udata.xstart);
   fprintf(UFID, "Right endpoint %f \n", udata.xend);
   sunrealtype* data = N_VGetArrayPointer(y);
+  sunrealtype* final_data = N_VGetArrayPointer(y); // solution at final time step
+  sunrealtype* error_data = N_VGetArrayPointer(tSol); // error between true solution and solution at final step
 
   /* output initial condition (u and v) to disk */
   for (int i = 0; i < udata.N; i++) { fprintf(UFID, " %.16" ESYM " %.16" ESYM, data[i], data[udata.N + i]); }
@@ -280,7 +290,6 @@ int main(int argc, char* argv[])
      prints results.  Stops when the final time has been reached */
   sunrealtype t = uopts.T0;
 
-  ydata = N_VGetArrayPointer(y); //in order to extract the minimum element of the solution vector y
   while (t < uopts.Tf)
   {
     flag = ARKodeEvolve(arkode_mem, uopts.Tf, y, &t, ARK_ONE_STEP); /* call integrator */
@@ -296,12 +305,20 @@ int main(int argc, char* argv[])
     for (int i = 0; i < udata.N; i++) { fprintf(UFID, " %.16" ESYM " %.16" ESYM, data[i], data[udata.N + i]); }
     fprintf(UFID, "\n \n");
   }
+
+  /* find the L_{1} norm */
+  sunrealtype sum_error = 0.0;
+  for (int i = 0; i < 2*udata.N; i++)
+  {
+    sum_error += SUNRabs(error_data[i]-data[i]);
+  }
+  printf(" L1-norm = %.16e\n", sum_error / udata.N);
+
   long int nsteps; //use the number of steps taken in the python plot
   ARKodeGetNumSteps(arkode_mem, &nsteps);
-  // printf("Number of steps taken: %ld\n", nsteps);
   fprintf(UFID, "Number of Time Steps Taken: %ld \n", nsteps);
 
-  printf("   -------------------------\n \n");
+  printf(" ---------------------------------\n \n");
   fclose(UFID);
 
   /* Print final statistics */
@@ -311,6 +328,7 @@ int main(int argc, char* argv[])
   /* Clean up and return with successful completion */
   N_VDestroy(y);           /* Free vectors */
   // free(udata);             /* Free user data */
+  N_VDestroy(tSol);
   ARKodeFree(&arkode_mem); /* Free integrator memory */
   SUNLinSolFree(LS);       /* Free linear solver */
 
@@ -333,8 +351,8 @@ static int fe(sunrealtype t, N_Vector y, N_Vector ydot, void* user_data)
   N_VConst(0.0, ydot); /* Initialize ydot to zero */
 
   /* set parameters */
-  const sunindextype N = udata->N;
-  const sunrealtype dx = udata->dx;
+  const sunindextype N     = udata->N;
+  const sunrealtype dx     = udata->dx;
   const sunrealtype alpha1 = udata->alpha1;
   const sunrealtype alpha2 = udata->alpha2;
 
@@ -344,11 +362,11 @@ static int fe(sunrealtype t, N_Vector y, N_Vector ydot, void* user_data)
   sunrealtype* vdot = Ydot + N;
 
   //boundary conditions
-  udot[0]   = 1.0; 
-  udot[N-1] = 1.0;
+  udot[0]   = 0.0; 
+  vdot[0]   = 0.0; 
 
   //interior points
-  for (int i = 1; i < N-1; i++){
+  for (int i = 1; i < N; i++){
     udot[i] = -alpha1*(u[i] - u[i-1])/(dx);
     vdot[i] = -alpha2*(v[i] - v[i-1])/(dx);
   }
@@ -369,8 +387,8 @@ static int f(sunrealtype t, N_Vector y, N_Vector ydot, void* user_data)
   N_VConst(0.0, ydot); /* Initialize ydot to zero */
 
   /* set parameters */
-  const sunindextype N = udata->N;
-  const sunrealtype dx = udata->dx;
+  const sunindextype N  = udata->N;
+  const sunrealtype dx  = udata->dx;
   const sunrealtype k1  = udata->k1;
   const sunrealtype k2  = udata->k2;
   const sunrealtype s1  = udata->s1;
@@ -381,11 +399,10 @@ static int f(sunrealtype t, N_Vector y, N_Vector ydot, void* user_data)
   sunrealtype* vdot = Ydot + N;
 
   //boundary conditions
-  udot[0]   = 1.0; 
-  udot[N-1] = 1.0;
+  udot[0]   = 0.0;
 
   //interior points
-  for (int i = 1; i < N-1; i++){
+  for (int i = 1; i < N; i++){
     udot[i] = -k1*u[i] + k2*v[i] + s1;
   }
 
@@ -394,6 +411,35 @@ static int f(sunrealtype t, N_Vector y, N_Vector ydot, void* user_data)
   }
 
   return 0; /* Return with success */
+}
+
+/* function to return the exact solution*/
+static int trueSol(sunrealtype t, N_Vector tSol, void* user_data)
+{
+  UserData* udata = (UserData*)user_data; /* access problem data */
+  sunrealtype *TSol = NULL;
+  TSol = N_VGetArrayPointer(tSol);
+  if (check_flag((void*)TSol, "N_VGetArrayPointer", 0)) { return 1; }
+  N_VConst(0.0, tSol); /* Initialize tSol to zero */
+
+  /* set parameters */
+  const sunindextype N  = udata->N;
+  const sunrealtype dx  = udata->dx;
+  const sunrealtype k1  = udata->k1;
+  const sunrealtype k2  = udata->k2;
+  const sunrealtype s1  = udata->s1;
+  const sunrealtype s2  = udata->s2;
+
+  sunrealtype* uSol = TSol;
+  sunrealtype* vSol = TSol + N;
+
+  for (int i = 0; i < N; i++)
+  {
+    uSol[i] = i * dx + 1.0;
+    vSol[i] = 0.5 * (i * dx + 1.0) + (1.0 / (2.0 * k1));
+  }
+
+  return 0;
 }
 
 
@@ -556,7 +602,7 @@ static int PrintSetup(UserData& udata, ARKODEParameters& uopts)
   std::cout << " --------------------------------- " << std::endl;
   std::cout << "  output       = " << uopts.output << std::endl;
   std::cout << " --------------------------------- " << std::endl;
-  std::cout << std::endl;
+  // std::cout << std::endl;
 
   return 0;
 }
