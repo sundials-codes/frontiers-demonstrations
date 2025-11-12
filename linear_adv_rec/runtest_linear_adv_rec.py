@@ -106,10 +106,10 @@ for runvalue in adaptive_params:
         adaptive_stat= runtest(solver_adapt, "adaptive", runvalue, showcommand=True)
         RunStats.append(adaptive_stat)
 
-# for runvalue in fixed_params:
-#     for solver_fixed in solvertype:
-#         fixed_stat = runtest(solver_fixed, "fixed", runvalue, showcommand=True)
-#         RunStats.append(fixed_stat)
+for runvalue in fixed_params:
+    for solver_fixed in solvertype:
+        fixed_stat = runtest(solver_fixed, "fixed", runvalue, showcommand=True)
+        RunStats.append(fixed_stat)
 
 RunStatsDf = pd.DataFrame.from_records(RunStats)
 
