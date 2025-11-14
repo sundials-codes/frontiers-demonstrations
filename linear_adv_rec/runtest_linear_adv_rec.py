@@ -118,3 +118,127 @@ print("RunStatsDf object:")
 print(RunStatsDf)
 print("Saving as Excel")
 RunStatsDf.to_excel(fname + '.xlsx', index=False)
+
+##---------------------------------------------- Efficiency Plots ---------------------------------------------
+df = pd.read_excel('linear_adv_rec_stats' + '.xlsx') # excel file
+
+adapt_accuracy         = True
+adapt_efficiency_time  = True
+adapt_efficiency_steps = True
+fixed_convergence      = True
+fixed_efficiency_work  = True
+fixed_efficiency_time  = True
+
+  
+# # --------------------------------------------------- Run Adaptive Time Steps --------------------------------------------------------------------------------  
+data_adaptive = df[(df["Runtype"] == "adaptive")][["Runtype", "IMEX_method", "runVal", "Explicit_RHS", "L1_norm", "runtime", "Steps"]]
+# if (adapt_accuracy):
+#     plt.figure()
+#     for SSPmethodAdt in data_adaptive['IMEX_method'].unique():
+#         SSPmethodAdt_data = data_adaptive[data_adaptive['IMEX_method'] == SSPmethodAdt]
+#         # Plot the whole method line with '.' markers
+#         method_line = plt.plot(SSPmethodAdt_data['runVal'], SSPmethodAdt_data['error'], marker='.', linestyle='-', label=SSPmethodAdt)
+#         method_line_color = method_line[0].get_color()
+#         # Overlay red 'x' markers where Negative_model == 1 or "not ssp"
+#         sspness = SSPmethodAdt_data[SSPmethodAdt_data['sspCondition'] == "not ssp"]
+#         plt.plot(sspness['runVal'], sspness['error'], marker='x', linewidth=2, linestyle='none', color=method_line_color)
+#     plt.xscale('log')
+#     plt.yscale('log')
+#     plt.xlabel('rtol')
+#     plt.ylabel('$L_{\\infty}$ error')
+#     plt.legend()
+#     plt.savefig("Adaptive accuracy plot with d = %.2f.pdf"%dck)
+#     plt.show()
+
+if (adapt_efficiency_time):
+    plt.figure()
+    for SSPmethodAdt in data_adaptive['IMEX_method'].unique():
+        SSPmethodAdt_data = data_adaptive[data_adaptive['IMEX_method'] == SSPmethodAdt]
+        method_line = plt.plot(SSPmethodAdt_data['runtime'], SSPmethodAdt_data['L1_norm'], marker='.', linestyle='-', label=SSPmethodAdt)
+        method_line_color = method_line[0].get_color()
+    plt.xscale('log')
+    plt.yscale('log')
+    plt.xlabel('runtime')
+    plt.ylabel('$L_{1}$ error')
+    plt.legend()
+    plt.savefig("Adaptive efficiency time plot")
+    plt.show()
+
+# if (adapt_efficiency_steps):
+#     plt.figure()
+#     for SSPmethodAdt in data_adaptive['IMEX_method'].unique():
+#         SSPmethodAdt_data = data_adaptive[data_adaptive['IMEX_method'] == SSPmethodAdt]
+#         # Plot the whole method line with '.' markers
+#         method_line = plt.plot(SSPmethodAdt_data['Steps'], SSPmethodAdt_data['error'], marker='.', linestyle='-', label=SSPmethodAdt)
+#         method_line_color = method_line[0].get_color()
+#         # Overlay red 'x' markers where Negative_model == 1 or "not ssp"
+#         sspness = SSPmethodAdt_data[SSPmethodAdt_data['sspCondition'] == "not ssp"]
+#         plt.plot(sspness['Steps'], sspness['error'], marker='x', linewidth=2, linestyle='none', color=method_line_color)
+#     plt.xscale('log')
+#     plt.yscale('log')
+#     plt.xlabel('number of steps')
+#     plt.ylabel('$L_{\\infty}$ error')
+#     plt.legend()
+#     plt.savefig("Adaptive efficiency steps plot with d = %.2f.pdf"%dck)
+#     plt.show()
+
+# # # ------------------------------------------------ Run Fixed Time Steps ---------------------------------------------------------------------------            
+#     data_fixed = df[(df["diff_coef"] == dck) & (df["Runtype"] == "fixed")][["Runtype", "IMEX_method", "diff_coef", "runVal", "Nonlinear_Solves", "Explicit_RHS", 
+#                                                                             "Total Func Eval", "error", "maxIntStep", "Negative_model", "sspCondition", "runtime", "Steps"]]
+#     if (fixed_convergence):
+#         plt.figure()
+#         for SSPmethodFix in data_fixed['IMEX_method'].unique():
+#             SSPmethodFix_data = data_fixed[data_fixed['IMEX_method'] == SSPmethodFix]
+#             # Plot the whole method line with '.' markers
+#             method_line = plt.plot(SSPmethodFix_data['runVal'], SSPmethodFix_data['error'],marker='.', linestyle='-', label=SSPmethodFix)
+#             method_line_color = method_line[0].get_color()
+#             # Overlay red 'x' markers where Negative_model == 1 or "not ssp"
+#             sspness = SSPmethodFix_data[SSPmethodFix_data['sspCondition'] == "not ssp"]
+#             plt.plot(sspness['runVal'], sspness['error'], marker='x', linewidth=2, linestyle='none', color=method_line_color)
+#         plt.xscale('log')
+#         plt.yscale('log')
+#         plt.xlabel('h')
+#         plt.ylabel('$L_{\\infty}$ error')
+#         plt.legend()
+#         plt.savefig("Fixed convergence plot with d = %.2f.pdf"%dck)
+#         plt.show()
+
+# if (fixed_efficiency_time):
+#     plt.figure()
+#     for SSPmethodFix in data_fixed['IMEX_method'].unique():
+#         SSPmethodFix_data = data_fixed[data_fixed['IMEX_method'] == SSPmethodFix]
+#         # Plot the whole method line with '.' markers
+#         method_line = plt.plot(SSPmethodFix_data['runtime'], SSPmethodFix_data['error'],marker='.', linestyle='-', label=SSPmethodFix)
+#         method_line_color = method_line[0].get_color()
+#         # Overlay red 'x' markers where Negative_model == 1 or "not ssp"
+#         sspness = SSPmethodFix_data[SSPmethodFix_data['sspCondition'] == "not ssp"]
+#         plt.plot(sspness['runtime'], sspness['error'], marker='x', linewidth=2, linestyle='none', color=method_line_color)
+#     plt.xscale('log')
+#     plt.yscale('log')
+#     plt.xlabel('runtime')
+#     plt.ylabel('$L_{\\infty}$ error')
+#     plt.legend()
+#     plt.savefig("Fixed effciency time plot for d = %.2f.pdf"%dck)
+#     plt.show()
+
+# if (fixed_efficiency_work):
+#     plt.figure()
+#     for SSPmethodFix in data_fixed['IMEX_method'].unique():
+#         SSPmethodFix_data = data_fixed[data_fixed['IMEX_method'] == SSPmethodFix]
+#         # Plot the whole method line with '.' markers
+#         method_line = plt.plot(SSPmethodFix_data['Total Func Eval'], SSPmethodFix_data['error'],marker='.', linestyle='-', label=SSPmethodFix)
+#         method_line_color = method_line[0].get_color()
+#         # Overlay red 'x' markers where Negative_model == 1 or "not ssp"
+#         sspness = SSPmethodFix_data[SSPmethodFix_data['sspCondition'] == "not ssp"]
+#         plt.plot(sspness['Total Func Eval'], sspness['error'], marker='x', linewidth=2, linestyle='none', color=method_line_color)
+#     plt.xscale('log')
+#     plt.yscale('log')
+#     plt.xlabel('Total Num of Func Evals')
+#     plt.ylabel('$L_{\\infty}$ error')
+#     plt.legend()
+#     plt.savefig("Fixed effciency work for d = %.2f.pdf"%dck)
+#     plt.show()
+
+
+
+
