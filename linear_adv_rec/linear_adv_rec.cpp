@@ -1,5 +1,5 @@
 /*---------------------------------------------------------------
- * Programmer(s): Sylvia Amihere @ SMU
+ * Programmer(s): Sylvia Amihere @ UMBC
  *---------------------------------------------------------------
  * SUNDIALS Copyright Start
  * Copyright (c) 2002-2024, Lawrence Livermore National Security
@@ -34,16 +34,16 @@
  * are printed at the end.
  *---------------------------------------------------------------*/
 
- #include <algorithm>
- #include <cmath>
- #include <cstdio>
- #include <fstream>
- #include <iomanip>
- #include <iostream>
- #include <limits>
- #include <sstream>
- #include <string>
- #include <vector>
+#include <algorithm>
+#include <cmath>
+#include <cstdio>
+#include <fstream>
+#include <iomanip>
+#include <iostream>
+#include <limits>
+#include <sstream>
+#include <string>
+#include <vector>
 
 
 /* Header files */
@@ -77,14 +77,14 @@ using namespace std;
   class UserData
   {
   public:
-    sunindextype N; /* number of intervals   */
-    sunrealtype dx; /* mesh spacing          */
+    sunindextype N;              /* number of intervals   */
+    sunrealtype dx;              /* mesh spacing          */
     sunrealtype alpha1, alpha2;  /* advection coefficients */
-    sunrealtype k1, k2;  /* reaction coefficients */
+    sunrealtype k1, k2;          /* reaction coefficients */
     sunrealtype s1, s2; 
-    sunrealtype xstart;  /* left endpoint on spatial grid */
-    sunrealtype xend;  /* right endpoint on spatial grid */
-    string swap_type;  /* Swapping or Non-Swapping of b-vectors of the method and its embedding*/ 
+    sunrealtype xstart;          /* left endpoint on spatial grid */
+    sunrealtype xend;            /* right endpoint on spatial grid */
+    string swap_type;            /* Swapping or Non-Swapping of b-vectors of the method and its embedding*/ 
 
   // constructor (with default values)
   UserData()
@@ -121,7 +121,7 @@ public:
    // Time Parameters
    sunrealtype T0;           // initial time
    sunrealtype Tf;           // end time
-  //  int Nt;                   // number of output times
+  //  int Nt;                // number of output times
    
    // Output-related information
    int output;         // 0 = none, 1 = stats, 2 = disk, 3 = disk with tstop
@@ -180,9 +180,6 @@ int main(int argc, char* argv[])
   if (check_flag(&flag, "PrintSetup", 1)) { return 1;}
 
   /* Initialize data structures */
-  // N_Vector y = N_VNew_Serial(2*udata.N, ctx); /* Create serial vector for solution */
-  // if (check_flag((void*)y, "N_VNew_Serial", 0)) { return 1; }
-
   N_Vector y = N_VNew_Serial(2*udata.N, ctx); /* Create serial vector for solution */
   if (check_flag((void*)y, "N_VNew_Serial", 0)) { return 1; }
 
@@ -190,7 +187,6 @@ int main(int argc, char* argv[])
   tSol = N_VClone(y);
   flag = trueSol(0.0, tSol, &udata);
   if (check_flag(&flag, "trueSol", 1)) { return 1;}
-  // N_VPrint(tSol);
   
   /* Set initial conditions for u and v */
   sunrealtype* y_data = N_VGetArrayPointer(y);  
@@ -255,13 +251,11 @@ int main(int argc, char* argv[])
     flag = ARKodeSetFixedStep(arkode_mem, uopts.fixed_h);
     if (check_flag(&flag, "ARKodeSetFixedStep", 1)) { return 1; }
   }
-  // flag = ARKStepWriteParameters(arkode_mem, stdout); // to know the ARKODE parameters used to run the test
-  // if (check_flag(&flag, "ARKStepWriteParameters", 1)) { return 1; } 
 
   flag = ARKodeSetStopTime(arkode_mem, uopts.Tf);
   if (check_flag(&flag, "ARKodeSetStopTime", 1)) { return 1; }
 
-  /* Initialize GMRES solver -- no preconditioning, with up to N iterations  */
+  /* Initialize GMRES solver -- no preconditioning, with up to 2*N iterations  */
   SUNLinearSolver LS = SUNLinSol_SPGMR(y, SUN_PREC_NONE, 2*udata.N, ctx);
   if (check_flag((void*)LS, "SUNLinSol_SPGMR", 0)) { return 1; }
 
@@ -284,7 +278,7 @@ int main(int argc, char* argv[])
   fprintf(UFID, "Right endpoint %f \n", udata.xend);
   sunrealtype* data = N_VGetArrayPointer(y);
   sunrealtype* final_data = N_VGetArrayPointer(y); // solution at final time step
-  sunrealtype* error_data = N_VGetArrayPointer(tSol); // error between true solution and solution at final step
+  sunrealtype* true_data = N_VGetArrayPointer(tSol); // true solution 
 
   /* output initial condition (u and v) to disk */
   for (int i = 0; i < udata.N; i++) { fprintf(UFID, " %.16" ESYM " %.16" ESYM, data[i], data[udata.N + i]); }
@@ -310,11 +304,11 @@ int main(int argc, char* argv[])
     fprintf(UFID, "\n \n");
   }
 
-  /* find the L_{1} norm */
+  /* find the L1 norm */
   sunrealtype sum_error = 0.0;
-  for (int i = 0; i < 2*udata.N; i++)
+  for (int i = udata.N; i < 2*udata.N; i++)
   {
-    sum_error += SUNRabs(error_data[i]-data[i]);
+    sum_error += SUNRabs(true_data[i]-data[i]);
   }
   printf(" L1-norm = %.16e\n", sum_error / udata.N);
 
@@ -440,7 +434,7 @@ static int trueSol(sunrealtype t, N_Vector tSol, void* user_data)
   for (int i = 0; i < N; i++)
   {
     uSol[i] = i * dx + 1.0;
-    vSol[i] = 0.5 * (i * dx + 1.0) + (1.0 / (2.0 * k1));
+    vSol[i] = (k1 * (i * dx + 1.0) + 1.0)/k2; //2k1 = k2
   }
 
   return 0;
