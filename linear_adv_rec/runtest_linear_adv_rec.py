@@ -161,7 +161,7 @@ if (adapt_efficiency_time):
     plt.xlabel('runtime')
     plt.ylabel('$L_{1}$ error')
     plt.legend()
-    plt.savefig("Adaptive efficiency time plot")
+    plt.savefig("adaptive_efficiency_time_linear_adv_rec")
     plt.show()
 
 # if (adapt_efficiency_steps):
