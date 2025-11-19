@@ -84,7 +84,7 @@ SSP_LSPUM_ARK_312 = "./linear_adv_rec  --IMintegrator ARKODE_SSP_LSPUM_SDIRK_3_1
 SSP_ARK_423       = "./linear_adv_rec  --IMintegrator ARKODE_SSP_ESDIRK_4_2_3       --EXintegrator ARKODE_SSP_ERK_4_2_3"     
 
 adaptive_params = [1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 1.0]          # relative tolerances
-fixed_params    = [1.25*1e-3, 2.50*1e-3, 5.00*1e-3, 1.00*1e-2] # fixed time step sizes
+fixed_params    = [6.25*1e-4, 1.25*1e-3, 2.50*1e-3, 5.00*1e-3, 1.00*1e-2] # fixed time step sizes
 
 
 # ----------------------------------------------------------------------------------------------------
