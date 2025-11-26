@@ -57,6 +57,7 @@
 #include "sundials/sundials_core.hpp"
 #include <sundials/sundials_types.h> /* defs. of sunrealtype, sunindextype, etc */
 #include <sunlinsol/sunlinsol_spgmr.h>/* access to GMRES SUNLinearSolver */
+#include <sunlinsol/sunlinsol_spbcgs.h> /* access to SPBCGS SUNLinearSolver            */
 #include <sundials/sundials_logger.h>
 
 
@@ -157,6 +158,7 @@ static int check_flag(void* flagvalue, const char* funcname, int opt);
 /* Main Program */
 int main(int argc, char* argv[])
 {
+  // int maxl           = 100;
 
   // SUNDIALS context object for this simulation
   sundials::Context ctx;
@@ -257,6 +259,8 @@ int main(int argc, char* argv[])
 
   /* Initialize GMRES solver -- no preconditioning, with up to 2*N iterations  */
   SUNLinearSolver LS = SUNLinSol_SPGMR(y, SUN_PREC_NONE, 2*udata.N, ctx);
+  // SUNLinearSolver LS = SUNLinSol_SPBCGS(y, SUN_PREC_NONE, 2*udata.N, ctx);
+  // SUNLinearSolver LS = SUNLinSol_SPGMR(y, maxl, 2*udata.N, ctx);
   if (check_flag((void*)LS, "SUNLinSol_SPGMR", 0)) { return 1; }
 
   /* Linear solver interface */
@@ -529,6 +533,8 @@ static int ReadInputs(std::vector<std::string>& args, UserData& udata,
  find_arg(args, "--xstart", udata.xstart);
  find_arg(args, "--xend", udata.xend);
  find_arg(args, "--swap_type", udata.swap_type);
+ find_arg(args, "--k1", udata.k1);
+ find_arg(args, "--k2", udata.k2);
 
 
 // Integrator options
@@ -565,6 +571,8 @@ static void InputHelp()
    std::cout << "  --rtol <real>     : relative tolerance\n";
    std::cout << "  --atol <real>     : absolute tolerance\n";
    std::cout << "  --fixed_h <real>  : fixed step size\n";
+   std::cout << "  --k1 <real>       : stiffness param k1 \n";
+   std::cout << "  --k2 <real>       : stiffness param k2 \n";
    std::cout << "  --maxsteps <int>  : max steps between outputs\n";
    std::cout << "  --output <int>    : output level\n";
    std::cout << "  --xstart <real>   : left spatial end point  \n";
@@ -587,6 +595,8 @@ static int PrintSetup(UserData& udata, ARKODEParameters& uopts)
   std::cout << "  xstart       = " << udata.xstart << std::endl;
   std::cout << "  xend         = " << udata.xend << std::endl;
   std::cout << "  swap_type    = " << udata.swap_type << std::endl;
+  std::cout << "  k1           = " << udata.k1 << std::endl;
+  std::cout << "  k2           = " << udata.k2 << std::endl;
   std::cout << " --------------------------------- " << std::endl;
   std::cout << "  IMintegrator = " << uopts.IMintegrator << std::endl;
   std::cout << "  EXintegrator = " << uopts.EXintegrator << std::endl;
