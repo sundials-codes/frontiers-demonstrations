@@ -2,7 +2,7 @@
 #------------------------------------------------------------------------------------------------------------------------------------
 # Programmer(s):  Sylvia Amihere @ UMBC
 #------------------------------------------------------------------------------------------------------------------------------------
-# Copyright (c) 2025, Southern Methodist University.
+# Copyright (c) 2025, University of Maryland Baltimore County.
 # All rights reserved.
 # For details, see the LICENSE file.
 #------------------------------------------------------------------------------------------------------------------------------------
@@ -78,8 +78,6 @@ def runtest(solver, modetype, runV, k1Val, k2Val, showcommand=True):
     # If SUNDIALS did not fail
     if not sundials_failed:
         print("Running: " + runcommand + " SUCCESS")
-    
-    if not sundials_failed:
         for line in stdout_lines:
             txt = line.split()
             if ("L1-norm" in txt):

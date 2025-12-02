@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 #------------------------------------------------------------------------------------------------------------------------------------
-# Programmer(s):  Sylvia Amihere @ SMU
+# Programmer(s):  Sylvia Amihere @ UMBC
 #------------------------------------------------------------------------------------------------------------------------------------
-# Copyright (c) 2025, Southern Methodist University.
+# Copyright (c) 2025, University of Maryland Baltimore County.
 # All rights reserved.
 # For details, see the LICENSE file.
 #------------------------------------------------------------------------------------------------------------------------------------
@@ -47,21 +47,37 @@ def runtest(solver, modetype, runV, kVal, showcommand=True, sspcommand=True):
         runcommand = " %s  --fixed_h %.6f --k %.2f" % (solver['exe'], runV, kVal)
     
     start_time = time.time()
-    result = subprocess.run(shlex.split(runcommand), stdout=subprocess.PIPE)
+    result = subprocess.run(shlex.split(runcommand), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     end_time = time.time()
     length_time = end_time - start_time
     stats['Runtype']    = modetype
     stats['ReturnCode'] = result.returncode
     stats['runtime']    = length_time
 
-    if (result.returncode != 0):
-        print("Running: " + runcommand + " FAILURE: \n" + str(result.returncode))
-        print(result.stderr)
-    else:
-        if (showcommand):
-            print("Running: " + runcommand + " SUCCESS")
-        lines = str(result.stdout).split('\\n')
-        for line in lines:
+    stdout_lines = str(result.stdout).split('\\n')
+    stderr_lines = str(result.stderr).split('\\n')
+    # print("stdout\n", stdout_lines)
+    # print("stderr\n", stderr_lines)
+
+     # If SUNDIALS failed  
+    sundials_failed = False
+    for line in stderr_lines:
+        if ("the error test failed repeatedly" in line):
+            sundials_failed = True
+    if sundials_failed == True:
+        stats['ReturnCode']       = 1
+        stats['Steps']            = 0
+        stats['StepAttempts']     = 0
+        stats['ErrTestFails']     = 0
+        stats['Explicit_RHS']     = 0 
+        stats['Implicit_RHS']     = 0   
+        stats['Nonlinear_Solves'] = 0  
+        stats['maxIntStep']       = 0
+
+    # If SUNDIALS did not fail
+    if not sundials_failed:
+        print("Running: " + runcommand + " SUCCESS")
+        for line in stdout_lines:
             txt = line.split()
             if ("Steps" in txt):
                 stats['Steps'] = int(txt[2])
@@ -78,7 +94,7 @@ def runtest(solver, modetype, runV, kVal, showcommand=True, sspcommand=True):
             elif (("Largest" in txt) and ("average" in txt) and ("step" in txt) and ("size" in txt)):
                 stats['maxIntStep'] = float(txt[7])         #last internal step size used in adaptive run
         sum_negLines = 0
-        for line in lines:
+        for line in stdout_lines:
             txt = line.split()
             if (("Model" in txt) and ("has" in txt) and ("a" in txt) and ("negative" in txt) and ("time" in txt) and ("step" in txt) and ("t" in txt)):
                 sum_negLines += 1
@@ -221,47 +237,47 @@ def bisection_midval(solvers, runtype, paramList):
         # print results
         print(f"{runtype} run with {name}, {kval}, iter {iter} : SSP-value & cond = {solver['sspVal'],condLow}, NonSSP-value & cond = {solver['nonsspVal'], condHigh}")
 
-# -------------------------------------- adaptive runs -----------------------------------------
-solvernames_adaptK0 = [#{'name': 'SSP-ARK-2-1-2', 'exe': SSP_ARK_212,             'sspVal': 1e-2, 'nonsspVal': 5e-2, 'kvalue': 0.0},
-                       #{'name': 'SSP-ARK-3-1-2', 'exe': SSP_ARK_312,             'sspVal': 1e-1, 'nonsspVal': 5e-1, 'kvalue': 0.0},
-                       {'name': 'SSP-LSPUM-ARK-3-1-2', 'exe': SSP_LSPUM_ARK_312, 'sspVal': 1e-1, 'nonsspVal': 5e-1, 'kvalue': 0.0}
-                       #{'name': 'SSP-ARK-4-2-3', 'exe': SSP_ARK_423,             'sspVal': 1e-3, 'nonsspVal': 1e-2, 'kvalue': 0.0} 
-                       ]
+# # -------------------------------------- adaptive runs -----------------------------------------
+# solvernames_adaptK0 = [#{'name': 'SSP-ARK-2-1-2', 'exe': SSP_ARK_212,             'sspVal': 1e-2, 'nonsspVal': 5e-2, 'kvalue': 0.0},
+#                        #{'name': 'SSP-ARK-3-1-2', 'exe': SSP_ARK_312,             'sspVal': 1e-1, 'nonsspVal': 5e-1, 'kvalue': 0.0},
+#                        {'name': 'SSP-LSPUM-ARK-3-1-2', 'exe': SSP_LSPUM_ARK_312, 'sspVal': 1e-1, 'nonsspVal': 5e-1, 'kvalue': 0.0}
+#                        #{'name': 'SSP-ARK-4-2-3', 'exe': SSP_ARK_423,             'sspVal': 1e-3, 'nonsspVal': 1e-2, 'kvalue': 0.0} 
+#                        ]
 
-solvernames_adaptK2 = [{'name': 'SSP-ARK-2-1-2', 'exe': SSP_ARK_212,             'sspVal': 1e-1, 'nonsspVal': 5e-1, 'kvalue': 0.02},
-                       {'name': 'SSP-ARK-3-1-2', 'exe': SSP_ARK_312,             'sspVal': 1e-1, 'nonsspVal': 5e-1, 'kvalue': 0.02},
-                       {'name': 'SSP-LSPUM-ARK-3-1-2', 'exe': SSP_LSPUM_ARK_312, 'sspVal': 5e-2, 'nonsspVal': 1e-1, 'kvalue': 0.02},
-                       {'name': 'SSP-ARK-4-2-3', 'exe': SSP_ARK_423,             'sspVal': 1e-3, 'nonsspVal': 1e-2, 'kvalue': 0.02} ]
+# solvernames_adaptK2 = [{'name': 'SSP-ARK-2-1-2', 'exe': SSP_ARK_212,             'sspVal': 1e-1, 'nonsspVal': 5e-1, 'kvalue': 0.02},
+#                        {'name': 'SSP-ARK-3-1-2', 'exe': SSP_ARK_312,             'sspVal': 1e-1, 'nonsspVal': 5e-1, 'kvalue': 0.02},
+#                        {'name': 'SSP-LSPUM-ARK-3-1-2', 'exe': SSP_LSPUM_ARK_312, 'sspVal': 5e-2, 'nonsspVal': 1e-1, 'kvalue': 0.02},
+#                        {'name': 'SSP-ARK-4-2-3', 'exe': SSP_ARK_423,             'sspVal': 1e-3, 'nonsspVal': 1e-2, 'kvalue': 0.02} ]
 
-solvernames_adaptK4 = [{'name': 'SSP-ARK-2-1-2', 'exe': SSP_ARK_212,             'sspVal': 1e-1, 'nonsspVal': 5e-1, 'kvalue': 0.04},
-                    #    {'name': 'SSP-ARK-3-1-2', 'exe': SSP_ARK_312,           'sspVal': 1e-1, 'nonsspVal': 5e-1, 'kvalue': 0.04},
-                       {'name': 'SSP-LSPUM-ARK-3-1-2', 'exe': SSP_LSPUM_ARK_312, 'sspVal': 5e-2, 'nonsspVal': 1e-1, 'kvalue': 0.04},
-                       {'name': 'SSP-ARK-4-2-3', 'exe': SSP_ARK_423,             'sspVal': 1e-1, 'nonsspVal': 5e-1, 'kvalue': 0.04} ]
+# solvernames_adaptK4 = [{'name': 'SSP-ARK-2-1-2', 'exe': SSP_ARK_212,             'sspVal': 1e-1, 'nonsspVal': 5e-1, 'kvalue': 0.04},
+#                     #    {'name': 'SSP-ARK-3-1-2', 'exe': SSP_ARK_312,           'sspVal': 1e-1, 'nonsspVal': 5e-1, 'kvalue': 0.04},
+#                        {'name': 'SSP-LSPUM-ARK-3-1-2', 'exe': SSP_LSPUM_ARK_312, 'sspVal': 5e-2, 'nonsspVal': 1e-1, 'kvalue': 0.04},
+#                        {'name': 'SSP-ARK-4-2-3', 'exe': SSP_ARK_423,             'sspVal': 1e-1, 'nonsspVal': 5e-1, 'kvalue': 0.04} ]
 
-bisection_midval(solvernames_adaptK0, "adaptive", paramList = adaptive_params)
-bisection_midval(solvernames_adaptK2, "adaptive", paramList = adaptive_params)
-bisection_midval(solvernames_adaptK4, "adaptive", paramList = adaptive_params)
+# bisection_midval(solvernames_adaptK0, "adaptive", paramList = adaptive_params)
+# bisection_midval(solvernames_adaptK2, "adaptive", paramList = adaptive_params)
+# bisection_midval(solvernames_adaptK4, "adaptive", paramList = adaptive_params)
 
 
-# -------------------------------------- fixed runs -----------------------------------------
-solvernames_fixedK0 = [{'name': 'SSP-ARK-2-1-2', 'exe': SSP_ARK_212,             'sspVal': 0.25*(2**2), 'nonsspVal': 0.25*(2**3), 'kvalue': 0.0},
-                       {'name': 'SSP-ARK-3-1-2', 'exe': SSP_ARK_312,             'sspVal': 0.25*(2**3), 'nonsspVal': 0.25*(2**4), 'kvalue': 0.0},
-                       {'name': 'SSP-LSPUM-ARK-3-1-2', 'exe': SSP_LSPUM_ARK_312, 'sspVal': 0.25*(2**2), 'nonsspVal': 0.25*(2**3), 'kvalue': 0.0},
-                       {'name': 'SSP-ARK-4-2-3', 'exe': SSP_ARK_423,             'sspVal': 0.25*(2**3), 'nonsspVal': 0.25*(2**4), 'kvalue': 0.0} ]
+# # -------------------------------------- fixed runs -----------------------------------------
+# solvernames_fixedK0 = [{'name': 'SSP-ARK-2-1-2', 'exe': SSP_ARK_212,             'sspVal': 0.25*(2**2), 'nonsspVal': 0.25*(2**3), 'kvalue': 0.0},
+#                        {'name': 'SSP-ARK-3-1-2', 'exe': SSP_ARK_312,             'sspVal': 0.25*(2**3), 'nonsspVal': 0.25*(2**4), 'kvalue': 0.0},
+#                        {'name': 'SSP-LSPUM-ARK-3-1-2', 'exe': SSP_LSPUM_ARK_312, 'sspVal': 0.25*(2**2), 'nonsspVal': 0.25*(2**3), 'kvalue': 0.0},
+#                        {'name': 'SSP-ARK-4-2-3', 'exe': SSP_ARK_423,             'sspVal': 0.25*(2**3), 'nonsspVal': 0.25*(2**4), 'kvalue': 0.0} ]
 
-solvernames_fixedK2 = [{'name': 'SSP-ARK-2-1-2', 'exe': SSP_ARK_212,             'sspVal': 0.25*(2**1), 'nonsspVal': 0.25*(2**2), 'kvalue': 0.02},
-                       {'name': 'SSP-ARK-3-1-2', 'exe': SSP_ARK_312,             'sspVal': 0.25*(2**2), 'nonsspVal': 0.25*(2**3), 'kvalue': 0.02},
-                       {'name': 'SSP-LSPUM-ARK-3-1-2', 'exe': SSP_LSPUM_ARK_312, 'sspVal': 0.25*(2**2), 'nonsspVal': 0.25*(2**3), 'kvalue': 0.02},
-                       {'name': 'SSP-ARK-4-2-3', 'exe': SSP_ARK_423,             'sspVal': 0.25*(2**0), 'nonsspVal': 0.25*(2**1), 'kvalue': 0.02} ]
+# solvernames_fixedK2 = [{'name': 'SSP-ARK-2-1-2', 'exe': SSP_ARK_212,             'sspVal': 0.25*(2**1), 'nonsspVal': 0.25*(2**2), 'kvalue': 0.02},
+#                        {'name': 'SSP-ARK-3-1-2', 'exe': SSP_ARK_312,             'sspVal': 0.25*(2**2), 'nonsspVal': 0.25*(2**3), 'kvalue': 0.02},
+#                        {'name': 'SSP-LSPUM-ARK-3-1-2', 'exe': SSP_LSPUM_ARK_312, 'sspVal': 0.25*(2**2), 'nonsspVal': 0.25*(2**3), 'kvalue': 0.02},
+#                        {'name': 'SSP-ARK-4-2-3', 'exe': SSP_ARK_423,             'sspVal': 0.25*(2**0), 'nonsspVal': 0.25*(2**1), 'kvalue': 0.02} ]
 
-solvernames_fixedK4 = [{'name': 'SSP-ARK-2-1-2', 'exe': SSP_ARK_212,             'sspVal': 0.25*(2**1), 'nonsspVal': 0.25*(2**2), 'kvalue': 0.04},
-                       {'name': 'SSP-ARK-3-1-2', 'exe': SSP_ARK_312,             'sspVal': 0.25*(2**2), 'nonsspVal': 0.25*(2**3), 'kvalue': 0.04},
-                       {'name': 'SSP-LSPUM-ARK-3-1-2', 'exe': SSP_LSPUM_ARK_312, 'sspVal': 0.25*(2**2), 'nonsspVal': 0.25*(2**3), 'kvalue': 0.04},
-                       {'name': 'SSP-ARK-4-2-3', 'exe': SSP_ARK_423,             'sspVal': 0.25*(2**0), 'nonsspVal': 0.25*(2**1), 'kvalue': 0.04} ]
+# solvernames_fixedK4 = [{'name': 'SSP-ARK-2-1-2', 'exe': SSP_ARK_212,             'sspVal': 0.25*(2**1), 'nonsspVal': 0.25*(2**2), 'kvalue': 0.04},
+#                        {'name': 'SSP-ARK-3-1-2', 'exe': SSP_ARK_312,             'sspVal': 0.25*(2**2), 'nonsspVal': 0.25*(2**3), 'kvalue': 0.04},
+#                        {'name': 'SSP-LSPUM-ARK-3-1-2', 'exe': SSP_LSPUM_ARK_312, 'sspVal': 0.25*(2**2), 'nonsspVal': 0.25*(2**3), 'kvalue': 0.04},
+#                        {'name': 'SSP-ARK-4-2-3', 'exe': SSP_ARK_423,             'sspVal': 0.25*(2**0), 'nonsspVal': 0.25*(2**1), 'kvalue': 0.04} ]
 
-bisection_midval(solvernames_fixedK0, "fixed", paramList = fixed_params)
-bisection_midval(solvernames_fixedK2, "fixed", paramList = fixed_params)
-bisection_midval(solvernames_fixedK4, "fixed", paramList = fixed_params)
+# bisection_midval(solvernames_fixedK0, "fixed", paramList = fixed_params)
+# bisection_midval(solvernames_fixedK2, "fixed", paramList = fixed_params)
+# bisection_midval(solvernames_fixedK4, "fixed", paramList = fixed_params)
 
 
 ## ----------------------------------------------------------------------------------------------------
