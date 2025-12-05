@@ -29,6 +29,7 @@
 // Include desired integrators, vectors, linear solvers, and nonlinear solvers
 #include "arkode/arkode_erkstep.h"
 #include "arkode/arkode_lsrkstep.h"
+#include <arkode/arkode_arkstep.h> //SA
 #include "nvector/nvector_manyvector.h"
 #include "nvector/nvector_serial.h"
 #include "sundials/sundials_core.hpp"
@@ -64,6 +65,15 @@ public:
   // (ARKODE_SSP_ERK_10_3_4, ARKODE_SSP_ERK_9_2_3, ARKODE_SSP_ERK_10_1_2)
   std::string integrator;
 
+  // implicit methods (ARKODE_SSP_SDIRK_2_1_2, ARKODE_SSP_DIRK_3_1_2,  
+  //                   ARKODE_SSP_LSPUM_SDIRK_3_1_2, ARKODE_SSP_ESDIRK_4_2_3)
+  // explicit methods (ARKODE_SSP_ERK_2_1_2,vARKODE_SSP_ERK_3_1_2,
+  //                   ARKODE_SSP_LSPUM_ERK_3_1_2, ARKODE_SSP_ERK_4_2_3)
+
+  // Integration method
+   std::string IMintegrator;
+   std::string EXintegrator;
+
   // Method stages (0 => to use the default; ignored if using ARKODE_LSRK_SSP_10_4 or
   // an ERK method)
   int stages;
@@ -86,6 +96,8 @@ public:
   // constructor (with default values)
   ARKODEParameters()
     : integrator("ARKODE_LSRK_SSP_S_2"),
+      IMintegrator("ARKODE_SSP_SDIRK_2_1_2"),
+      EXintegrator("ARKODE_SSP_ERK_2_1_2"),
       stages(0),
       rtol(SUN_RCONST(1.e-4)),
       atol(SUN_RCONST(1.e-11)),
@@ -286,10 +298,18 @@ static void InputHelp()
                "ARKODE_LSRK_SSP_10_4, or any valid ARKODE_ERKTableID)\n";
   std::cout << "  --stages <int>     : number of stages (ignored for "
                "ARKODE_LSRK_SSP_10_4 and ERK)\n";
+  std::cout << "  --IMintegrator <str> : method (ARKODE_SSP_SDIRK_2_1_2, "
+              "ARKODE_SSP_DIRK_3_1_2, " 
+              "ARKODE_SSP_LSPUM_SDIRK_3_1_2, or ARKODE_SSP_ESDIRK_4_2_3)\n";
+  std::cout << "  --EXintegrator <str> : method (ARKODE_SSP_ERK_2_1_2, "
+              "ARKODE_SSP_ERK_3_1_2, " 
+              "ARKODE_SSP_LSPUM_ERK_3_1_2, or ARKODE_SSP_ERK_4_2_3)\n";
   std::cout << "  --tf <real>        : final time\n";
   std::cout << "  --xl <real>        : domain lower boundary\n";
   std::cout << "  --xr <real>        : domain upper boundary\n";
   std::cout << "  --gamma <real>     : ideal gas constant\n";
+  std::cout << "  --asq <real>       : isothermal sound speed\n";
+  std::cout << "  --eps_stiff <real> : stiffness parameter\n";
   std::cout << "  --nx <int>         : number of mesh points\n";
   std::cout << "  --rtol <real>      : relative tolerance\n";
   std::cout << "  --atol <real>      : absolute tolerance\n";
@@ -372,6 +392,8 @@ static int ReadInputs(std::vector<std::string>& args, EulerData& udata,
 
   // Problem parameters
   find_arg(args, "--gamma", udata.gamma);
+  find_arg(args, "--asq", udata.asq);
+  find_arg(args, "--eps_stiff", udata.eps_stiff);
   find_arg(args, "--tf", udata.tf);
   find_arg(args, "--xl", udata.xl);
   find_arg(args, "--xr", udata.xr);
@@ -379,6 +401,8 @@ static int ReadInputs(std::vector<std::string>& args, EulerData& udata,
 
   // Integrator options
   find_arg(args, "--integrator", uopts.integrator);
+  find_arg(args, "--IMintegrator", uopts.IMintegrator);
+  find_arg(args, "--EXintegrator", uopts.EXintegrator);
   find_arg(args, "--stages", uopts.stages);
   find_arg(args, "--rtol", uopts.rtol);
   find_arg(args, "--atol", uopts.atol);
@@ -407,15 +431,19 @@ static int PrintSetup(EulerData& udata, ARKODEParameters& uopts)
   std::cout << std::endl;
   std::cout << "Problem parameters and options:" << std::endl;
   std::cout << " --------------------------------- " << std::endl;
-  std::cout << "  gamma      = " << udata.gamma << std::endl;
+  std::cout << "  gamma        = " << udata.gamma << std::endl;
+  std::cout << "  asq          = " << udata.asq << std::endl;
+  std::cout << "  eps_stiff    = " << udata.eps_stiff << std::endl;
   std::cout << " --------------------------------- " << std::endl;
-  std::cout << "  tf         = " << udata.tf << std::endl;
-  std::cout << "  xl         = " << udata.xl << std::endl;
-  std::cout << "  xr         = " << udata.xr << std::endl;
-  std::cout << "  nx         = " << udata.nx << std::endl;
-  std::cout << "  dx         = " << udata.dx << std::endl;
+  std::cout << "  tf           = " << udata.tf << std::endl;
+  std::cout << "  xl           = " << udata.xl << std::endl;
+  std::cout << "  xr           = " << udata.xr << std::endl;
+  std::cout << "  nx           = " << udata.nx << std::endl;
+  std::cout << "  dx           = " << udata.dx << std::endl;
   std::cout << " --------------------------------- " << std::endl;
-  std::cout << "  integrator = " << uopts.integrator << std::endl;
+  std::cout << "  integrator   = " << uopts.integrator << std::endl;
+  std::cout << "  IMintegrator = " << uopts.IMintegrator << std::endl;
+  std::cout << "  EXintegrator = " << uopts.EXintegrator << std::endl;
   if (uopts.stages > 0)
   {
     std::cout << "  stages     = " << uopts.stages << std::endl;
