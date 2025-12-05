@@ -31,6 +31,7 @@
 #include "arkode/arkode_lsrkstep.h"
 #include <arkode/arkode_arkstep.h> //SA
 #include <sunlinsol/sunlinsol_spgmr.h>/* access to GMRES SUNLinearSolver *///SA
+#include <sunlinsol/sunlinsol_spbcgs.h> /* access to SPBCGS SUNLinearSolver            */
 #include "nvector/nvector_manyvector.h"
 #include "nvector/nvector_serial.h"
 #include "sundials/sundials_core.hpp"
@@ -138,10 +139,10 @@ public:
 
   // constructor
   EulerData()
-    : nx(512),
+    : nx(200),
       t0(ZERO),
       // tf(SUN_RCONST(HALF)), 
-      tf(SUN_RCONST(0.45)),
+      tf(SUN_RCONST(0.2)),
       xl(ZERO),
       xr(ONE),
       asq(ONE), //SA

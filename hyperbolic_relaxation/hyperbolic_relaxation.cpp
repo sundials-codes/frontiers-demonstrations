@@ -169,9 +169,9 @@ int main(int argc, char* argv[])
   flag = ARKodeSetStopTime(arkode_mem, udata.tf);
   if (check_flag(flag, "ARKodeSetStopTime")) { return 1; }
 
-  SUNLinearSolver LS = SUNLinSol_SPGMR(y, SUN_PREC_NONE, udata.nx, ctx);
-  // // SUNLinearSolver LS = SUNLinSol_SPBCGS(y, SUN_PREC_NONE, 2*udata.N, ctx);
-  // // SUNLinearSolver LS = SUNLinSol_SPGMR(y, maxl, 2*udata.N, ctx);
+  // SUNLinearSolver LS = SUNLinSol_SPGMR(y, SUN_PREC_NONE, udata.nx, ctx);
+  SUNLinearSolver LS = SUNLinSol_SPBCGS(y, SUN_PREC_NONE, udata.nx, ctx);
+  // // SUNLinearSolver LS = SUNLinSol_SPGMR(y, maxl, udata.nx, ctx);
   if (check_ptr(LS, "SUNLinSol_SPGMR")) { return 1; }
 
   // /* Linear solver interface */

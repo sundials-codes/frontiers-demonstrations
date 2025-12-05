@@ -180,7 +180,7 @@ if (DoPlots):
     # ax10.set_ylabel(r"$v_x$")
     # ax20.set_ylabel(r"$p$")
     ax00.set_xlabel(r"$x$")
-    it = 1
+    it = int(np.ceil(nt/2))
     tval = repr(float(t[it])).zfill(3)
     ax01.plot(x, rho[it, :], "-b", x, rhotrue[it, :], ":k")
     ax01.set_title(r"$t =$ " + tval)
