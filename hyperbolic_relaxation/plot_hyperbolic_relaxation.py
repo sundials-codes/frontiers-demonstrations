@@ -23,7 +23,7 @@ import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 
 # data file name
-datafile = "advection.out"
+datafile = "hyperbolic_relaxation.out"
 
 #parameters
 rho0 = 0.01

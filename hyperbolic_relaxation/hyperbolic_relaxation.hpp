@@ -485,7 +485,7 @@ static int OpenOutput(EulerData& udata, ARKODEParameters& uopts)
   {
     // Open output stream
     std::stringstream fname;
-    fname << "advection.out";
+    fname << "hyperbolic_relaxation.out";
     uopts.uout.open(fname.str());
 
     uopts.uout << std::scientific;
