@@ -448,11 +448,11 @@ static int PrintSetup(EulerData& udata, ARKODEParameters& uopts)
   {
     std::cout << "  stages     = " << uopts.stages << std::endl;
   }
-  std::cout << "  rtol       = " << uopts.rtol << std::endl;
-  std::cout << "  atol       = " << uopts.atol << std::endl;
-  std::cout << "  fixed h    = " << uopts.fixed_h << std::endl;
+  std::cout << "  rtol         = " << uopts.rtol << std::endl;
+  std::cout << "  atol         = " << uopts.atol << std::endl;
+  std::cout << "  fixed h      = " << uopts.fixed_h << std::endl;
   std::cout << " --------------------------------- " << std::endl;
-  std::cout << "  output     = " << uopts.output << std::endl;
+  std::cout << "  output       = " << uopts.output << std::endl;
   std::cout << " --------------------------------- " << std::endl;
   std::cout << std::endl;
 
