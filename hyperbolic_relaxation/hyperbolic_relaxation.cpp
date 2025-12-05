@@ -92,51 +92,57 @@ int main(int argc, char* argv[])
   void* arkode_mem = nullptr;
 
   // Determine type (LSRKStep vs ERKStep)
-  bool lsrk = false;
-  int stages = -1;
-  if (uopts.integrator == "ARKODE_LSRK_SSP_S_2") { 
-    lsrk = true; 
-    stages = 2;
-  }
-  if (uopts.integrator == "ARKODE_LSRK_SSP_S_3") { 
-    lsrk = true;
-    stages = 4; 
-  }
-  if (uopts.integrator == "ARKODE_LSRK_SSP_10_4") { lsrk = true; }
+  // bool lsrk = false;
+  // int stages = -1;
+  // if (uopts.integrator == "ARKODE_LSRK_SSP_S_2") { 
+  //   lsrk = true; 
+  //   stages = 2;
+  // }
+  // if (uopts.integrator == "ARKODE_LSRK_SSP_S_3") { 
+  //   lsrk = true;
+  //   stages = 4; 
+  // }
+  // if (uopts.integrator == "ARKODE_LSRK_SSP_10_4") { lsrk = true; }
 
-  if (lsrk) // Setup LSRKStep
-  {
-    // ARKODE memory structure
-    arkode_mem = LSRKStepCreateSSP(fe_rhs, udata.t0, y, ctx);
-    if (check_ptr(arkode_mem, "LSRKStepCreateSSP")) { return 1; }
+  arkode_mem = ARKStepCreate(fe_rhs, fi_rhs, udata.t0, y, ctx);
+  if (check_ptr(arkode_mem, "ARKStepCreate")) { return 1; }
 
-    // Select SSPRK method type
-    flag = LSRKStepSetSSPMethodByName(arkode_mem, uopts.integrator.c_str());
-    if (check_flag(flag, "LSRKStepSetSSPMethodByName")) { return 1; }
+  flag = ARKStepSetTableName(arkode_mem, uopts.IMintegrator.c_str(), uopts.EXintegrator.c_str()); 
+  if (check_flag(flag, "ARKStepSetTableName")) { return 1; } 
 
-    // Select number of SSPRK stages
-    if (uopts.stages > 0)
-    {
-      flag = LSRKStepSetNumSSPStages(arkode_mem, uopts.stages);
-      if (check_flag(flag, "LSRKStepSetNumSSPStages")) { return 1; }
-    }
-    else if (stages > 0)
-    {
-      flag = LSRKStepSetNumSSPStages(arkode_mem, stages);
-      if (check_flag(flag, "LSRKStepSetNumSSPStages")) { return 1; }
-    }
-  }
-  else
-  { // Setup ERKStep
+  // if (lsrk) // Setup LSRKStep
+  // {
+  //   // ARKODE memory structure
+  //   arkode_mem = LSRKStepCreateSSP(fe_rhs, udata.t0, y, ctx);
+  //   if (check_ptr(arkode_mem, "LSRKStepCreateSSP")) { return 1; }
 
-    // ARKODE memory structure
-    arkode_mem = ERKStepCreate(fe_rhs, udata.t0, y, ctx);
-    if (check_ptr(arkode_mem, "ERKStepCreate")) { return 1; }
+  //   // Select SSPRK method type
+  //   flag = LSRKStepSetSSPMethodByName(arkode_mem, uopts.integrator.c_str());
+  //   if (check_flag(flag, "LSRKStepSetSSPMethodByName")) { return 1; }
 
-    // Select ERK method
-    flag = ERKStepSetTableName(arkode_mem, uopts.integrator.c_str());
-    if (check_flag(flag, "ERKStepSetTableName")) { return 1; }
-  }
+  //   // Select number of SSPRK stages
+  //   if (uopts.stages > 0)
+  //   {
+  //     flag = LSRKStepSetNumSSPStages(arkode_mem, uopts.stages);
+  //     if (check_flag(flag, "LSRKStepSetNumSSPStages")) { return 1; }
+  //   }
+  //   else if (stages > 0)
+  //   {
+  //     flag = LSRKStepSetNumSSPStages(arkode_mem, stages);
+  //     if (check_flag(flag, "LSRKStepSetNumSSPStages")) { return 1; }
+  //   }
+  // }
+  // else
+  // { // Setup ERKStep
+
+  //   // ARKODE memory structure
+  //   arkode_mem = ERKStepCreate(fe_rhs, udata.t0, y, ctx);
+  //   if (check_ptr(arkode_mem, "ERKStepCreate")) { return 1; }
+
+  //   // Select ERK method
+  //   flag = ERKStepSetTableName(arkode_mem, uopts.integrator.c_str());
+  //   if (check_flag(flag, "ERKStepSetTableName")) { return 1; }
+  // }
 
   // Shared setup
 
@@ -162,6 +168,15 @@ int main(int argc, char* argv[])
   //   Set stopping time
   flag = ARKodeSetStopTime(arkode_mem, udata.tf);
   if (check_flag(flag, "ARKodeSetStopTime")) { return 1; }
+
+  SUNLinearSolver LS = SUNLinSol_SPGMR(y, SUN_PREC_NONE, udata.nx, ctx);
+  // // SUNLinearSolver LS = SUNLinSol_SPBCGS(y, SUN_PREC_NONE, 2*udata.N, ctx);
+  // // SUNLinearSolver LS = SUNLinSol_SPGMR(y, maxl, 2*udata.N, ctx);
+  if (check_ptr(LS, "SUNLinSol_SPGMR")) { return 1; }
+
+  // /* Linear solver interface */
+  flag = ARKodeSetLinearSolver(arkode_mem, LS, NULL);
+  if (check_flag(flag, "ARKodeSetLinearSolver")) { return 1; }
 
   // ----------------------
   // Evolve problem in time
@@ -224,6 +239,7 @@ int main(int argc, char* argv[])
   ARKodeFree(&arkode_mem);
   for (int i = 0; i < NSPECIES; i++) { N_VDestroy(vecs[i]); }
   N_VDestroy(y);
+  SUNLinSolFree(LS);       /* Free linear solver */
 
   return 0;
 }

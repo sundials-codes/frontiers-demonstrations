@@ -30,6 +30,7 @@
 #include "arkode/arkode_erkstep.h"
 #include "arkode/arkode_lsrkstep.h"
 #include <arkode/arkode_arkstep.h> //SA
+#include <sunlinsol/sunlinsol_spgmr.h>/* access to GMRES SUNLinearSolver *///SA
 #include "nvector/nvector_manyvector.h"
 #include "nvector/nvector_serial.h"
 #include "sundials/sundials_core.hpp"
@@ -63,7 +64,7 @@ public:
   // or any valid ARKODE_ERKTableID for ERK methods)
   //Corresponding ERK_SSP methods of the above LSRK_SSP methods:
   // (ARKODE_SSP_ERK_10_3_4, ARKODE_SSP_ERK_9_2_3, ARKODE_SSP_ERK_10_1_2)
-  std::string integrator;
+  // std::string integrator;
 
   // implicit methods (ARKODE_SSP_SDIRK_2_1_2, ARKODE_SSP_DIRK_3_1_2,  
   //                   ARKODE_SSP_LSPUM_SDIRK_3_1_2, ARKODE_SSP_ESDIRK_4_2_3)
@@ -76,7 +77,7 @@ public:
 
   // Method stages (0 => to use the default; ignored if using ARKODE_LSRK_SSP_10_4 or
   // an ERK method)
-  int stages;
+  // int stages;
 
   // Relative and absolute tolerances
   sunrealtype rtol;
@@ -95,10 +96,10 @@ public:
 
   // constructor (with default values)
   ARKODEParameters()
-    : integrator("ARKODE_LSRK_SSP_S_2"),
-      IMintegrator("ARKODE_SSP_SDIRK_2_1_2"),
+    // : integrator("ARKODE_LSRK_SSP_S_2"),
+    : IMintegrator("ARKODE_SSP_SDIRK_2_1_2"),
       EXintegrator("ARKODE_SSP_ERK_2_1_2"),
-      stages(0),
+      // stages(0),
       rtol(SUN_RCONST(1.e-4)),
       atol(SUN_RCONST(1.e-11)),
       fixed_h(ZERO),
@@ -293,11 +294,11 @@ static void InputHelp()
 {
   std::cout << std::endl;
   std::cout << "Command line options:" << std::endl;
-  std::cout << "  --integrator <str> : method (ARKODE_LSRK_SSP_S_2, "
-               "ARKODE_LSRK_SSP_S_3, "
-               "ARKODE_LSRK_SSP_10_4, or any valid ARKODE_ERKTableID)\n";
-  std::cout << "  --stages <int>     : number of stages (ignored for "
-               "ARKODE_LSRK_SSP_10_4 and ERK)\n";
+  // std::cout << "  --integrator <str> : method (ARKODE_LSRK_SSP_S_2, "
+  //              "ARKODE_LSRK_SSP_S_3, "
+  //              "ARKODE_LSRK_SSP_10_4, or any valid ARKODE_ERKTableID)\n";
+  // std::cout << "  --stages <int>     : number of stages (ignored for "
+              //  "ARKODE_LSRK_SSP_10_4 and ERK)\n";
   std::cout << "  --IMintegrator <str> : method (ARKODE_SSP_SDIRK_2_1_2, "
               "ARKODE_SSP_DIRK_3_1_2, " 
               "ARKODE_SSP_LSPUM_SDIRK_3_1_2, or ARKODE_SSP_ESDIRK_4_2_3)\n";
@@ -400,10 +401,10 @@ static int ReadInputs(std::vector<std::string>& args, EulerData& udata,
   find_arg(args, "--nx", udata.nx);
 
   // Integrator options
-  find_arg(args, "--integrator", uopts.integrator);
+  // find_arg(args, "--integrator", uopts.integrator);
   find_arg(args, "--IMintegrator", uopts.IMintegrator);
   find_arg(args, "--EXintegrator", uopts.EXintegrator);
-  find_arg(args, "--stages", uopts.stages);
+  // find_arg(args, "--stages", uopts.stages);
   find_arg(args, "--rtol", uopts.rtol);
   find_arg(args, "--atol", uopts.atol);
   find_arg(args, "--fixed_h", uopts.fixed_h);
@@ -416,11 +417,11 @@ static int ReadInputs(std::vector<std::string>& args, EulerData& udata,
   if (udata.flux) { delete[] udata.flux; }
   udata.flux = new sunrealtype[NSPECIES * (udata.nx + 1)];
 
-  if (uopts.stages < 0)
-  {
-    std::cerr << "ERROR: Invalid number of stages" << std::endl;
-    return -1;
-  }
+  // if (uopts.stages < 0)
+  // {
+  //   std::cerr << "ERROR: Invalid number of stages" << std::endl;
+  //   return -1;
+  // }
 
   return 0;
 }
@@ -441,13 +442,13 @@ static int PrintSetup(EulerData& udata, ARKODEParameters& uopts)
   std::cout << "  nx           = " << udata.nx << std::endl;
   std::cout << "  dx           = " << udata.dx << std::endl;
   std::cout << " --------------------------------- " << std::endl;
-  std::cout << "  integrator   = " << uopts.integrator << std::endl;
+  // std::cout << "  integrator   = " << uopts.integrator << std::endl;
   std::cout << "  IMintegrator = " << uopts.IMintegrator << std::endl;
   std::cout << "  EXintegrator = " << uopts.EXintegrator << std::endl;
-  if (uopts.stages > 0)
-  {
-    std::cout << "  stages     = " << uopts.stages << std::endl;
-  }
+  // if (uopts.stages > 0)
+  // {
+  //   std::cout << "  stages     = " << uopts.stages << std::endl;
+  // }
   std::cout << "  rtol         = " << uopts.rtol << std::endl;
   std::cout << "  atol         = " << uopts.atol << std::endl;
   std::cout << "  fixed h      = " << uopts.fixed_h << std::endl;
