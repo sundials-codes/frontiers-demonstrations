@@ -240,7 +240,7 @@ public:
 
 // ODE explicit and implicit right hand side (RHS) functions
 int fe_rhs(sunrealtype t, N_Vector y, N_Vector f, void* user_data);
-int fi_rhs(sunrealtype t, N_Vector y, N_Vector f, void* user_data)
+int fi_rhs(sunrealtype t, N_Vector y, N_Vector f, void* user_data);
 
 // -----------------------------------------------------------------------------
 // Helper functions

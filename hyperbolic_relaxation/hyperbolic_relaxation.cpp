@@ -49,7 +49,7 @@
  * and integrator settings. Use the flag --help for more information.
  * ---------------------------------------------------------------------------*/
 
-#include "linear_advection.hpp"
+#include "hyperbolic_relaxation.hpp"
 using namespace std;
 
 int main(int argc, char* argv[])
@@ -390,11 +390,11 @@ int fi_rhs(sunrealtype t, N_Vector y, N_Vector f, void* user_data)
     /* 0.5 * rho * u^2 */
     sunrealtype Eeq2 = (mx[i] * mx[i] + my[i] * my[i] + mz[i] * mz[i]) * HALF / rho[i];
 
-    /* Eqe = (a^2*rho) /  (gamma - 1) + 0.5 * rho * u^2  */
-    sunrealtype Eqe = Eeq1 + Eeq2;
+    /* Eeq = (a^2*rho) /  (gamma - 1) + 0.5 * rho * u^2  */
+    sunrealtype Eeq = Eeq1 + Eeq2;
 
     /* relaxation term: (1/epsilon) * (Eeq - E) */
-    etdot[i] = inv_eps_stiff * (Eeq = et[i]);
+    etdot[i] = inv_eps_stiff * (Eeq - et[i]);
   }
 
   return 0;
