@@ -57,6 +57,8 @@ int main(int argc, char* argv[])
   // SUNDIALS context object for this simulation
   sundials::Context ctx;
 
+  // int maxl = 10
+
   // -----------------
   // Setup the problem
   // -----------------
@@ -91,58 +93,11 @@ int main(int argc, char* argv[])
   // --------------------
   void* arkode_mem = nullptr;
 
-  // Determine type (LSRKStep vs ERKStep)
-  // bool lsrk = false;
-  // int stages = -1;
-  // if (uopts.integrator == "ARKODE_LSRK_SSP_S_2") { 
-  //   lsrk = true; 
-  //   stages = 2;
-  // }
-  // if (uopts.integrator == "ARKODE_LSRK_SSP_S_3") { 
-  //   lsrk = true;
-  //   stages = 4; 
-  // }
-  // if (uopts.integrator == "ARKODE_LSRK_SSP_10_4") { lsrk = true; }
-
   arkode_mem = ARKStepCreate(fe_rhs, fi_rhs, udata.t0, y, ctx);
   if (check_ptr(arkode_mem, "ARKStepCreate")) { return 1; }
 
   flag = ARKStepSetTableName(arkode_mem, uopts.IMintegrator.c_str(), uopts.EXintegrator.c_str()); 
   if (check_flag(flag, "ARKStepSetTableName")) { return 1; } 
-
-  // if (lsrk) // Setup LSRKStep
-  // {
-  //   // ARKODE memory structure
-  //   arkode_mem = LSRKStepCreateSSP(fe_rhs, udata.t0, y, ctx);
-  //   if (check_ptr(arkode_mem, "LSRKStepCreateSSP")) { return 1; }
-
-  //   // Select SSPRK method type
-  //   flag = LSRKStepSetSSPMethodByName(arkode_mem, uopts.integrator.c_str());
-  //   if (check_flag(flag, "LSRKStepSetSSPMethodByName")) { return 1; }
-
-  //   // Select number of SSPRK stages
-  //   if (uopts.stages > 0)
-  //   {
-  //     flag = LSRKStepSetNumSSPStages(arkode_mem, uopts.stages);
-  //     if (check_flag(flag, "LSRKStepSetNumSSPStages")) { return 1; }
-  //   }
-  //   else if (stages > 0)
-  //   {
-  //     flag = LSRKStepSetNumSSPStages(arkode_mem, stages);
-  //     if (check_flag(flag, "LSRKStepSetNumSSPStages")) { return 1; }
-  //   }
-  // }
-  // else
-  // { // Setup ERKStep
-
-  //   // ARKODE memory structure
-  //   arkode_mem = ERKStepCreate(fe_rhs, udata.t0, y, ctx);
-  //   if (check_ptr(arkode_mem, "ERKStepCreate")) { return 1; }
-
-  //   // Select ERK method
-  //   flag = ERKStepSetTableName(arkode_mem, uopts.integrator.c_str());
-  //   if (check_flag(flag, "ERKStepSetTableName")) { return 1; }
-  // }
 
   // Shared setup
 
@@ -169,9 +124,8 @@ int main(int argc, char* argv[])
   flag = ARKodeSetStopTime(arkode_mem, udata.tf);
   if (check_flag(flag, "ARKodeSetStopTime")) { return 1; }
 
-  // SUNLinearSolver LS = SUNLinSol_SPGMR(y, SUN_PREC_NONE, udata.nx, ctx);
-  SUNLinearSolver LS = SUNLinSol_SPBCGS(y, SUN_PREC_NONE, udata.nx, ctx);
-  // // SUNLinearSolver LS = SUNLinSol_SPGMR(y, maxl, udata.nx, ctx);
+  SUNLinearSolver LS = SUNLinSol_SPGMR(y, SUN_PREC_NONE, udata.nx, ctx);
+  // SUNLinearSolver LS = SUNLinSol_SPGMR(y, SUN_PREC_RIGHT, maxl, ctx);
   if (check_ptr(LS, "SUNLinSol_SPGMR")) { return 1; }
 
   // /* Linear solver interface */
@@ -217,6 +171,10 @@ int main(int argc, char* argv[])
     tout += dTout;
     tout = (tout > udata.tf) ? udata.tf : tout;
   }
+
+   /* compute the difference between E_eq and E (or pressure and density)*/
+  flag = L2error_norm(t, y, udata, uopts);
+  if (check_flag(flag, "L2error_norm")) { return 1; }
 
   // Close output
   flag = CloseOutput(uopts);
@@ -367,30 +325,10 @@ int fi_rhs(sunrealtype t, N_Vector y, N_Vector f, void* user_data)
   const sunrealtype gamma = udata->gamma; //SA
   sunrealtype* flux    = udata->flux;
 
-  sunrealtype inv_gamma_minus1 = ONE/(gamma-ONE);// 1/(gamma-1) //SA
-  sunrealtype inv_eps_stiff = ONE/eps_stiff; // 1/epsilon//SA
-
-  // compute face-centered fluxes over domain interior: pack 1D x-directional array
-  // of variable shortcuts, and compute flux at lower x-directional face
-  // for (long int i = 3; i < nx - 2; i++)
-  // {
-  //   udata->pack1D(rho, mx, my, mz, et, i);
-  //   face_flux(udata->w1d, &(flux[i * NSPECIES]), *udata);
-  // }
-
-  // compute face-centered fluxes at left boundary
-  // for (long int i = 0; i < 3; i++)
-  // {
-  //   udata->pack1D_bdry(rho, mx, my, mz, et, i);
-  //   face_flux(udata->w1d, &(flux[i * NSPECIES]), *udata);
-  // }
-
-  // compute face-centered fluxes at right boundary
-  // for (long int i = nx - 2; i <= nx; i++)
-  // {
-  //   udata->pack1D_bdry(rho, mx, my, mz, et, i);
-  //   face_flux(udata->w1d, &(flux[i * NSPECIES]), *udata);
-  // }
+  /* 1 / (gamma-1)  */
+  sunrealtype inv_gamma_minus1 = ONE/(gamma-ONE);
+  /* 1 / epsilon */
+  sunrealtype inv_eps_stiff = ONE/eps_stiff;     
 
   // iterate over subdomain, updating RHS
   for (long int i = 0; i < nx; i++)

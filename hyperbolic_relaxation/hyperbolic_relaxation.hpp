@@ -30,8 +30,7 @@
 #include "arkode/arkode_erkstep.h"
 #include "arkode/arkode_lsrkstep.h"
 #include <arkode/arkode_arkstep.h> //SA
-#include <sunlinsol/sunlinsol_spgmr.h>/* access to GMRES SUNLinearSolver *///SA
-#include <sunlinsol/sunlinsol_spbcgs.h> /* access to SPBCGS SUNLinearSolver            */
+#include <sunlinsol/sunlinsol_spgmr.h>/* access to GMRES SUNLinearSolver */
 #include "nvector/nvector_manyvector.h"
 #include "nvector/nvector_serial.h"
 #include "sundials/sundials_core.hpp"
@@ -61,24 +60,15 @@
 class ARKODEParameters
 {
 public:
-  // Integration method (ARKODE_LSRK_SSP_S_2, ARKODE_LSRK_SSP_S_3, ARKODE_LSRK_SSP_10_4,
-  // or any valid ARKODE_ERKTableID for ERK methods)
-  //Corresponding ERK_SSP methods of the above LSRK_SSP methods:
-  // (ARKODE_SSP_ERK_10_3_4, ARKODE_SSP_ERK_9_2_3, ARKODE_SSP_ERK_10_1_2)
-  // std::string integrator;
-
-  // implicit methods (ARKODE_SSP_SDIRK_2_1_2, ARKODE_SSP_DIRK_3_1_2,  
-  //                   ARKODE_SSP_LSPUM_SDIRK_3_1_2, ARKODE_SSP_ESDIRK_4_2_3)
-  // explicit methods (ARKODE_SSP_ERK_2_1_2,vARKODE_SSP_ERK_3_1_2,
-  //                   ARKODE_SSP_LSPUM_ERK_3_1_2, ARKODE_SSP_ERK_4_2_3)
+  // Integration methods: 
+  //                    implicit methods (ARKODE_SSP_SDIRK_2_1_2, ARKODE_SSP_DIRK_3_1_2,  
+  //                                      ARKODE_SSP_LSPUM_SDIRK_3_1_2, ARKODE_SSP_ESDIRK_4_2_3)
+  //                    explicit methods (ARKODE_SSP_ERK_2_1_2,vARKODE_SSP_ERK_3_1_2,
+  //                                      ARKODE_SSP_LSPUM_ERK_3_1_2, ARKODE_SSP_ERK_4_2_3)
 
   // Integration method
    std::string IMintegrator;
    std::string EXintegrator;
-
-  // Method stages (0 => to use the default; ignored if using ARKODE_LSRK_SSP_10_4 or
-  // an ERK method)
-  // int stages;
 
   // Relative and absolute tolerances
   sunrealtype rtol;
@@ -97,10 +87,8 @@ public:
 
   // constructor (with default values)
   ARKODEParameters()
-    // : integrator("ARKODE_LSRK_SSP_S_2"),
-    : IMintegrator("ARKODE_SSP_SDIRK_2_1_2"),
-      EXintegrator("ARKODE_SSP_ERK_2_1_2"),
-      // stages(0),
+    : IMintegrator("ARKODE_SSP_ESDIRK_4_2_3"),
+      EXintegrator("ARKODE_SSP_ERK_4_2_3"),
       rtol(SUN_RCONST(1.e-4)),
       atol(SUN_RCONST(1.e-11)),
       fixed_h(ZERO),
@@ -127,9 +115,9 @@ public:
   sunrealtype dx; // spatial mesh spacing
 
   ///// problem-defining data /////
-  sunrealtype gamma; // ratio of specific heat capacities, cp/cv
-  sunrealtype asq; //a = isothermal speed of sound //SA
-  sunrealtype eps_stiff; //stiffness parameter //SA
+  sunrealtype gamma;     // ratio of specific heat capacities, cp/cv
+  sunrealtype asq;       //a = isothermal speed of sound 
+  sunrealtype eps_stiff; //stiffness parameter 
 
   ///// reusable arrays for WENO flux calculations /////
   sunrealtype* flux;
@@ -141,12 +129,11 @@ public:
   EulerData()
     : nx(200),
       t0(ZERO),
-      // tf(SUN_RCONST(HALF)), 
       tf(SUN_RCONST(0.2)),
       xl(ZERO),
       xr(ONE),
-      asq(ONE), //SA
-      eps_stiff(1e-8), //SA
+      asq(ONE),
+      eps_stiff(1e-8),
       dx(ZERO),
       gamma(SUN_RCONST(1.4)),
       flux(nullptr){};
@@ -295,11 +282,6 @@ static void InputHelp()
 {
   std::cout << std::endl;
   std::cout << "Command line options:" << std::endl;
-  // std::cout << "  --integrator <str> : method (ARKODE_LSRK_SSP_S_2, "
-  //              "ARKODE_LSRK_SSP_S_3, "
-  //              "ARKODE_LSRK_SSP_10_4, or any valid ARKODE_ERKTableID)\n";
-  // std::cout << "  --stages <int>     : number of stages (ignored for "
-              //  "ARKODE_LSRK_SSP_10_4 and ERK)\n";
   std::cout << "  --IMintegrator <str> : method (ARKODE_SSP_SDIRK_2_1_2, "
               "ARKODE_SSP_DIRK_3_1_2, " 
               "ARKODE_SSP_LSPUM_SDIRK_3_1_2, or ARKODE_SSP_ESDIRK_4_2_3)\n";
@@ -402,10 +384,8 @@ static int ReadInputs(std::vector<std::string>& args, EulerData& udata,
   find_arg(args, "--nx", udata.nx);
 
   // Integrator options
-  // find_arg(args, "--integrator", uopts.integrator);
   find_arg(args, "--IMintegrator", uopts.IMintegrator);
   find_arg(args, "--EXintegrator", uopts.EXintegrator);
-  // find_arg(args, "--stages", uopts.stages);
   find_arg(args, "--rtol", uopts.rtol);
   find_arg(args, "--atol", uopts.atol);
   find_arg(args, "--fixed_h", uopts.fixed_h);
@@ -417,12 +397,6 @@ static int ReadInputs(std::vector<std::string>& args, EulerData& udata,
   udata.dx = (udata.xr - udata.xl) / ((sunrealtype)udata.nx);
   if (udata.flux) { delete[] udata.flux; }
   udata.flux = new sunrealtype[NSPECIES * (udata.nx + 1)];
-
-  // if (uopts.stages < 0)
-  // {
-  //   std::cerr << "ERROR: Invalid number of stages" << std::endl;
-  //   return -1;
-  // }
 
   return 0;
 }
@@ -443,13 +417,8 @@ static int PrintSetup(EulerData& udata, ARKODEParameters& uopts)
   std::cout << "  nx           = " << udata.nx << std::endl;
   std::cout << "  dx           = " << udata.dx << std::endl;
   std::cout << " --------------------------------- " << std::endl;
-  // std::cout << "  integrator   = " << uopts.integrator << std::endl;
   std::cout << "  IMintegrator = " << uopts.IMintegrator << std::endl;
   std::cout << "  EXintegrator = " << uopts.EXintegrator << std::endl;
-  // if (uopts.stages > 0)
-  // {
-  //   std::cout << "  stages     = " << uopts.stages << std::endl;
-  // }
   std::cout << "  rtol         = " << uopts.rtol << std::endl;
   std::cout << "  atol         = " << uopts.atol << std::endl;
   std::cout << "  fixed h      = " << uopts.fixed_h << std::endl;
@@ -549,6 +518,50 @@ static int WriteOutput(sunrealtype t, N_Vector y, EulerData& udata,
       }
       uopts.uout << std::endl;
     }
+  }
+
+  return 0;
+}
+
+static int L2error_norm(sunrealtype t, N_Vector y, EulerData& udata,
+                       ARKODEParameters& uopts)
+{
+  if (uopts.output)
+  {
+    // Compute rms norm of the state
+    N_Vector rho       = N_VGetSubvector_ManyVector(y, 0);
+    N_Vector mx        = N_VGetSubvector_ManyVector(y, 1);
+    N_Vector my        = N_VGetSubvector_ManyVector(y, 2);
+    N_Vector mz        = N_VGetSubvector_ManyVector(y, 3);
+    N_Vector et        = N_VGetSubvector_ManyVector(y, 4);
+    N_Vector prz       = N_VClone(rho); //pressure
+
+    sunrealtype* rhodata = N_VGetArrayPointer(rho);
+    if (check_ptr(rhodata, "N_VGetArrayPointer")) { return -1; }
+    sunrealtype* mxdata = N_VGetArrayPointer(mx);
+    if (check_ptr(mxdata, "N_VGetArrayPointer")) { return -1; }
+    sunrealtype* mydata = N_VGetArrayPointer(my);
+    if (check_ptr(mydata, "N_VGetArrayPointer")) { return -1; }
+    sunrealtype* mzdata = N_VGetArrayPointer(mz);
+    if (check_ptr(mzdata, "N_VGetArrayPointer")) { return -1; }
+    sunrealtype* etdata = N_VGetArrayPointer(et);
+    if (check_ptr(etdata, "N_VGetArrayPointer")) { return -1; }
+    sunrealtype* przdata = N_VGetArrayPointer(prz);
+    if (check_ptr(przdata, "N_VGetArrayPointer")) { return -1; }
+
+    for (int i = 0; i < udata.nx; i++){
+      przdata[i] = udata.eos(rhodata[i], mxdata[i], mydata[i], mzdata[i], etdata[i]);
+    }
+    for (int i = 0; i < udata.nx; i++){
+      printf("difference error %f\n", SUNRabs(rhodata[i] - przdata[i]));
+    }
+
+    sunrealtype error_sum = 0.0;
+    for (int i = 0; i < udata.nx; i++){
+      error_sum = error_sum + SUNRpowerI((rhodata[i] - przdata[i]),2);
+    }
+    error_sum = SUNRsqrt(error_sum / udata.nx);
+    printf("error final %e\n", error_sum );
   }
 
   return 0;
