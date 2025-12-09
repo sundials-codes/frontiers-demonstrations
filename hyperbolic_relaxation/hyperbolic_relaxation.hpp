@@ -586,7 +586,7 @@ static int CloseOutput(ARKODEParameters& uopts)
   // Close output streams
   if (uopts.output >= 2) 
   { 
-    uopts.uout << "# nstepsmax " << uopts.nstepsmax << std::endl;
+    // uopts.uout << "# nstepsmax " << uopts.nstepsmax << std::endl;
     uopts.uout.close(); 
   }
 

@@ -172,8 +172,8 @@ int main(int argc, char* argv[])
   }
 
   /* total number of steps used in run */
-  ARKodeGetNumSteps(arkode_mem, &nsteps);
-  uopts.nstepsmax = nsteps;
+  // ARKodeGetNumSteps(arkode_mem, &nsteps);
+  // uopts.nstepsmax = nsteps;
 
   /* compute the difference between E_eq and E (or difference between pressure and density)*/
   flag = L2error_norm(t, y, udata, uopts);

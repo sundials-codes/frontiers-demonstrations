@@ -42,9 +42,9 @@ with open(datafile, "r") as file:
     nx = int((lines.pop(0).split())[2])
     xl = float((lines.pop(0).split())[2])
     xr = float((lines.pop(0).split())[2])
-    lastline  = (lines[-1])
-    num_steps = lastline.split()
-    nsteps    = int(num_steps[2]) # total number of steps taken
+    # lastline  = (lines[-1])
+    # num_steps = lastline.split()
+    # nsteps    = int(num_steps[2]) # total number of steps taken
 
     # allocate solution data as 2D Python arrays
     t = np.zeros((nt), dtype=float)
@@ -66,7 +66,7 @@ with open(datafile, "r") as file:
             mz[it, ix] = line.pop(0)
             et[it, ix] = line.pop(0)
 
-przdata     = np.zeros((nx), dtype=float)
+przdata = np.zeros((nx), dtype=float)
 rhodata = np.zeros((nx), dtype=float)
 for i in range(nx):
     przdata[i] = (1.4-1.0) * (et[nt-1, i] - (mx[nt-1, i] * mx[nt-1, i] + my[nt-1, i] * my[nt-1, i] + mz[nt-1, i] * mz[nt-1, i]) * 0.5 / rho[nt-1, i])
@@ -89,6 +89,6 @@ plt.xlabel('x')
 plt.ylabel('pressure / density')
 plt.legend()
 
-plt.show()
+plt.close()
 
 ##### end of script #####
