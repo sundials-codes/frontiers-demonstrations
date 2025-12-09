@@ -79,6 +79,7 @@ public:
 
   // Maximum number of time steps between outputs
   int maxsteps;
+  long int nstepsmax;
 
   // Output-related information
   int output;         // 0 = none, 1 = stats, 2 = disk, 3 = disk with tstop
@@ -93,6 +94,7 @@ public:
       atol(SUN_RCONST(1.e-11)),
       fixed_h(ZERO),
       maxsteps(10000),
+      nstepsmax(10000),
       output(1),
       nout(10){};
 
@@ -463,10 +465,10 @@ static int OpenOutput(EulerData& udata, ARKODEParameters& uopts)
     uopts.uout << "# title Linear Advection" << std::endl;
     uopts.uout << "# nvar 5" << std::endl;
     uopts.uout << "# vars rho mx my mz et" << std::endl;
-    uopts.uout << "# nt " << uopts.nout + 1 << std::endl;
-    uopts.uout << "# nx " << udata.nx << std::endl;
-    uopts.uout << "# xl " << udata.xl << std::endl;
-    uopts.uout << "# xr " << udata.xr << std::endl;
+    uopts.uout << "# nt "     << uopts.nout + 1 << std::endl;
+    uopts.uout << "# nx "     << udata.nx << std::endl;
+    uopts.uout << "# xl "     << udata.xl << std::endl;
+    uopts.uout << "# xr "     << udata.xr << std::endl;
   }
 
   return 0;
@@ -555,10 +557,14 @@ static int L2error_norm(sunrealtype t, N_Vector y, EulerData& udata,
 
     sunrealtype error_sum = 0.0;
     for (int i = 0; i < udata.nx; i++){
-      error_sum = error_sum + SUNRpowerI((rhodata[i] - przdata[i]),2);
+      error_sum = error_sum + (rhodata[i] - przdata[i]) * (rhodata[i] - przdata[i]);
     }
     error_sum = SUNRsqrt(error_sum / udata.nx);
-    printf("error final %e\n", error_sum );
+    std::cout
+      << " -----------------------------------------------------------------"
+         "---------"
+      << std::endl;
+    printf("  L2 error norm = %e\n", error_sum);
   }
 
   return 0;
@@ -578,7 +584,11 @@ static int CloseOutput(ARKODEParameters& uopts)
   }
 
   // Close output streams
-  if (uopts.output >= 2) { uopts.uout.close(); }
+  if (uopts.output >= 2) 
+  { 
+    uopts.uout << "# nstepsmax " << uopts.nstepsmax << std::endl;
+    uopts.uout.close(); 
+  }
 
   return 0;
 }

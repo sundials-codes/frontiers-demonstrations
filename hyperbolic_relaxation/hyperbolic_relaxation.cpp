@@ -19,6 +19,7 @@
  *  U    = [rho    rho*u       e]
  *  F(U) = [rho*u  rho*u^2+p  (e+p)*u]
  *  R(U) = [0      0          e_eq - e]
+ * 
  *  where rho, rho*u and E are the density, momentum and total energy, respectively, 
  *  epsilon is the stiffness parameter. 
  *
@@ -55,6 +56,8 @@ int main(int argc, char* argv[])
 {
   // SUNDIALS context object for this simulation
   sundials::Context ctx;
+
+  long int nsteps;
 
   // -----------------
   // Setup the problem
@@ -168,7 +171,12 @@ int main(int argc, char* argv[])
     tout = (tout > udata.tf) ? udata.tf : tout;
   }
 
-   /* compute the difference between E_eq and E (or pressure and density)*/
+  /* total number of steps used in run */
+  ARKodeGetNumSteps(arkode_mem, &nsteps);
+  uopts.nstepsmax = nsteps;
+  // printf("  Number of Time Steps Taken: %ld %ld\n", nsteps, uopts.nstepsmax);
+
+  /* compute the difference between E_eq and E (or difference between pressure and density)*/
   flag = L2error_norm(t, y, udata, uopts);
   if (check_flag(flag, "L2error_norm")) { return 1; }
 
