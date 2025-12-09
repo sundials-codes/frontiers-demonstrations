@@ -1,5 +1,5 @@
 /* -----------------------------------------------------------------------------
- * Programmer(s): Daniel R. Reynolds and Sylvia Amihere @ SMU
+ * Programmer(s): Sylvia Amihere and Daniel R. Reynolds @ SMU
  * -----------------------------------------------------------------------------
  * SUNDIALS Copyright Start
  * Copyright (c) 2002-2024, Lawrence Livermore National Security
@@ -174,7 +174,6 @@ int main(int argc, char* argv[])
   /* total number of steps used in run */
   ARKodeGetNumSteps(arkode_mem, &nsteps);
   uopts.nstepsmax = nsteps;
-  // printf("  Number of Time Steps Taken: %ld %ld\n", nsteps, uopts.nstepsmax);
 
   /* compute the difference between E_eq and E (or difference between pressure and density)*/
   flag = L2error_norm(t, y, udata, uopts);
