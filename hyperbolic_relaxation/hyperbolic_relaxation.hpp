@@ -1,5 +1,5 @@
 /* -----------------------------------------------------------------------------
- * Programmer(s): Daniel R. Reynolds and Sylvia Amihere @ SMU
+ * Programmer(s): Sylvia Amihere and Daniel R. Reynolds @ SMU
  * -----------------------------------------------------------------------------
  * SUNDIALS Copyright Start
  * Copyright (c) 2002-2024, Lawrence Livermore National Security
@@ -63,7 +63,7 @@ public:
   // Integration methods: 
   //                    implicit methods (ARKODE_SSP_SDIRK_2_1_2, ARKODE_SSP_DIRK_3_1_2,  
   //                                      ARKODE_SSP_LSPUM_SDIRK_3_1_2, ARKODE_SSP_ESDIRK_4_2_3)
-  //                    explicit methods (ARKODE_SSP_ERK_2_1_2,vARKODE_SSP_ERK_3_1_2,
+  //                    explicit methods (ARKODE_SSP_ERK_2_1_2, ARKODE_SSP_ERK_3_1_2,
   //                                      ARKODE_SSP_LSPUM_ERK_3_1_2, ARKODE_SSP_ERK_4_2_3)
 
   // Integration method
@@ -551,9 +551,6 @@ static int L2error_norm(sunrealtype t, N_Vector y, EulerData& udata,
 
     for (int i = 0; i < udata.nx; i++){
       przdata[i] = udata.eos(rhodata[i], mxdata[i], mydata[i], mzdata[i], etdata[i]);
-    }
-    for (int i = 0; i < udata.nx; i++){
-      printf("difference error %f\n", SUNRabs(rhodata[i] - przdata[i]));
     }
 
     sunrealtype error_sum = 0.0;

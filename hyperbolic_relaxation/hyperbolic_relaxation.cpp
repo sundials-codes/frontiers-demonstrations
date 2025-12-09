@@ -11,13 +11,23 @@
  * SPDX-License-Identifier: BSD-3-Clause
  * SUNDIALS Copyright End
  * -----------------------------------------------------------------------------
- * This example performs a 1D linear advection problem
- *    [rho, u, v, w, p] = { [1, 1, 0, 0, 1],     if 0.25 <= x <= 0.5
- *                        { [0.01, 1, 0, 0, 1],  otherwise
- *    e(x) = p(x)/(gamma - 1) + 0.5*(u^2)
+ * This example performs a 1D hyperbolic equation with a stiff relaxation term.
+ * This is a modification of the 1D Euler equation with conserved quanties for 
+ * an ideal gas (Embedded pairs for optimal explicit strong stability
+ * preserving Runge–Kutta methods (2022) by Fekete et.al.)
+ *  U_t + F(U)_x = (1 / epsilon)*R(U)
+ *  U    = [rho    rho*u       e]
+ *  F(U) = [rho*u  rho*u^2+p  (e+p)*u]
+ *  R(U) = [0      0          e_eq - e]
+ *  where rho, rho*u and E are the density, momentum and total energy, respectively, 
+ *  epsilon is the stiffness parameter. 
+ *
+ *    e(x)    = p(x)/(gamma - 1) + 0.5*(u^2)
+ *    p(x)    = (gamma - 1)(e - 0.5*rho*u^2)
+ *    e_eq(x) = a^2*rho/(gamma - 1) + 0.5*rho*u^2
  *
  * The code solves the 1D compressible Euler equations in conserved variables,
- * over the domain (t,x) in [0, 0.5] x [0, 1].
+ * over the domain (t,x) in [0, 0.5] x [0, 1] with a stiff relaxation term, R(U).
  *
  * Since the Linear Advection is specified in terms of primitive variables, we
  * convert between primitive and conserved variables for the initial conditions
@@ -25,25 +35,14 @@
  *
  * This problem should be run with homogeneous Neumann boundary conditions.
  *
- * The system is advanced in time using one of the strong-stability-preserving
- * Runge--Kutta methods from LSRKStep, based on the --integrator METHOD input
- * value. The following options are available:
+ * The system is advanced in time using one of implicit-explicit 
+ * strong-stability-preserving (IMEX SSP) Runge--Kutta methods. 
+ * The following options are available:
  *
- *   SSPRK(s,2) -- specified via METHOD = ARKODE_LSRK_SSP_S_2.  The number of
- *                 stages to use defaults to 10.
- *
- *   SSPRK(s,3) -- specified via METHOD = ARKODE_LSRK_SSP_S_3.  The number of
- *                 stages to use defaults to 9.
- *
- *   SSPRK(10,4) -- specified via METHOD = ARKODE_LSRK_SSP_10_4.
- *
- * Both the SSPRK(s,2) and SSPRK(s,3) methods allow specification of a
- * non-default number of stages.  This may be specified using the --stages S
- * input value, where S is an integer.  Note: SSPRK(s,2) requires S at least
- * 2, and SSPRK(s,3) requires S be a perfect square, with S at least 4.
- *
- * Alternately, if METHOD corresponds with a valid ARKODE_ERKTableID then
- * the system will be advanced using that method in ERKStep.
+ *   SSP-ARK-2-1-2:       ARKODE_SSP_SDIRK_2_1_2       + ARKODE_SSP_SDIRK_2_1_2
+ *   SSP-ARK-3-1-2:       ARKODE_SSP_DIRK_3_1_2        + ARKODE_SSP_DIRK_3_1_2
+ *   SSP-LSPUM-ARK-3-1-2: ARKODE_SSP_LSPUM_SDIRK_3_1_2 + ARKODE_SSP_LSPUM_SDIRK_3_1_2
+ *   SSP-ARK-4-2-3:       ARKODE_SSP_ESDIRK_4_2_3      + ARKODE_SSP_ESDIRK_4_2_3 
  *
  * Several additional command line options are available to change the
  * and integrator settings. Use the flag --help for more information.
@@ -56,8 +55,6 @@ int main(int argc, char* argv[])
 {
   // SUNDIALS context object for this simulation
   sundials::Context ctx;
-
-  // int maxl = 10
 
   // -----------------
   // Setup the problem
@@ -125,7 +122,6 @@ int main(int argc, char* argv[])
   if (check_flag(flag, "ARKodeSetStopTime")) { return 1; }
 
   SUNLinearSolver LS = SUNLinSol_SPGMR(y, SUN_PREC_NONE, udata.nx, ctx);
-  // SUNLinearSolver LS = SUNLinSol_SPGMR(y, SUN_PREC_RIGHT, maxl, ctx);
   if (check_ptr(LS, "SUNLinSol_SPGMR")) { return 1; }
 
   // /* Linear solver interface */
