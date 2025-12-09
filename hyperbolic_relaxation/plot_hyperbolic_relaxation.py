@@ -66,10 +66,11 @@ with open(datafile, "r") as file:
             mz[it, ix] = line.pop(0)
             et[it, ix] = line.pop(0)
 
+gamma = 7.0/5.0
 przdata = np.zeros((nx), dtype=float)
 rhodata = np.zeros((nx), dtype=float)
 for i in range(nx):
-    przdata[i] = (1.4-1.0) * (et[nt-1, i] - (mx[nt-1, i] * mx[nt-1, i] + my[nt-1, i] * my[nt-1, i] + mz[nt-1, i] * mz[nt-1, i]) * 0.5 / rho[nt-1, i])
+    przdata[i] = (gamma-1.0) * (et[nt-1, i] - (mx[nt-1, i] * mx[nt-1, i] + my[nt-1, i] * my[nt-1, i] + mz[nt-1, i] * mz[nt-1, i]) * 0.5 / rho[nt-1, i])
 #end
 for i in range(nx):
     rhodata[i] = rho[nt-1, i]
@@ -88,7 +89,7 @@ plt.plot(x, rhodata, marker='x', markersize=6, linestyle='-',  color='blue', lab
 plt.xlabel('x')
 plt.ylabel('pressure / density')
 plt.legend()
-
-plt.close()
+plt.savefig("hyperbolic_relaxation_frames.png")
+# plt.show()
 
 ##### end of script #####

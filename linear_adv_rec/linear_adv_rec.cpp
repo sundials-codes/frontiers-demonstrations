@@ -217,6 +217,9 @@ int main(int argc, char* argv[])
   if (check_flag(&flag, "ARKodeSetMaxNumSteps", 1)) { return 1; }
   flag = ARKodeSStolerances(arkode_mem, uopts.rtol, uopts.atol);
   if (check_flag(&flag, "ARKodeSStolerances", 1)) { return 1; }
+  /* Tighten nonlinear solver tolerance */
+  flag = ARKodeSetNonlinConvCoef(arkode_mem, SUN_RCONST(0.01));
+  if (check_flag(&flag, "ARKodeSetNonlinConvCoef", 1)) { return 1; }
 
   /*Keep original butcher tableau or swap b-vectors of method and its embedding*/
   if (udata.swap_type == "nonswap"){

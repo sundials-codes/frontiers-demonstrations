@@ -38,8 +38,8 @@ def runtest(solver, modetype, runV, k1Val, k2Val, showcommand=True):
     Output: returns the statistics
     """
     stats = {'Runtype': modetype,'ReturnCode': 0, 'IMEX_method': solver['name'], 'runVal': runV, 
-             'k1': k1Val, 'k2': k2Val, 'runtime':0.0, 'Steps': 0, 'StepAttempts': 0, 
-             'ErrTestFails': 0, 'Explicit_RHS': 0, 'Implicit_RHS': 0,  'L1_norm': 0.0}
+             'k1': k1Val, 'k2': k2Val, 'Steps': 0, 'StepAttempts': 0, 'ErrTestFails': 0,
+             'Explicit_RHS': 0, 'Implicit_RHS': 0,  'L1_norm': 0.0, 'runtime':0.0}
 
     if (modetype == "adaptive"):
         runcommand = " %s  --rtol %e  --k1 %e  --k2 %e" % (solver['exe'], runV, k1Val, k2Val)

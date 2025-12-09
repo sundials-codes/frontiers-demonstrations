@@ -37,7 +37,7 @@ def runtest(solver, modetype, runV, showcommand=True, sspcommand=True):
     """
     stats = {'Runtype': modetype,'ReturnCode': 0, 'IMEX_method': solver['name'], 'runVal': runV,
             'Steps': 0, 'StepAttempts': 0, 'ErrTestFails': 0, 'Explicit_RHS': 0, 'Implicit_RHS': 0, 
-            'runtime':0.0, 'l2_error': 0.0}
+            'l2_error': 0.0, 'runtime':0.0}
 
     if (modetype == "adaptive"):
         runcommand = " %s  --rtol %e --output 2" % (solver['exe'], runV)
@@ -58,7 +58,7 @@ def runtest(solver, modetype, runV, showcommand=True, sspcommand=True):
      # If SUNDIALS failed  
     sundials_failed = False
     for line in stderr_lines:
-        if ("the error test failed repeatedly" in line):
+        if (("test failed repeatedly" in line) or ("mxstep steps taken before reaching tout" in line)):
             sundials_failed = True
     if sundials_failed == True:
         stats['ReturnCode']       = 1
@@ -86,9 +86,20 @@ def runtest(solver, modetype, runV, showcommand=True, sspcommand=True):
             elif (("L2" in txt) and ("error" in txt) and ("norm" in txt)):
                 stats['l2_error'] = float(txt[4])   #right hand side evaluations for implicit method
 
-    # ## running python file to plot pressure and density
-    # sspcommand = " python ./plot_hyperbolic_relaxation.py"
-    # ssp_result = subprocess.run(shlex.split(sspcommand), stdout=subprocess.PIPE)    
+            ## running python file to plot pressure and density
+        sspcommand = " python ./plot_hyperbolic_relaxation.py"
+        ssp_result = subprocess.run(shlex.split(sspcommand), stdout=subprocess.PIPE) 
+
+        if (sspcommand):
+            print("Run solution graph: " + sspcommand + " SUCCESS")
+            new_fileName = f"soln_graph_{solver['name']}_{runV}.png"
+
+            ## rename plot file
+            if os.path.exists("hyperbolic_relaxation_frames.png"):
+                os.rename("hyperbolic_relaxation_frames.png", new_fileName)
+                print(f"Plot saved as: {new_fileName}")
+            else:
+                print("Warning: hyperbolic_relaxation_frames.png not found.")   
         
     return stats
 ## end of function

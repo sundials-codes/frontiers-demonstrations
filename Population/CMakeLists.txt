@@ -6,11 +6,11 @@ set(sources population_density.cpp)
 
 #   extra installation files
 set(extras
-    runtest_population_refSol.py
-    runtest_population_imex.py
+    runtests_population_refSol.py
+    runtests_population_imex.py
     plot_population.py
     plot_population_finalStepSoln.py
-    runtest_population_adaptLog.py
+    runtests_population_adaptLog.py
     run-all-population-tests.sh)
 
 #   set the target name

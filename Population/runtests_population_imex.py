@@ -38,7 +38,7 @@ def runtest(solver, modetype, runV, kVal, showcommand=True, sspcommand=True):
     """
     stats = {'Runtype': modetype,'ReturnCode': 0, 'IMEX_method': solver['name'], 'diff_coef': kVal, 'runVal': runV,
             'Steps': 0, 'StepAttempts': 0, 'ErrTestFails': 0, 'Explicit_RHS': 0, 'Implicit_RHS': 0, 'Total Func Eval':0,
-            'maxIntStep': 0.0, 'Nonlinear_Solves':0, 'Negative_model': 0, 'runtime':0.0, 'lmax_1dev': 0.0, 'error': 0.0,
+            'maxIntStep': 0.0, 'Nonlinear_Solves':0, 'Negative_model': 0, 'lmax_1dev': 0.0, 'error': 0.0, 'runtime':0.0,
             'sspCondition': " "}
 
     if (modetype == "adaptive"):
@@ -62,7 +62,7 @@ def runtest(solver, modetype, runV, kVal, showcommand=True, sspcommand=True):
      # If SUNDIALS failed  
     sundials_failed = False
     for line in stderr_lines:
-        if ("the error test failed repeatedly" in line):
+        if ("test failed repeatedly" in line):
             sundials_failed = True
     if sundials_failed == True:
         stats['ReturnCode']       = 1
@@ -101,45 +101,45 @@ def runtest(solver, modetype, runV, kVal, showcommand=True, sspcommand=True):
         stats['Negative_model'] = sum_negLines               #right hand side evaluations for implicit method
         stats['Total Func Eval'] = stats['Implicit_RHS'] + stats['Explicit_RHS']
 
-    ## running python file to determine the if the graph is smooth and positive or not (ssp condition)
-    sspcommand = " python ./plot_population.py"
-    ssp_result = subprocess.run(shlex.split(sspcommand), stdout=subprocess.PIPE)
-    # if (sspcommand):
-    #         print("Run solution graph: " + sspcommand + " SUCCESS")
-    #         new_fileName = f"soln_graph_{solver['name']}_{runN}_{kName}.png"
+        ## running python file to determine the if the graph is smooth and positive or not (ssp condition)
+        sspcommand = " python ./plot_population.py"
+        ssp_result = subprocess.run(shlex.split(sspcommand), stdout=subprocess.PIPE)
+        # if (sspcommand):
+        #         print("Run solution graph: " + sspcommand + " SUCCESS")
+        #         new_fileName = f"soln_graph_{solver['name']}_{runN}_{kName}.png"
 
-    #         ## rename plot file
-    #         if os.path.exists("populationModel_frames.png"):
-    #             os.rename("populationModel_frames.png", new_fileName)
-    #             print(f"Plot saved as: {new_fileName}")
-    #         else:
-    #             print("Warning: populationModel_frames.png not found.")
+        #         ## rename plot file
+        #         if os.path.exists("populationModel_frames.png"):
+        #             os.rename("populationModel_frames.png", new_fileName)
+        #             print(f"Plot saved as: {new_fileName}")
+        #         else:
+        #             print("Warning: populationModel_frames.png not found.")
 
-    pylines = str(ssp_result.stdout).split()
-    lmax_1dev = float(pylines[8].replace('\\nLmax', ''))
-    lmax_error = float(pylines[13].replace("\\n'", ''))
+        pylines = str(ssp_result.stdout).split()
+        lmax_1dev = float(pylines[8].replace('\\nLmax', ''))
+        lmax_error = float(pylines[13].replace("\\n'", ''))
 
-    stats['lmax_1dev'] = lmax_1dev #lmax val for first derivative
-    stats['error']     = lmax_error # lmax error after comparing solution at final time step with reference solution
+        stats['lmax_1dev'] = lmax_1dev #lmax val for first derivative
+        stats['error']     = lmax_error # lmax error after comparing solution at final time step with reference solution
 
-    # # assessing SSPness based on positivity at all time steps and smooth profile at final time step
-    # if (kVal==0.02) and (lmax_1dev >= 1.2) and (lmax_1dev <= 1.7) and (stats['Negative_model'] == 0):
-    #     stats['sspCondition'] = str('ssp')
-    #     ssp_cond = 0
-    # elif (kVal==0.04) and (lmax_1dev >= 0.7) and (lmax_1dev <= 1.5) and (stats['Negative_model'] == 0):
-    #     stats['sspCondition'] = str('ssp')
-    #     ssp_cond = 0
-    # else:
-    #     stats['sspCondition'] = str('not ssp')  
-    #     ssp_cond = 1   
+        # # assessing SSPness based on positivity at all time steps and smooth profile at final time step
+        # if (kVal==0.02) and (lmax_1dev >= 1.2) and (lmax_1dev <= 1.7) and (stats['Negative_model'] == 0):
+        #     stats['sspCondition'] = str('ssp')
+        #     ssp_cond = 0
+        # elif (kVal==0.04) and (lmax_1dev >= 0.7) and (lmax_1dev <= 1.5) and (stats['Negative_model'] == 0):
+        #     stats['sspCondition'] = str('ssp')
+        #     ssp_cond = 0
+        # else:
+        #     stats['sspCondition'] = str('not ssp')  
+        #     ssp_cond = 1   
 
-    # assessing SSPness based on positivity at all time steps
-    if (stats['Negative_model'] == 0):
-        stats['sspCondition'] = str('ssp')
-        ssp_cond = 0
-    else:
-        stats['sspCondition'] = str('not ssp')  
-        ssp_cond = 1      
+        # assessing SSPness based on positivity at all time steps
+        if (stats['Negative_model'] == 0):
+            stats['sspCondition'] = str('ssp')
+            ssp_cond = 0
+        else:
+            stats['sspCondition'] = str('not ssp')  
+            ssp_cond = 1      
         
     return stats, ssp_cond
 ## end of function
