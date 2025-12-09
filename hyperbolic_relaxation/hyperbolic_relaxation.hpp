@@ -557,7 +557,7 @@ static int L2error_norm(sunrealtype t, N_Vector y, EulerData& udata,
 
     sunrealtype error_sum = 0.0;
     for (int i = 0; i < udata.nx; i++){
-      error_sum = error_sum + (rhodata[i] - przdata[i]) * (rhodata[i] - przdata[i]);
+      error_sum = error_sum + SUNRpowerI((rhodata[i] - przdata[i]),2);
     }
     error_sum = SUNRsqrt(error_sum / udata.nx);
     std::cout
