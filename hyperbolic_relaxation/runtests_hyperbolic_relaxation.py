@@ -61,6 +61,7 @@ def runtest(solver, modetype, runV, showcommand=True, sspcommand=True):
         if (("test failed repeatedly" in line) or ("mxstep steps taken before reaching tout" in line)):
             sundials_failed = True
     if sundials_failed == True:
+        print("Running: " + runcommand + " FAILED")
         stats['ReturnCode']       = 1
         stats['Steps']            = 0
         stats['StepAttempts']     = 0
@@ -113,7 +114,7 @@ SSP_ARK_423       = "./hyperbolic_relaxation  --IMintegrator ARKODE_SSP_ESDIRK_4
 
 adaptive_params = [1e-5, 1e-4, 1e-3, 1e-2, 1e-1] ## relative tolerances
 fixed_params    = [] # fixed time step sizes
-for i in range(10,-1,-1):
+for i in range(8,-1,-1):
     fixed_params.append(0.001/(2.0**i))
 
 
