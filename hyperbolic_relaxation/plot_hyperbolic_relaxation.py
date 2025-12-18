@@ -66,15 +66,18 @@ with open(datafile, "r") as file:
             mz[it, ix] = line.pop(0)
             et[it, ix] = line.pop(0)
 
-gamma = 7.0/5.0
-przdata = np.zeros((nx), dtype=float)
-rhodata = np.zeros((nx), dtype=float)
+gamma   = 7.0/5.0
+przdata = np.zeros((nx), dtype=float) #pressure
+rhodata = np.zeros((nx), dtype=float) #density
+veldata = np.zeros((nx), dtype=float) #velocity
+eknot   = np.ones((nx),  dtype=float) #e_{0}
+etdiff  = np.zeros((nx), dtype=float) #E - E_{0}
 for i in range(nx):
     przdata[i] = (gamma-1.0) * (et[nt-1, i] - (mx[nt-1, i] * mx[nt-1, i] + my[nt-1, i] * my[nt-1, i] + mz[nt-1, i] * mz[nt-1, i]) * 0.5 / rho[nt-1, i])
-#end
-for i in range(nx):
     rhodata[i] = rho[nt-1, i]
-#end
+    veldata[i] = mx[nt-1, i]/rho[nt-1, i]
+    etdiff[i] = ( (et[nt-1, i]/rho[nt-1, i]) - 0.5 * ((mx[nt-1, i]/rho[nt-1, i])**2) ) - eknot[i] 
+# end
 
 # confirm the L2 error norm for (p - rho)
 # sumerror = 0.0
@@ -83,13 +86,45 @@ for i in range(nx):
 # l2error = np.sqrt(sumerror/nx)
 # print("L2 error norm: %.6e" %l2error)
 
-plt.plot(x, przdata, marker='o', markersize=6, linestyle='-.', color='red',  label="pressure", linewidth=0.8)
-plt.plot(x, rhodata, marker='x', markersize=6, linestyle='-',  color='blue', label="density",  linewidth=0.8)
+fig = plt.figure(figsize=(10, 5))
+gs  = GridSpec(2, 2, figure=fig)
 
-plt.xlabel('x')
-plt.ylabel('pressure / density')
+## density 
+ax00 = fig.add_subplot(gs[0, 0])  
+ax00.plot(x, rhodata, marker='x', markersize=6, linestyle='-',  color='blue', label="density",  linewidth=0.8)
+ax00.set_ylabel(r"density")
+ax00.set_xlabel(r"x")
+# ax00.set_xticks(np.linspace(0,1,11))
+# ax00.set_yticks(np.linspace(0.1,1.1,11))
 plt.legend()
+
+## pressure
+ax01 = fig.add_subplot(gs[0, 1]) 
+ax01.plot(x, przdata, marker='o', markersize=6, linestyle='-.', color='red',  label="pressure", linewidth=0.8)
+ax01.set_ylabel(r"pressure")
+ax01.set_xlabel(r"x")
+# ax01.set_xticks(np.linspace(0,1,11))
+# ax01.set_yticks(np.linspace(0.05,0.45,9))
+plt.legend()
+
+## velocity
+ax03 = fig.add_subplot(gs[1, 0]) 
+ax03.plot(x, veldata, marker='s', markersize=6, linestyle='--', color='black',  label="velocity", linewidth=0.8)
+ax03.set_ylabel(r"velocity")
+ax03.set_xlabel(r"x")
+# ax03.set_xticks(np.linspace(0,1,11))
+# ax03.set_yticks(np.linspace(-0.1,0.6,8))
+plt.legend()
+
+## E - E_{0}
+ax04 = fig.add_subplot(gs[1, 1]) 
+ax04.plot(x, etdiff, marker='+', markersize=6, linestyle=':', color='green',  label="$E - E_{0}$", linewidth=0.8)
+ax04.set_ylabel(r"$E - E_{0}$")
+ax04.set_xlabel(r"x")
+# ax04.set_xticks(np.linspace(0,1,11))
+plt.legend()
+
 plt.savefig("hyperbolic_relaxation_frames.png")
-# plt.show()
+plt.show()
 
 ##### end of script #####

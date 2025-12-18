@@ -84,8 +84,8 @@ def runtest(solver, modetype, runV, showcommand=True, sspcommand=True):
                 stats['Explicit_RHS'] = int(txt[5])       #right hand side evaluations for explicit method
             elif (("Implicit" in txt) and ("RHS" in txt)):
                 stats['Implicit_RHS'] = int(txt[5])       #right hand side evaluations for implicit method
-            elif (("L2" in txt) and ("error" in txt) and ("norm" in txt)):
-                stats['l2_error'] = float(txt[4])   #right hand side evaluations for implicit method
+            # elif (("L2" in txt) and ("error" in txt) and ("norm" in txt)):
+            #     stats['l2_error'] = float(txt[4])   #l2 error for the differenc ebetween the 
 
             ## running python file to plot pressure and density
         sspcommand = " python ./plot_hyperbolic_relaxation.py"
@@ -115,7 +115,7 @@ SSP_ARK_423       = "./hyperbolic_relaxation  --IMintegrator ARKODE_SSP_ESDIRK_4
 adaptive_params = [1e-5, 1e-4, 1e-3, 1e-2, 1e-1] ## relative tolerances
 fixed_params    = [] # fixed time step sizes
 for i in range(8,-1,-1):
-    fixed_params.append(0.001/(2.0**i))
+    fixed_params.append(0.002/(2.0**i))
 
 
 ## ----------------------------------------------------------------------------------------------------

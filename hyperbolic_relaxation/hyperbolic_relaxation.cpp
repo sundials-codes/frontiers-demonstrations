@@ -15,20 +15,25 @@
  * This is a modification of the 1D Euler equation with conserved quanties for 
  * an ideal gas (Embedded pairs for optimal explicit strong stability
  * preserving Runge–Kutta methods (2022) by Fekete et.al.)
- *  U_t + F(U)_x = (1 / epsilon)*R(U)
- *  U    = [rho    rho*u       e]
- *  F(U) = [rho*u  rho*u^2+p  (e+p)*u]
- *  R(U) = [0      0          e_eq - e]
+ *  U_t + F(U)_x = R(U)
+ *  U    = [rho    rho*u       E]
+ *  F(U) = [rho*u  rho*u^2+p  (E+p)*u]
+ *  R(U) = [0      0          -K*rho*(E/rho - 0.5*u^2 - e_0)]
  * 
  *  where rho, rho*u and E are the density, momentum and total energy, respectively, 
- *  epsilon is the stiffness parameter. 
+ *  e is the internal energy and 1/K = epsilon, the stiffness parameter. 
  *
- *    e(x)    = p(x)/(gamma - 1) + 0.5*(u^2)
- *    p(x)    = (gamma - 1)(e - 0.5*rho*u^2)
- *    e_eq(x) = a^2*rho/(gamma - 1) + 0.5*rho*u^2
- *
+ *    E(x) = p(x)/(gamma - 1) + 0.5*(u^2)
+ *    p(x) = (gamma - 1)(E - 0.5*rho*u^2)
+ *   
  * The code solves the 1D compressible Euler equations in conserved variables,
- * over the domain (t,x) in [0, 0.5] x [0, 1] with a stiff relaxation term, R(U).
+ * over the domain (t,x) in [0, 0.3] x [0, 1] with a stiff relaxation term, R(U).
+ * 
+ * Initial data:
+ *              rho(x,0)   = 1.0 for x<0.5, rho(x,0) = 0.2 for x>=0.5
+ *              rho*u(x,0) = 0.0, for all x in [0, 1]
+ *              E(x,0)     = 1.0, for all x in [0, 1]
+ *              e_0        = 1.0, for all x in [0, 1]
  *
  * Since the Linear Advection is specified in terms of primitive variables, we
  * convert between primitive and conserved variables for the initial conditions
@@ -176,8 +181,8 @@ int main(int argc, char* argv[])
   // uopts.nstepsmax = nsteps;
 
   /* compute the difference between E_eq and E (or difference between pressure and density)*/
-  flag = L2error_norm(t, y, udata, uopts);
-  if (check_flag(flag, "L2error_norm")) { return 1; }
+  // flag = L2error_norm(t, y, udata, uopts);
+  // if (check_flag(flag, "L2error_norm")) { return 1; }
 
   // Close output
   flag = CloseOutput(uopts);
@@ -231,10 +236,7 @@ int fe_rhs(sunrealtype t, N_Vector y, N_Vector f, void* user_data)
   if (check_ptr(et, "N_VGetSubvectorArrayPointer_ManyVector")) { return -1; }
 
   sunrealtype* rhodot = N_VGetSubvectorArrayPointer_ManyVector(f, 0);
-  if (check_ptr(rhodot, "N_VGetSubvectorArrayPointer_ManyVector"))
-  {
-    return -1;
-  }
+  if (check_ptr(rhodot, "N_VGetSubvectorArrayPointer_ManyVector")){ return -1; }
   sunrealtype* mxdot = N_VGetSubvectorArrayPointer_ManyVector(f, 1);
   if (check_ptr(mxdot, "N_VGetSubvectorArrayPointer_ManyVector")) { return -1; }
   sunrealtype* mydot = N_VGetSubvectorArrayPointer_ManyVector(f, 2);
@@ -307,10 +309,7 @@ int fi_rhs(sunrealtype t, N_Vector y, N_Vector f, void* user_data)
   if (check_ptr(et, "N_VGetSubvectorArrayPointer_ManyVector")) { return -1; }
 
   sunrealtype* rhodot = N_VGetSubvectorArrayPointer_ManyVector(f, 0);
-  if (check_ptr(rhodot, "N_VGetSubvectorArrayPointer_ManyVector"))
-  {
-    return -1;
-  }
+  if (check_ptr(rhodot, "N_VGetSubvectorArrayPointer_ManyVector")){ return -1; }
   sunrealtype* mxdot = N_VGetSubvectorArrayPointer_ManyVector(f, 1);
   if (check_ptr(mxdot, "N_VGetSubvectorArrayPointer_ManyVector")) { return -1; }
   sunrealtype* mydot = N_VGetSubvectorArrayPointer_ManyVector(f, 2);
@@ -320,18 +319,27 @@ int fi_rhs(sunrealtype t, N_Vector y, N_Vector f, void* user_data)
   sunrealtype* etdot = N_VGetSubvectorArrayPointer_ManyVector(f, 4);
   if (check_ptr(etdot, "N_VGetSubvectorArrayPointer_ManyVector")) { return -1; }
 
-  // Set shortcut variables
-  const long int nx    = udata->nx;
-  const sunrealtype dx = udata->dx;
-  const sunrealtype asq = udata->asq; //SA
-  const sunrealtype eps_stiff = udata->eps_stiff; //SA
-  const sunrealtype gamma = udata->gamma; //SA
-  sunrealtype* flux    = udata->flux;
+  N_Vector rhodot_vec = N_VGetSubvector_ManyVector(f, 0);
+  if (check_ptr(rhodot, "N_VGetSubvector_ManyVector")){ return -1; }
+  N_Vector eKnot = N_VClone(rhodot_vec); //SA: internal energy at equilibrium
+  // int local_length = N_VGetSubvectorLocalLength_ManyVector(f,0);//SA: to check the length of eknot
+  // printf("X is equal to %d\n", local_length);
+  sunrealtype* eKnot_data = N_VGetArrayPointer(eKnot);
 
-  /* 1 / (gamma-1)  */
-  sunrealtype inv_gamma_minus1 = ONE/(gamma-ONE);
-  /* 1 / epsilon */
-  sunrealtype inv_eps_stiff = ONE/eps_stiff;     
+  // Set shortcut variables
+  const long int nx           = udata->nx;
+  const sunrealtype dx        = udata->dx;
+  const sunrealtype xl        = udata->xl;
+  const sunrealtype eps_stiff = udata->eps_stiff; 
+  const sunrealtype gamma     = udata->gamma; 
+  sunrealtype* flux           = udata->flux;
+
+  for (long int i = 0; i < nx; i++)
+  {
+    // sunrealtype xloc = ((sunrealtype)i + HALF) * dx + xl;
+    sunrealtype xloc = ((sunrealtype)i) * dx + xl;
+    eKnot_data[i] = 1.0;
+  }     
 
   // iterate over subdomain, updating RHS
   for (long int i = 0; i < nx; i++)
@@ -341,17 +349,17 @@ int fi_rhs(sunrealtype t, N_Vector y, N_Vector f, void* user_data)
     mydot[i]  = ZERO;
     mzdot[i]  = ZERO;
 
-     /* (a^2*rho) /  (gamma - 1)*/ 
-    sunrealtype Eeq1 = asq * rho[i] * inv_gamma_minus1; 
+     /* -K * rho*/ 
+    sunrealtype coef = -eps_stiff*rho[i];
 
-    /* 0.5 * rho * u^2 */
-    sunrealtype Eeq2 = (mx[i] * mx[i] + my[i] * my[i] + mz[i] * mz[i]) * HALF / rho[i];
+    /* 1.0 / rho*/
+    sunrealtype rhoth = 1.0/rho[i];
 
-    /* Eeq = (a^2*rho) /  (gamma - 1) + 0.5 * rho * u^2  */
-    sunrealtype Eeq = Eeq1 + Eeq2;
+    /* E - 0.5 * rho * u^2 */
+    sunrealtype rhoe = et[i] - ((mx[i] * mx[i] + my[i] * my[i] + mz[i] * mz[i]) * HALF / rho[i]);
 
-    /* relaxation term: (1/epsilon) * (Eeq - E) */
-    etdot[i] = inv_eps_stiff * (Eeq - et[i]);
+    /* relaxation term */
+    etdot[i] = coef*(rhoth*rhoe - eKnot_data[i]);
   }
 
   return 0;
@@ -617,8 +625,9 @@ int SetIC(N_Vector y, EulerData& udata)
 
   for (long int i = 0; i < udata.nx; i++)
   {
-    sunrealtype xloc = ((sunrealtype)i + HALF) * udata.dx + udata.xl;
-    if (xloc >= FOURTH && xloc <= HALF)
+    // sunrealtype xloc = ((sunrealtype)i + HALF) * udata.dx + udata.xl;
+    sunrealtype xloc = ((sunrealtype)i) * udata.dx + udata.xl;
+    if (xloc < HALF)
     {
       rho[i] = rhoL;
       mx[i]  = rhoL * uL;

@@ -29,7 +29,7 @@
 // Include desired integrators, vectors, linear solvers, and nonlinear solvers
 #include "arkode/arkode_erkstep.h"
 #include "arkode/arkode_lsrkstep.h"
-#include <arkode/arkode_arkstep.h> //SA
+#include <arkode/arkode_arkstep.h>
 #include <sunlinsol/sunlinsol_spgmr.h>/* access to GMRES SUNLinearSolver */
 #include "nvector/nvector_manyvector.h"
 #include "nvector/nvector_serial.h"
@@ -37,11 +37,11 @@
 
 // Macros for problem constants
 #define rhoL   SUN_RCONST(1.0)
-#define rhoR   SUN_RCONST(0.01) 
-#define pL     SUN_RCONST(1.0)
-#define pR     SUN_RCONST(1.0) 
-#define uL     SUN_RCONST(1.0) 
-#define uR     SUN_RCONST(1.0) 
+#define rhoR   SUN_RCONST(0.2)
+#define uL     SUN_RCONST(0.0)
+#define uR     SUN_RCONST(0.0)
+#define pL     SUN_RCONST(0.4)
+#define pR     SUN_RCONST(0.4)
 #define HALF   SUN_RCONST(0.5)
 #define ZERO   SUN_RCONST(0.0)
 #define ONE    SUN_RCONST(1.0)
@@ -88,8 +88,8 @@ public:
 
   // constructor (with default values)
   ARKODEParameters()
-    : IMintegrator("ARKODE_SSP_ESDIRK_4_2_3"),
-      EXintegrator("ARKODE_SSP_ERK_4_2_3"),
+    : IMintegrator("ARKODE_SSP_SDIRK_2_1_2"),
+      EXintegrator("ARKODE_SSP_ERK_2_1_2"),
       rtol(SUN_RCONST(1.e-4)),
       atol(SUN_RCONST(1.e-11)),
       fixed_h(ZERO),
@@ -118,7 +118,6 @@ public:
 
   ///// problem-defining data /////
   sunrealtype gamma;     // ratio of specific heat capacities, cp/cv
-  sunrealtype asq;       //a = isothermal speed of sound 
   sunrealtype eps_stiff; //stiffness parameter 
 
   ///// reusable arrays for WENO flux calculations /////
@@ -131,11 +130,10 @@ public:
   EulerData()
     : nx(200),
       t0(ZERO),
-      tf(SUN_RCONST(0.2)),
+      tf(SUN_RCONST(0.3)),
       xl(ZERO),
       xr(ONE),
-      asq(ONE),
-      eps_stiff(1e-8),
+      eps_stiff(1e8),
       dx(ZERO),
       gamma(SUN_RCONST(1.4)),
       flux(nullptr){};
@@ -294,7 +292,6 @@ static void InputHelp()
   std::cout << "  --xl <real>        : domain lower boundary\n";
   std::cout << "  --xr <real>        : domain upper boundary\n";
   std::cout << "  --gamma <real>     : ideal gas constant\n";
-  std::cout << "  --asq <real>       : isothermal sound speed\n";
   std::cout << "  --eps_stiff <real> : stiffness parameter\n";
   std::cout << "  --nx <int>         : number of mesh points\n";
   std::cout << "  --rtol <real>      : relative tolerance\n";
@@ -378,7 +375,6 @@ static int ReadInputs(std::vector<std::string>& args, EulerData& udata,
 
   // Problem parameters
   find_arg(args, "--gamma", udata.gamma);
-  find_arg(args, "--asq", udata.asq);
   find_arg(args, "--eps_stiff", udata.eps_stiff);
   find_arg(args, "--tf", udata.tf);
   find_arg(args, "--xl", udata.xl);
@@ -410,7 +406,6 @@ static int PrintSetup(EulerData& udata, ARKODEParameters& uopts)
   std::cout << "Problem parameters and options:" << std::endl;
   std::cout << " --------------------------------- " << std::endl;
   std::cout << "  gamma        = " << udata.gamma << std::endl;
-  std::cout << "  asq          = " << udata.asq << std::endl;
   std::cout << "  eps_stiff    = " << udata.eps_stiff << std::endl;
   std::cout << " --------------------------------- " << std::endl;
   std::cout << "  tf           = " << udata.tf << std::endl;
@@ -525,50 +520,50 @@ static int WriteOutput(sunrealtype t, N_Vector y, EulerData& udata,
   return 0;
 }
 
-static int L2error_norm(sunrealtype t, N_Vector y, EulerData& udata,
-                       ARKODEParameters& uopts)
-{
-  if (uopts.output)
-  {
-    // Compute rms norm of the state
-    N_Vector rho       = N_VGetSubvector_ManyVector(y, 0);
-    N_Vector mx        = N_VGetSubvector_ManyVector(y, 1);
-    N_Vector my        = N_VGetSubvector_ManyVector(y, 2);
-    N_Vector mz        = N_VGetSubvector_ManyVector(y, 3);
-    N_Vector et        = N_VGetSubvector_ManyVector(y, 4);
-    N_Vector prz       = N_VClone(rho); //pressure
+// static int L2error_norm(sunrealtype t, N_Vector y, EulerData& udata,
+//                        ARKODEParameters& uopts)
+// {
+//   if (uopts.output)
+//   {
+//     // Compute rms norm of the state
+//     N_Vector rho       = N_VGetSubvector_ManyVector(y, 0);
+//     N_Vector mx        = N_VGetSubvector_ManyVector(y, 1);
+//     N_Vector my        = N_VGetSubvector_ManyVector(y, 2);
+//     N_Vector mz        = N_VGetSubvector_ManyVector(y, 3);
+//     N_Vector et        = N_VGetSubvector_ManyVector(y, 4);
+//     N_Vector prz       = N_VClone(rho); //pressure
 
-    sunrealtype* rhodata = N_VGetArrayPointer(rho);
-    if (check_ptr(rhodata, "N_VGetArrayPointer")) { return -1; }
-    sunrealtype* mxdata = N_VGetArrayPointer(mx);
-    if (check_ptr(mxdata, "N_VGetArrayPointer")) { return -1; }
-    sunrealtype* mydata = N_VGetArrayPointer(my);
-    if (check_ptr(mydata, "N_VGetArrayPointer")) { return -1; }
-    sunrealtype* mzdata = N_VGetArrayPointer(mz);
-    if (check_ptr(mzdata, "N_VGetArrayPointer")) { return -1; }
-    sunrealtype* etdata = N_VGetArrayPointer(et);
-    if (check_ptr(etdata, "N_VGetArrayPointer")) { return -1; }
-    sunrealtype* przdata = N_VGetArrayPointer(prz);
-    if (check_ptr(przdata, "N_VGetArrayPointer")) { return -1; }
+//     sunrealtype* rhodata = N_VGetArrayPointer(rho);
+//     if (check_ptr(rhodata, "N_VGetArrayPointer")) { return -1; }
+//     sunrealtype* mxdata = N_VGetArrayPointer(mx);
+//     if (check_ptr(mxdata, "N_VGetArrayPointer")) { return -1; }
+//     sunrealtype* mydata = N_VGetArrayPointer(my);
+//     if (check_ptr(mydata, "N_VGetArrayPointer")) { return -1; }
+//     sunrealtype* mzdata = N_VGetArrayPointer(mz);
+//     if (check_ptr(mzdata, "N_VGetArrayPointer")) { return -1; }
+//     sunrealtype* etdata = N_VGetArrayPointer(et);
+//     if (check_ptr(etdata, "N_VGetArrayPointer")) { return -1; }
+//     sunrealtype* przdata = N_VGetArrayPointer(prz);
+//     if (check_ptr(przdata, "N_VGetArrayPointer")) { return -1; }
 
-    for (int i = 0; i < udata.nx; i++){
-      przdata[i] = udata.eos(rhodata[i], mxdata[i], mydata[i], mzdata[i], etdata[i]);
-    }
+//     for (int i = 0; i < udata.nx; i++){
+//       przdata[i] = udata.eos(rhodata[i], mxdata[i], mydata[i], mzdata[i], etdata[i]);
+//     }
 
-    sunrealtype error_sum = 0.0;
-    for (int i = 0; i < udata.nx; i++){
-      error_sum = error_sum + SUNRpowerI((rhodata[i] - przdata[i]),2);
-    }
-    error_sum = SUNRsqrt(error_sum / udata.nx);
-    std::cout
-      << " -----------------------------------------------------------------"
-         "---------"
-      << std::endl;
-    printf("  L2 error norm = %e\n", error_sum);
-  }
+//     sunrealtype error_sum = 0.0;
+//     for (int i = 0; i < udata.nx; i++){
+//       error_sum = error_sum + SUNRpowerI((rhodata[i] - przdata[i]),2);
+//     }
+//     error_sum = SUNRsqrt(error_sum / udata.nx);
+//     std::cout
+//       << " -----------------------------------------------------------------"
+//          "---------"
+//       << std::endl;
+//     printf("  L2 error norm = %e\n", error_sum);
+//   }
 
-  return 0;
-}
+//   return 0;
+// }
 
 // Finalize output
 static int CloseOutput(ARKODEParameters& uopts)
