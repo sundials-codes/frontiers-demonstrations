@@ -95,12 +95,12 @@ def runtest(solver, modetype, runV, showcommand=True, sspcommand=True):
             print("Run solution graph: " + sspcommand + " SUCCESS")
             new_fileName = f"soln_graph_{solver['name']}_{runV}.png"
 
-            ## rename plot file
-            if os.path.exists("hyperbolic_relaxation_frames.png"):
-                os.rename("hyperbolic_relaxation_frames.png", new_fileName)
-                print(f"Plot saved as: {new_fileName}")
-            else:
-                print("Warning: hyperbolic_relaxation_frames.png not found.")   
+            # ## rename plot file
+            # if os.path.exists("hyperbolic_relaxation_frames.png"):
+            #     os.rename("hyperbolic_relaxation_frames.png", new_fileName)
+            #     print(f"Plot saved as: {new_fileName}")
+            # else:
+            #     print("Warning: hyperbolic_relaxation_frames.png not found.")   
         
     return stats
 ## end of function
