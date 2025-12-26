@@ -152,33 +152,45 @@ int main(int argc, char* argv[])
   flag = WriteOutput(t, y, udata, uopts);
   if (check_flag(flag, "WriteOutput")) { return 1; }
 
-  // Loop over output times
-  for (int iout = 0; iout < uopts.nout; iout++)
-  {
-    // Evolve
-    if (uopts.output == 3)
-    {
-      // Stop at output time (do not interpolate output)
-      flag = ARKodeSetStopTime(arkode_mem, tout);
-      if (check_flag(flag, "ARKodeSetStopTime")) { return 1; }
-    }
+  // // Loop over output times
+  // for (int iout = 0; iout < uopts.nout; iout++)
+  // {
+  //   // Evolve
+  //   if (uopts.output == 3)
+  //   {
+  //     // Stop at output time (do not interpolate output)
+  //     flag = ARKodeSetStopTime(arkode_mem, tout);
+  //     if (check_flag(flag, "ARKodeSetStopTime")) { return 1; }
+  //   }
 
+  //   //   Advance in time
+  //   flag = ARKodeEvolve(arkode_mem, tout, y, &t, ARK_NORMAL);
+  //   if (check_flag(flag, "ARKodeEvolve")) { break; }
+
+  //   // Output solution
+  //   flag = WriteOutput(t, y, udata, uopts);
+  //   if (check_flag(flag, "WriteOutput")) { return 1; }
+
+  //   // Update output time
+  //   tout += dTout;
+  //   tout = (tout > udata.tf) ? udata.tf : tout;
+  // }
+
+  /* print the solution at all time steps in the .out file */
+  while (t < udata.tf)
+  {
     //   Advance in time
-    flag = ARKodeEvolve(arkode_mem, tout, y, &t, ARK_NORMAL);
+    flag = ARKodeEvolve(arkode_mem, udata.tf, y, &t, ARK_ONE_STEP);
     if (check_flag(flag, "ARKodeEvolve")) { break; }
 
     // Output solution
     flag = WriteOutput(t, y, udata, uopts);
     if (check_flag(flag, "WriteOutput")) { return 1; }
-
-    // Update output time
-    tout += dTout;
-    tout = (tout > udata.tf) ? udata.tf : tout;
   }
 
   /* total number of steps used in run */
-  // ARKodeGetNumSteps(arkode_mem, &nsteps);
-  // uopts.nstepsmax = nsteps;
+  ARKodeGetNumSteps(arkode_mem, &nsteps);
+  uopts.nstepsmax = nsteps;
 
   /* compute the difference between E_eq and E (or difference between pressure and density)*/
   // flag = L2error_norm(t, y, udata, uopts);
@@ -246,10 +258,18 @@ int fe_rhs(sunrealtype t, N_Vector y, N_Vector f, void* user_data)
   sunrealtype* etdot = N_VGetSubvectorArrayPointer_ManyVector(f, 4);
   if (check_ptr(etdot, "N_VGetSubvectorArrayPointer_ManyVector")) { return -1; }
 
+  N_Vector rhodot_vec = N_VGetSubvector_ManyVector(f, 0);
+  if (check_ptr(rhodot, "N_VGetSubvector_ManyVector")){ return -1; }
+  N_Vector eKnot = N_VClone(rhodot_vec); //SA: internal energy at equilibrium
+  sunrealtype* eKnot_data = N_VGetArrayPointer(eKnot);
+
   // Set shortcut variables
-  const long int nx    = udata->nx;
-  const sunrealtype dx = udata->dx;
-  sunrealtype* flux    = udata->flux;
+  const long int nx              = udata->nx;
+  const sunrealtype dx           = udata->dx;
+  sunrealtype* flux              = udata->flux;
+  const sunrealtype xl           = udata->xl;
+  const sunrealtype eps_nonstiff = udata->eps_nonstiff; 
+  const sunrealtype gamma        = udata->gamma; 
 
   // compute face-centered fluxes over domain interior: pack 1D x-directional array
   // of variable shortcuts, and compute flux at lower x-directional face
@@ -281,6 +301,30 @@ int fe_rhs(sunrealtype t, N_Vector y, N_Vector f, void* user_data)
     mydot[i] -= (flux[(i + 1) * NSPECIES + 2] - flux[i * NSPECIES + 2]) / dx;
     mzdot[i] -= (flux[(i + 1) * NSPECIES + 3] - flux[i * NSPECIES + 3]) / dx;
     etdot[i] -= (flux[(i + 1) * NSPECIES + 4] - flux[i * NSPECIES + 4]) / dx;
+  }
+
+  for (long int i = 0; i < nx; i++) //SA
+  {
+    eKnot_data[i] = 1.0;
+  }  
+
+  for (long int i = 0; i < nx; i++) //SA
+  {
+    sunrealtype xloc = ((sunrealtype)i) * dx + xl;
+    if (xloc < HALF)
+    {
+      /* -K * rho*/ 
+      sunrealtype coef = -eps_nonstiff*rho[i];
+
+      /* 1.0 / rho*/
+      sunrealtype rhoth = 1.0/rho[i];
+
+      /* E - 0.5 * rho * u^2 */
+      sunrealtype rhoe = et[i] - ((mx[i] * mx[i] + my[i] * my[i] + mz[i] * mz[i]) * HALF / rho[i]);
+
+      /* relaxation term */
+      etdot[i] = etdot[i] + coef*(rhoth*rhoe - eKnot_data[i]);
+    }
   }
 
   return 0;
@@ -336,30 +380,32 @@ int fi_rhs(sunrealtype t, N_Vector y, N_Vector f, void* user_data)
 
   for (long int i = 0; i < nx; i++)
   {
-    // sunrealtype xloc = ((sunrealtype)i + HALF) * dx + xl;
-    sunrealtype xloc = ((sunrealtype)i) * dx + xl;
     eKnot_data[i] = 1.0;
   }     
 
   // iterate over subdomain, updating RHS
   for (long int i = 0; i < nx; i++)
   {
-    rhodot[i] = ZERO;
-    mxdot[i]  = ZERO;
-    mydot[i]  = ZERO;
-    mzdot[i]  = ZERO;
+    sunrealtype xloc = ((sunrealtype)i) * dx + xl;
+    if (xloc >= HALF)
+    {
+      rhodot[i] = ZERO;
+      mxdot[i]  = ZERO;
+      mydot[i]  = ZERO;
+      mzdot[i]  = ZERO;
 
-     /* -K * rho*/ 
-    sunrealtype coef = -eps_stiff*rho[i];
+      /* -K * rho*/ 
+      sunrealtype coef = -eps_stiff*rho[i];
 
-    /* 1.0 / rho*/
-    sunrealtype rhoth = 1.0/rho[i];
+      /* 1.0 / rho*/
+      sunrealtype rhoth = 1.0/rho[i];
 
-    /* E - 0.5 * rho * u^2 */
-    sunrealtype rhoe = et[i] - ((mx[i] * mx[i] + my[i] * my[i] + mz[i] * mz[i]) * HALF / rho[i]);
+      /* E - 0.5 * rho * u^2 */
+      sunrealtype rhoe = et[i] - ((mx[i] * mx[i] + my[i] * my[i] + mz[i] * mz[i]) * HALF / rho[i]);
 
-    /* relaxation term */
-    etdot[i] = coef*(rhoth*rhoe - eKnot_data[i]);
+      /* relaxation term */
+      etdot[i] = coef*(rhoth*rhoe - eKnot_data[i]);
+    }
   }
 
   return 0;

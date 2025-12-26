@@ -42,21 +42,24 @@ with open(datafile, "r") as file:
     nx = int((lines.pop(0).split())[2])
     xl = float((lines.pop(0).split())[2])
     xr = float((lines.pop(0).split())[2])
-    # lastline  = (lines[-1])
-    # num_steps = lastline.split()
-    # nsteps    = int(num_steps[2]) # total number of steps taken
+    lastline  = (lines[-1])
+    num_steps = lastline.split(':')
+    nsteps    = int(num_steps[1].strip()) # total number of steps taken
+    # print(nsteps)
+
 
     # allocate solution data as 2D Python arrays
-    t = np.zeros((nt), dtype=float)
-    rho = np.zeros((nt, nx), dtype=float)
-    mx = np.zeros((nt, nx), dtype=float)
-    my = np.zeros((nt, nx), dtype=float)
-    mz = np.zeros((nt, nx), dtype=float)
-    et = np.zeros((nt, nx), dtype=float)
+    t = np.zeros((nsteps), dtype=float)
+    rho = np.zeros((nsteps, nx), dtype=float)
+    mx = np.zeros((nsteps, nx), dtype=float)
+    my = np.zeros((nsteps, nx), dtype=float)
+    mz = np.zeros((nsteps, nx), dtype=float)
+    et = np.zeros((nsteps, nx), dtype=float)
     x = np.linspace(xl, xr, nx)
 
     # store remaining data into numpy arrays
-    for it in range(nt):
+    for it in range(nsteps):
+        lines.pop(0)
         line = (lines.pop(0)).split()
         t[it] = line.pop(0)
         for ix in range(nx):
@@ -66,6 +69,7 @@ with open(datafile, "r") as file:
             mz[it, ix] = line.pop(0)
             et[it, ix] = line.pop(0)
 
+# print(t[-1])
 gamma   = 7.0/5.0
 przdata = np.zeros((nx), dtype=float) #pressure
 rhodata = np.zeros((nx), dtype=float) #density
@@ -73,10 +77,10 @@ veldata = np.zeros((nx), dtype=float) #velocity
 eknot   = np.ones((nx),  dtype=float) #e_{0}
 etdiff  = np.zeros((nx), dtype=float) #E - E_{0}
 for i in range(nx):
-    przdata[i] = (gamma-1.0) * (et[nt-1, i] - (mx[nt-1, i] * mx[nt-1, i] + my[nt-1, i] * my[nt-1, i] + mz[nt-1, i] * mz[nt-1, i]) * 0.5 / rho[nt-1, i])
-    rhodata[i] = rho[nt-1, i]
-    veldata[i] = mx[nt-1, i]/rho[nt-1, i]
-    etdiff[i] = ( (et[nt-1, i]/rho[nt-1, i]) - 0.5 * ((mx[nt-1, i]/rho[nt-1, i])**2) ) - eknot[i] 
+    przdata[i] = (gamma-1.0) * (et[nsteps-1, i] - (mx[nsteps-1, i] * mx[nsteps-1, i] + my[nsteps-1, i] * my[nsteps-1, i] + mz[nsteps-1, i] * mz[nsteps-1, i]) * 0.5 / rho[nsteps-1, i])
+    rhodata[i] = rho[nsteps-1, i]
+    veldata[i] = mx[nsteps-1, i]/rho[nsteps-1, i]
+    etdiff[i] = ( (et[nsteps-1, i]/rho[nsteps-1, i]) - 0.5 * ((mx[nsteps-1, i]/rho[nsteps-1, i])**2) ) - eknot[i] 
 # end
 
 # confirm the L2 error norm for (p - rho)

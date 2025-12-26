@@ -119,6 +119,7 @@ public:
   ///// problem-defining data /////
   sunrealtype gamma;     // ratio of specific heat capacities, cp/cv
   sunrealtype eps_stiff; //stiffness parameter 
+  sunrealtype eps_nonstiff; //stiffness parameter 
 
   ///// reusable arrays for WENO flux calculations /////
   sunrealtype* flux;
@@ -128,12 +129,13 @@ public:
 
   // constructor
   EulerData()
-    : nx(200),
+    : nx(100),
       t0(ZERO),
       tf(SUN_RCONST(0.3)),
       xl(ZERO),
       xr(ONE),
       eps_stiff(1e8),
+      eps_nonstiff(1e2),
       dx(ZERO),
       gamma(SUN_RCONST(1.4)),
       flux(nullptr){};
@@ -288,19 +290,20 @@ static void InputHelp()
   std::cout << "  --EXintegrator <str> : method (ARKODE_SSP_ERK_2_1_2, "
               "ARKODE_SSP_ERK_3_1_2, " 
               "ARKODE_SSP_LSPUM_ERK_3_1_2, or ARKODE_SSP_ERK_4_2_3)\n";
-  std::cout << "  --tf <real>        : final time\n";
-  std::cout << "  --xl <real>        : domain lower boundary\n";
-  std::cout << "  --xr <real>        : domain upper boundary\n";
-  std::cout << "  --gamma <real>     : ideal gas constant\n";
-  std::cout << "  --eps_stiff <real> : stiffness parameter\n";
-  std::cout << "  --nx <int>         : number of mesh points\n";
-  std::cout << "  --rtol <real>      : relative tolerance\n";
-  std::cout << "  --atol <real>      : absolute tolerance\n";
-  std::cout << "  --fixed_h <real>   : fixed step size\n";
-  std::cout << "  --maxsteps <int>   : max steps between outputs\n";
-  std::cout << "  --output <int>     : output level\n";
-  std::cout << "  --nout <int>       : number of outputs\n";
-  std::cout << "  --help             : print options and exit\n";
+  std::cout << "  --tf <real>           : final time\n";
+  std::cout << "  --xl <real>           : domain lower boundary\n";
+  std::cout << "  --xr <real>           : domain upper boundary\n";
+  std::cout << "  --gamma <real>        : ideal gas constant\n";
+  std::cout << "  --eps_stiff <real>    : stiffness parameter\n";
+  std::cout << "  --eps_nonstiff <real> : non-stiffness parameter\n";
+  std::cout << "  --nx <int>            : number of mesh points\n";
+  std::cout << "  --rtol <real>         : relative tolerance\n";
+  std::cout << "  --atol <real>         : absolute tolerance\n";
+  std::cout << "  --fixed_h <real>      : fixed step size\n";
+  std::cout << "  --maxsteps <int>      : max steps between outputs\n";
+  std::cout << "  --output <int>        : output level\n";
+  std::cout << "  --nout <int>          : number of outputs\n";
+  std::cout << "  --help                : print options and exit\n";
 }
 
 inline void find_arg(std::vector<std::string>& args, const std::string key,
@@ -376,6 +379,7 @@ static int ReadInputs(std::vector<std::string>& args, EulerData& udata,
   // Problem parameters
   find_arg(args, "--gamma", udata.gamma);
   find_arg(args, "--eps_stiff", udata.eps_stiff);
+  find_arg(args, "--eps_nonstiff", udata.eps_nonstiff);
   find_arg(args, "--tf", udata.tf);
   find_arg(args, "--xl", udata.xl);
   find_arg(args, "--xr", udata.xr);
@@ -407,6 +411,7 @@ static int PrintSetup(EulerData& udata, ARKODEParameters& uopts)
   std::cout << " --------------------------------- " << std::endl;
   std::cout << "  gamma        = " << udata.gamma << std::endl;
   std::cout << "  eps_stiff    = " << udata.eps_stiff << std::endl;
+  std::cout << "  eps_nonstiff = " << udata.eps_nonstiff << std::endl;
   std::cout << " --------------------------------- " << std::endl;
   std::cout << "  tf           = " << udata.tf << std::endl;
   std::cout << "  xl           = " << udata.xl << std::endl;
@@ -504,6 +509,7 @@ static int WriteOutput(sunrealtype t, N_Vector y, EulerData& udata,
       sunrealtype* etdata = N_VGetArrayPointer(et);
       if (check_ptr(etdata, "N_VGetArrayPointer")) { return -1; }
 
+      uopts.uout << "Time step size: " << t << std::endl;
       uopts.uout << t;
       for (sunindextype i = 0; i < udata.nx; i++)
       {
@@ -581,7 +587,7 @@ static int CloseOutput(ARKODEParameters& uopts)
   // Close output streams
   if (uopts.output >= 2) 
   { 
-    // uopts.uout << "# nstepsmax " << uopts.nstepsmax << std::endl;
+    uopts.uout << "Number of Time Steps Taken: " << uopts.nstepsmax << std::endl;
     uopts.uout.close(); 
   }
 
