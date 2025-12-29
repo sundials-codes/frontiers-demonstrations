@@ -16,6 +16,9 @@
 # ------------------------------------------------------------------------------
 
 # imports
+import shutil
+import subprocess
+import shlex
 import sys, os
 import pandas as pd
 import numpy as np
@@ -45,7 +48,7 @@ with open(datafile, "r") as file:
     lastline  = (lines[-1])
     num_steps = lastline.split(':')
     nsteps    = int(num_steps[1].strip()) # total number of steps taken
-    # print(nsteps)
+    lines.pop()   # remove "Number of Time Steps Taken: 2604"
 
 
     # allocate solution data as 2D Python arrays
@@ -56,10 +59,13 @@ with open(datafile, "r") as file:
     mz = np.zeros((nsteps, nx), dtype=float)
     et = np.zeros((nsteps, nx), dtype=float)
     x = np.linspace(xl, xr, nx)
+    dx = (xr - xl)/nx
 
-    # store remaining data into numpy arrays
+    lines.pop(0) #remove the initial solution
+    
+    # store remaining data into numpy arrays (ignoring the initial solution and time step)
+    # the first element in each array is the time step
     for it in range(nsteps):
-        lines.pop(0)
         line = (lines.pop(0)).split()
         t[it] = line.pop(0)
         for ix in range(nx):
@@ -69,7 +75,43 @@ with open(datafile, "r") as file:
             mz[it, ix] = line.pop(0)
             et[it, ix] = line.pop(0)
 
+largeDev_xgrid = [] #contains grid values were largest derivative occurs
+largeDev_time  = [] #contains the time step corresponding to the largest derivative value
+for it in range(nsteps):
+    largeDev      = 0.0 #largest derivative value
+    largeDev_xloc = 0   # spatial grid location of the largest derivative
+    for ix in range(nx-1):
+        max_derv = abs(rho[it, ix+1] - rho[it, ix])/dx
+        if (max_derv > largeDev):
+            largeDev      = max_derv
+            largeDev_xloc = ix
+            timeV = it
+        #end
+    #end
+    largeDev_xgrid.append(float(x[largeDev_xloc]))
+    largeDev_time.append(float(t[timeV]))
+#end
+# print(largeDev_xgrid)
+# print(largeDev_time)
+
+# determine the shock speed and its corresponding time step
+for i in range(len(largeDev_xgrid)):
+    if largeDev_xgrid[i] >= 0.5:
+        xgrid_star = largeDev_xgrid[i]
+        t_star     = largeDev_time[i]
+        # iloc = i
+        break
+# print (xgrid_star)#,iloc
+print ("Time step where grid point is not less than the shock value: %f\n" % t_star)
+# print(t[iloc])
+
 # print(t[-1])
+# print(len(t))
+# print(t)
+# print(len(rho[1,:]))
+# print(len(x))
+# print(x[3])
+
 gamma   = 7.0/5.0
 przdata = np.zeros((nx), dtype=float) #pressure
 rhodata = np.zeros((nx), dtype=float) #density
@@ -130,5 +172,30 @@ plt.legend()
 
 plt.savefig("hyperbolic_relaxation_frames.png")
 plt.show()
+
+
+## ==============================================================================
+## use the t_star value in the time step history to determine time history 
+## on the left and right side of the shock
+## ==============================================================================
+
+# copy sun.log file into the /sundials/tools folder
+file_to_copy = './sun1.log'
+destination_directory = './../deps/sundials/tools'
+shutil.copy(file_to_copy, destination_directory)
+
+# change the working directory to sundials/tools
+curent_directory = os.getcwd()
+# print("Current directory:", curent_directory)
+tools_directory  = os.chdir("../deps/sundials/tools")
+new_directory    = os.getcwd()
+# print("New directory:", new_directory)
+
+# add tstar to time histroy plot
+runcommand = f"./log_example.py {file_to_copy} --tstar %f" %(t_star)
+result = subprocess.run(shlex.split(runcommand), stdout=subprocess.PIPE)
+
+
+
 
 ##### end of script #####

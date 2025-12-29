@@ -509,7 +509,7 @@ static int WriteOutput(sunrealtype t, N_Vector y, EulerData& udata,
       sunrealtype* etdata = N_VGetArrayPointer(et);
       if (check_ptr(etdata, "N_VGetArrayPointer")) { return -1; }
 
-      uopts.uout << "Time step size: " << t << std::endl;
+      // uopts.uout << "Time step size: " << t << std::endl;
       uopts.uout << t;
       for (sunindextype i = 0; i < udata.nx; i++)
       {
