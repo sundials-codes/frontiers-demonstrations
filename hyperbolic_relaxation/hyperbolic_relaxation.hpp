@@ -135,7 +135,7 @@ public:
       xl(ZERO),
       xr(ONE),
       eps_stiff(1e8),
-      eps_nonstiff(1e2),
+      eps_nonstiff(1e3),
       dx(ZERO),
       gamma(SUN_RCONST(1.4)),
       flux(nullptr){};

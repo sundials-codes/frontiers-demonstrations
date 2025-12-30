@@ -171,16 +171,18 @@ ax04.set_xlabel(r"x")
 plt.legend()
 
 plt.savefig("hyperbolic_relaxation_frames.png")
-plt.show()
+# plt.show()
 
 
 ## ==============================================================================
 ## use the t_star value in the time step history to determine time history 
 ## on the left and right side of the shock
 ## ==============================================================================
-
+# adaptive = True
+# fixed    = False
+# if (adaptive):
 # copy sun.log file into the /sundials/tools folder
-file_to_copy = './sun1.log'
+file_to_copy = './sunlog.log'
 destination_directory = './../deps/sundials/tools'
 shutil.copy(file_to_copy, destination_directory)
 
@@ -192,10 +194,7 @@ new_directory    = os.getcwd()
 # print("New directory:", new_directory)
 
 # add tstar to time histroy plot
-runcommand = f"./log_example.py {file_to_copy} --tstar %f" %(t_star)
+runcommand = f"./log_example.py {file_to_copy} --tstar %f  --save sun_save " %(t_star)
 result = subprocess.run(shlex.split(runcommand), stdout=subprocess.PIPE)
-
-
-
 
 ##### end of script #####
