@@ -103,7 +103,7 @@ def runtest(solver, modetype, runV, runN, showcommand=True, sspcommand=True):
             # modify name of .log file and its figure
             modified_lines = []
             for line in lines:
-                if "file_to_copy = './sun1.log'" in line:
+                if "file_to_copy = './sun.log'" in line:
                     modified_lines.append(f"file_to_copy = './{new_file}'\n")
                 elif ("log_example.py" in line) and  ("--save sun_save" in line):
                     modified_lines.append(line.replace("sun_save", save_file))
@@ -137,7 +137,7 @@ SSPL312 = "  ./hyperbolic_relaxation  --IMintegrator ARKODE_SSP_LSPUM_SDIRK_3_1_
 SSP423  = "  ./hyperbolic_relaxation  --IMintegrator ARKODE_SSP_ESDIRK_4_2_3       --EXintegrator ARKODE_SSP_ERK_4_2_3        --output 2"    
 
 ## common testing parameters
-adaptive_params = {'r1':1e-5, 'r2':1e-4, 'r3':1e-3, 'r4':1e-4, 'r5':1e-5} ## relative tolerances
+adaptive_params = {'r1':1e-5, 'r2':1e-4, 'r3':1e-3, 'r4':1e-2, 'r5':1e-1, 'r6':1.0, 'r7':1.5, 'r8':2.0} ## relative tolerances
 # fixed_params    = [] # fixed time step sizes
 # for i in range(8,-1,-1):
 #     fixed_params.append(0.002/(2.0**i))

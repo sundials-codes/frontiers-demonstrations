@@ -85,7 +85,7 @@ for it in range(nsteps):
         if (max_derv > largeDev):
             largeDev      = max_derv
             largeDev_xloc = ix
-            timeV = it
+        timeV = it
         #end
     #end
     largeDev_xgrid.append(float(x[largeDev_xloc]))
@@ -104,13 +104,6 @@ for i in range(len(largeDev_xgrid)):
 # print (xgrid_star)#,iloc
 print ("Time step where grid point is not less than the shock value: %f\n" % t_star)
 # print(t[iloc])
-
-# print(t[-1])
-# print(len(t))
-# print(t)
-# print(len(rho[1,:]))
-# print(len(x))
-# print(x[3])
 
 gamma   = 7.0/5.0
 przdata = np.zeros((nx), dtype=float) #pressure
@@ -170,8 +163,8 @@ ax04.set_xlabel(r"x")
 # ax04.set_xticks(np.linspace(0,1,11))
 plt.legend()
 
-plt.savefig("hyperbolic_relaxation_frames.png")
-# plt.show()
+# plt.savefig("hyperbolic_relaxation_frames.png")
+plt.show()
 
 
 ## ==============================================================================
@@ -182,7 +175,7 @@ plt.savefig("hyperbolic_relaxation_frames.png")
 # fixed    = False
 # if (adaptive):
 # copy sun.log file into the /sundials/tools folder
-file_to_copy = './sunlog.log'
+file_to_copy = './sun.log'
 destination_directory = './../deps/sundials/tools'
 shutil.copy(file_to_copy, destination_directory)
 
@@ -194,7 +187,8 @@ new_directory    = os.getcwd()
 # print("New directory:", new_directory)
 
 # add tstar to time histroy plot
-runcommand = f"./log_example.py {file_to_copy} --tstar %f  --save sun_save " %(t_star)
+# runcommand = f"./log_example.py {file_to_copy} --tstar %f  --save sun_save " %(t_star)
+runcommand = f"./log_example.py {file_to_copy} --tstar %f " %(t_star)
 result = subprocess.run(shlex.split(runcommand), stdout=subprocess.PIPE)
 
 ##### end of script #####

@@ -88,8 +88,8 @@ public:
 
   // constructor (with default values)
   ARKODEParameters()
-    : IMintegrator("ARKODE_SSP_SDIRK_2_1_2"),
-      EXintegrator("ARKODE_SSP_ERK_2_1_2"),
+    : IMintegrator("ARKODE_SSP_ESDIRK_4_2_3"),
+      EXintegrator("ARKODE_SSP_ERK_4_2_3"),
       rtol(SUN_RCONST(1.e-4)),
       atol(SUN_RCONST(1.e-11)),
       fixed_h(ZERO),
@@ -135,7 +135,7 @@ public:
       xl(ZERO),
       xr(ONE),
       eps_stiff(1e8),
-      eps_nonstiff(1e3),
+      eps_nonstiff(1e2),
       dx(ZERO),
       gamma(SUN_RCONST(1.4)),
       flux(nullptr){};
