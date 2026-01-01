@@ -102,7 +102,7 @@ for i in range(len(largeDev_xgrid)):
         # iloc = i
         break
 # print (xgrid_star)#,iloc
-print ("Time step where grid point is not less than the shock value: %f\n" % t_star)
+print ("Time step where grid point is not less than the shock value = %f\n" % t_star)
 # print(t[iloc])
 
 gamma   = 7.0/5.0
@@ -133,8 +133,6 @@ ax00 = fig.add_subplot(gs[0, 0])
 ax00.plot(x, rhodata, marker='x', markersize=6, linestyle='-',  color='blue', label="density",  linewidth=0.8)
 ax00.set_ylabel(r"density")
 ax00.set_xlabel(r"x")
-# ax00.set_xticks(np.linspace(0,1,11))
-# ax00.set_yticks(np.linspace(0.1,1.1,11))
 plt.legend()
 
 ## pressure
@@ -142,8 +140,6 @@ ax01 = fig.add_subplot(gs[0, 1])
 ax01.plot(x, przdata, marker='o', markersize=6, linestyle='-.', color='red',  label="pressure", linewidth=0.8)
 ax01.set_ylabel(r"pressure")
 ax01.set_xlabel(r"x")
-# ax01.set_xticks(np.linspace(0,1,11))
-# ax01.set_yticks(np.linspace(0.05,0.45,9))
 plt.legend()
 
 ## velocity
@@ -151,8 +147,6 @@ ax03 = fig.add_subplot(gs[1, 0])
 ax03.plot(x, veldata, marker='s', markersize=6, linestyle='--', color='black',  label="velocity", linewidth=0.8)
 ax03.set_ylabel(r"velocity")
 ax03.set_xlabel(r"x")
-# ax03.set_xticks(np.linspace(0,1,11))
-# ax03.set_yticks(np.linspace(-0.1,0.6,8))
 plt.legend()
 
 ## E - E_{0}
@@ -160,35 +154,169 @@ ax04 = fig.add_subplot(gs[1, 1])
 ax04.plot(x, etdiff, marker='+', markersize=6, linestyle=':', color='green',  label="$E - E_{0}$", linewidth=0.8)
 ax04.set_ylabel(r"$E - E_{0}$")
 ax04.set_xlabel(r"x")
-# ax04.set_xticks(np.linspace(0,1,11))
 plt.legend()
 
-# plt.savefig("hyperbolic_relaxation_frames.png")
-plt.show()
+plt.savefig("hyperbolic_relaxation_frames.png")
+# plt.show()
 
+# ## ==============================================================================
+# ## use the t_star value in the time step history to determine time history 
+# ## on the left and right side of the shock (only use this part of the script
+# ## when doing a single run and not running multiple tests at a time using 
+# ## runtests_hyperbolic_relaxation.py)
+# ## ==============================================================================
+# # copy sun.log file into the /sundials/tools folder
+# file_to_copy = './sun.log'
+# destination_directory = './../deps/sundials/tools'
+# shutil.copy(file_to_copy, destination_directory)
 
-## ==============================================================================
-## use the t_star value in the time step history to determine time history 
-## on the left and right side of the shock
-## ==============================================================================
-# adaptive = True
-# fixed    = False
-# if (adaptive):
-# copy sun.log file into the /sundials/tools folder
-file_to_copy = './sun.log'
-destination_directory = './../deps/sundials/tools'
-shutil.copy(file_to_copy, destination_directory)
+# # change the working directory to sundials/tools
+# curent_directory = os.getcwd()
+# # print("Current directory:", curent_directory)
+# tools_directory  = os.chdir("../deps/sundials/tools")
+# new_directory    = os.getcwd()
+# # print("New directory:", new_directory)
 
-# change the working directory to sundials/tools
-curent_directory = os.getcwd()
-# print("Current directory:", curent_directory)
-tools_directory  = os.chdir("../deps/sundials/tools")
-new_directory    = os.getcwd()
-# print("New directory:", new_directory)
-
-# add tstar to time histroy plot
+# # add tstar to time histroy plot
 # runcommand = f"./log_example.py {file_to_copy} --tstar %f  --save sun_save " %(t_star)
-runcommand = f"./log_example.py {file_to_copy} --tstar %f " %(t_star)
-result = subprocess.run(shlex.split(runcommand), stdout=subprocess.PIPE)
+# # runcommand = f"./log_example.py {file_to_copy} --tstar %f " %(t_star)
+# result = subprocess.run(shlex.split(runcommand), stdout=subprocess.PIPE)
+
+
+
+## ------------------ Extract Reference Solution at Final Time Step -----------------------
+def read_ref_solution(filename, N):
+    """
+    This script extract the solution at the final time step of the reference solution 
+    required to compute the error norm at the final time step.
+
+    Input: filename: reference solution filename
+           N : the length of the solution at the final time step
+
+    Output: returns the solution vector at the final time step
+    """
+    if not os.path.isfile(filename):
+        msg = "Error: file " + filename + " does not exist"
+        sys.exit(msg)
+    
+    # read solution file, storing each line as a string in a list
+    with open(filename, "r") as file_ref:
+        lines_ref = file_ref.readlines()
+
+        # extract header information
+        title_ref     = lines_ref.pop(0)
+        nvar_ref      = int((lines_ref.pop(0).split())[2])
+        varnames_ref  = lines_ref.pop(0)
+        nt_ref        = int((lines_ref.pop(0).split())[2])
+        nx_ref        = int((lines_ref.pop(0).split())[2])
+        xl_ref        = float((lines_ref.pop(0).split())[2])
+        xr_ref        = float((lines_ref.pop(0).split())[2])
+        lastline_ref  = (lines_ref[-1])
+        num_steps_ref = lastline_ref.split(':')
+        nsteps_ref    = int(num_steps_ref[1].strip()) # total number of steps taken
+        lines_ref.pop()   # remove "Number of Time Steps Taken: 2604"
+
+        # allocate solution data as 2D Python arrays
+        t_ref   = np.zeros((nsteps_ref), dtype=float)
+        rho_ref = np.zeros((nsteps_ref, nx_ref), dtype=float)
+        mx_ref  = np.zeros((nsteps_ref, nx_ref), dtype=float)
+        my_ref  = np.zeros((nsteps_ref, nx_ref), dtype=float)
+        mz_ref  = np.zeros((nsteps_ref, nx_ref), dtype=float)
+        et_ref  = np.zeros((nsteps_ref, nx_ref), dtype=float)
+        x_ref   = np.linspace(xl_ref, xr_ref, nx_ref)
+        dx_ref  = (xr_ref - xl_ref)/nx_ref
+
+        lines_ref.pop(0) #remove the initial solution
+        
+        # store remaining data into numpy arrays (ignoring the initial solution and time step)
+        # the first element in each array is the time step
+        for it in range(nsteps_ref):
+            line_ref  = (lines_ref.pop(0)).split()
+            t_ref[it] = line_ref.pop(0)
+            for ix in range(nx):
+                rho_ref[it, ix] = line_ref.pop(0)
+                mx_ref[it, ix]  = line_ref.pop(0)
+                my_ref[it, ix]  = line_ref.pop(0)
+                mz_ref[it, ix]  = line_ref.pop(0)
+                et_ref[it, ix]  = line_ref.pop(0)
+
+    # extract the solutiion at the final time step
+    gamma = 7.0/5.0
+    rhoRefFinal = np.zeros((nx_ref), dtype=float) #density
+    velRefFinal = np.zeros((nx_ref), dtype=float) #velocity
+    etRefFinal  = np.zeros((nx_ref), dtype=float) #energy
+    przRefFinal = np.zeros((nx_ref), dtype=float) #pressure
+    for i in range(nx):
+        rhoRefFinal[i] = rho_ref[nsteps_ref-1,i] 
+        velRefFinal[i] = mx_ref[nsteps_ref-1,i]/rho_ref[nsteps_ref-1,i] 
+        etRefFinal[i]  = et_ref[nsteps_ref-1,i] 
+        przRefFinal[i] = (gamma-1.0) * (et_ref[nsteps_ref-1, i] - (mx_ref[nsteps_ref-1, i] * mx_ref[nsteps_ref-1, i] + my_ref[nsteps_ref-1, i] * my_ref[nsteps_ref-1, i] + mz_ref[nsteps_ref-1, i] * mz_ref[nsteps_ref-1, i]) * 0.5 / rho_ref[nsteps_ref-1, i])
+    
+    return rhoRefFinal
+
+# fixed runs
+fixedk0_refSoln_lastStep = read_ref_solution("fixed_referenceSoln_k0.txt", N)
+fixedk2_refSoln_lastStep = read_ref_solution("fixed_referenceSoln_k2.txt", N)
+fixedk4_refSoln_lastStep = read_ref_solution("fixed_referenceSoln_k4.txt", N)
+# adaptive runs
+adaptk0_refSoln_lastStep = read_ref_solution("adaptive_referenceSoln_k0.txt", N)
+adaptk2_refSoln_lastStep = read_ref_solution("adaptive_referenceSoln_k2.txt", N)
+adaptk4_refSoln_lastStep = read_ref_solution("adaptive_referenceSoln_k4.txt", N)
+
+
+## -------------------- Compute L-infinty norm using the reference solution -----------------------
+AdaptiveRun = True
+FixedRun    = True
+elmax       = 0.0 #l-infinity error
+if (FixedRun):
+    if (diff_k==0.0):
+        for i in range(N):
+            errV = np.abs(fixedk0_refSoln_lastStep[i] - rho_lastStep[i])
+            if (errV > elmax):
+                elmax = errV
+            # end
+        # end
+    elif (diff_k==0.02):
+        for i in range(N):
+            errV = np.abs(fixedk2_refSoln_lastStep[i] - rho_lastStep[i])
+            if (errV > elmax):
+                elmax = errV
+            # end
+        # end
+    elif (diff_k==0.04):
+        for i in range(N):
+            errV = np.abs(fixedk4_refSoln_lastStep[i] - rho_lastStep[i])
+            if (errV > elmax):
+                elmax = errV
+            # end
+        # end
+if (AdaptiveRun):
+    if (diff_k==0.0):
+        for i in range(N):
+            errV = np.abs(adaptk0_refSoln_lastStep[i] - rho_lastStep[i])
+            if (errV > elmax):
+                elmax = errV
+            # end
+        # end
+    elif (diff_k==0.02):
+        for i in range(N):
+            errV = np.abs(adaptk2_refSoln_lastStep[i] - pSol_lastStep[i])
+            if (errV > elmax):
+                elmax = errV
+            # end
+        # end
+    elif (diff_k==0.04):
+        for i in range(N):
+            errV = np.abs(adaptk4_refSoln_lastStep[i] - pSol_lastStep[i])
+            if (errV > elmax):
+                elmax = errV
+            # end
+        # end
+
+print("Lmax error using reference solution: %.6e" %elmax)
+# end if statement
+
+##### end of script #####
+
 
 ##### end of script #####
