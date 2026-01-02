@@ -23,7 +23,7 @@ from matplotlib.gridspec import GridSpec
 from math import log10, floor
 
 # utility routine to run a test, storing the run options and solver statistics
-def refSoln(solver, modetype, runV, kstiff, ksN, knonstiff, knsN, showcommand=True):
+def refSoln(solver, modetype, runV, kstiff, ksN, knonstiff, showcommand=True):
     """
     This function generates the reference solution needed to compute the
     error for the population density model.
@@ -39,9 +39,9 @@ def refSoln(solver, modetype, runV, kstiff, ksN, knonstiff, knsN, showcommand=Tr
     """
 
     if (modetype == "adaptive"):
-        runcommand = " %s  --rtol %.2e  --eps_stiff %.2e  --eps_nonstiff %.2e" % (solver['exe'], runV, kstiff, knonstiff)
+        runcommand = " %s  --rtol %.6e  --eps_stiff %.2e  --eps_nonstiff %.2e" % (solver['exe'], runV, kstiff, knonstiff)
     elif (modetype == "fixed"):
-        runcommand = " %s  --fixed_h %.6f  --eps_stiff %.2e  --eps_nonstiff %.2e" % (solver['exe'], runV, kstiff, knonstiff)
+        runcommand = " %s  --fixed_h %.6e  --eps_stiff %.2e  --eps_nonstiff %.2e" % (solver['exe'], runV, kstiff, knonstiff)
 
     result = subprocess.run(shlex.split(runcommand), stdout=subprocess.PIPE)
 
@@ -51,7 +51,7 @@ def refSoln(solver, modetype, runV, kstiff, ksN, knonstiff, knsN, showcommand=Tr
     else:
         if (showcommand):
             print(f"Running {modetype} reference solution : " + runcommand + " SUCCESS")
-            new_fileName = f"{modetype}_referenceSoln_ks_{ksN}_kns_{knsN}.out"
+            new_fileName = f"{modetype}_referenceSoln_{ksN}.out"
 
             ## rename plot file
             if os.path.exists("hyperbolic_relaxation.out"):
@@ -65,26 +65,26 @@ def refSoln(solver, modetype, runV, kstiff, ksN, knonstiff, knsN, showcommand=Tr
 
 
 # method to generate reference solution
-SSP423 = "./population_imex  --IMintegrator ARKODE_SSP_ESDIRK_4_2_3  --EXintegrator ARKODE_SSP_ERK_4_2_3  --output 2"     
+SSP423 = "./hyperbolic_relaxation  --IMintegrator ARKODE_SSP_ESDIRK_4_2_3  --EXintegrator ARKODE_SSP_ERK_4_2_3  --output 2"     
 
 adaptive_params = [1e-10] ## relative tolerance for reference solution
 fixed_params    = [1e-10] ## fixed time step size for reference solution
-nonstiff_params = {'kns1': 1e2}
-stiff_params    = {'ks1': 1e8}
+nonstiff_params = [1e2]
+stiff_params    = {'ks1e8': 1e8}
 
 ## Integrator types
 solvertype = [{'name': 'SSP-ARK-4-2-3', 'exe': SSP423}]
 
 # run function to generate reference solution
-for knsname, knsval in nonstiff_params.items():
+for knsval in nonstiff_params:
     for ksname, ksval in stiff_params.items():
         for run_val in adaptive_params:
             for solver in solvertype:
-                adapt_refSoln = refSoln(solver, "adaptive", run_val, ksval, ksname, knsval, knsname, showcommand=True)
+                adapt_refSoln = refSoln(solver, "adaptive", run_val, ksval, ksname, knsval, showcommand=True)
 
-for knsname, knsval in nonstiff_params.items():
+for knsval in nonstiff_params:
     for ksname, ksval in stiff_params.items():
         for run_val in fixed_params:
             for solver in solvertype:
-                fixed_refSoln = refSoln(solver, "fixed", run_val, ksval, ksname, knsval, knsname, showcommand=True)
+                fixed_refSoln = refSoln(solver, "fixed", run_val, ksval, ksname, knsval, showcommand=True)
 

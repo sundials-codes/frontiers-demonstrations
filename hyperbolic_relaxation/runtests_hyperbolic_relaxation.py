@@ -25,7 +25,7 @@ from matplotlib.gridspec import GridSpec
 from math import log10, floor
 
 # utility routine to run a test, storing the run options and solver statistics
-def runtest(solver, modetype, runV, runN, kstiff, knonstiff, showcommand=True, sspcommand=True):
+def runtest(solver, modetype, runV, runN, kstiff, knonstiff, kstiffname, showcommand=True, sspcommand=True):
     """
     This function runs the hyperbolic equation with relaxation using both fixed and adaptive time
     stepping with different parameters and stores the stats in an excel file
@@ -40,7 +40,7 @@ def runtest(solver, modetype, runV, runN, kstiff, knonstiff, showcommand=True, s
     Output: returns the statistics
     """
     stats = {'Runtype': modetype,'ReturnCode': 0, 'IMEX_method': solver['name'], 'runVal': runV, 'runtime':0.0, 'stiff_param': 0.0, 
-             'nonstiff_param': 0.0, 'Steps': 0, 'StepAttempts': 0, 'ErrTestFails': 0, 'Explicit_RHS': 0, 'Implicit_RHS': 0}
+             'nonstiff_param': 0.0, 'Steps': 0, 'StepAttempts': 0, 'ErrTestFails': 0, 'Explicit_RHS': 0, 'Implicit_RHS': 0, 'error': 0.0}
 
     if (modetype == "adaptive"):
         runcommand = "SUNLOGGER_INFO_FILENAME=sun-%s-%s.log %s  --rtol %.2e  --eps_stiff %.2e  --eps_nonstiff %.2e" % (solver['name'], runN, solver['exe'], runV, kstiff, knonstiff)
@@ -73,6 +73,7 @@ def runtest(solver, modetype, runV, runN, kstiff, knonstiff, showcommand=True, s
         stats['ErrTestFails']    = 0
         stats['Explicit_RHS']    = 0 
         stats['Implicit_RHS']    = 0   
+        stats['error']           = 0 
 
     # If SUNDIALS did not fail
     if not sundials_failed:
@@ -97,10 +98,29 @@ def runtest(solver, modetype, runV, runN, kstiff, knonstiff, showcommand=True, s
             sys.exit(msg)
 
         if (modetype=="adaptive"):
-             # running python file to plot pressure and density
+            # adaptiveRun = True and fixedRun = False to compute the Lmax error
+            with open(datafile, "r") as file:
+                original_lines = file.readlines()
+
+            modified_lines = []
+            for line in original_lines:
+                if "AdaptiveRun =" in line:
+                    val = "True" #if modetype == "adaptive" else "False"
+                    modified_lines.append(f"AdaptiveRun = {val}\n")
+                elif "FixedRun =" in line:
+                    val = "False" #if modetype == "adaptive" else "True"
+                    modified_lines.append(f"FixedRun = {val}\n")
+                else:
+                    modified_lines.append(line)
+                
+            # write the modified line to the python script
+            with open(datafile, "w") as f:
+                f.writelines(modified_lines)
+                
+            # running python file to plot pressure and density
             sspcommand = " python ./plot_hyperbolic_relaxation.py"
             ssp_result = subprocess.run(shlex.split(sspcommand), stdout=subprocess.PIPE) 
-            new_fileName = f"hyperbolic_graph_{solver['name']}_{runN}.png"
+            new_fileName = f"hyperbolic_graph_{solver['name']}_{runN}_{kstiffname}.png"
             # rename plot file
             if os.path.exists("hyperbolic_relaxation_frames.png"):
                 os.rename("hyperbolic_relaxation_frames.png", new_fileName)
@@ -114,44 +134,77 @@ def runtest(solver, modetype, runV, runN, kstiff, knonstiff, showcommand=True, s
                 txt = line.split()
                 if (("grid" in txt) and ("point" in txt) and ("shock" in txt)):
                     tstar = float(txt[13])
+                    # print("tstar is %f\n" %tstar)
+                elif (("Lmax" in txt) and ("reference" in txt) and ("solution" in txt)):
+                    # print("error %.14e" %float(txt[6]))
+                    stats['error'] = float(txt[6])
                 #end
-            #end
+            # #end
 
-            ## ==============================================================================
-            ## use the t_star to determine time history on the left and right side of the shock
-            ## ==============================================================================
-            # copy sun.log file into the /sundials/tools folder
-            file_to_copy = "sun-%s-%s.log" % (solver['name'], runN) #'./sun.log'
-            save_file = "sun-%s-%s" % (solver['name'], runN)
-            destination_directory = './../deps/sundials/tools'
-            shutil.copy(file_to_copy, destination_directory)
+            #tstar should not be None for adaptive runs.
+            if tstar is not None:
+                ## ==============================================================================
+                ## use the t_star to determine time history on the left and right side of the shock
+                ## ==============================================================================
+                # copy sun.log file into the /sundials/tools folder
+                file_to_copy = "sun-%s-%s.log" % (solver['name'], runN) #'./sun.log'
+                save_file = "sun-%s-%s-%s" % (solver['name'], runN, kstiffname)
+                destination_directory = './../deps/sundials/tools'
+                shutil.copy(file_to_copy, destination_directory)
 
-            # change the working directory to sundials/tools
-            curent_directory = os.getcwd()
-            # print("Current directory:", curent_directory)
-            tools_directory  = os.chdir("../deps/sundials/tools")
-            tools_directory  = os.getcwd()
-            # print("tools directory:", tools_directory)
+                # change the working directory to sundials/tools
+                curent_directory = os.getcwd()
+                tools_directory  = os.chdir("../deps/sundials/tools")
+                tools_directory  = os.getcwd()
 
-            # add tstar to time histroy plot
-            logcommand = f"./log_example.py {file_to_copy} --tstar %f  --save {save_file}" %(tstar)
-            log_result = subprocess.run(shlex.split(logcommand), stdout=subprocess.PIPE)
+                # add tstar to time histroy plot
+                logcommand = f"./log_example.py {file_to_copy} --tstar %f  --save {save_file}" %(tstar)
+                log_result = subprocess.run(shlex.split(logcommand), stdout=subprocess.PIPE)
 
-            # after the tools directory come back to the bin directory
-            bin_directory = os.chdir("../../../bin")
-            bin_directory  = os.getcwd()
-            # print("bin directory:", bin_directory)
+                # after the tools directory come back to the bin directory
+                bin_directory = os.chdir("../../../bin")
+                bin_directory  = os.getcwd()
+
+
         elif (modetype == "fixed"):
+            # FixedRun = True and AdaptiveRun = False to compute the Lmax error
+            with open(datafile, "r") as file:
+                original_lines = file.readlines()
+
+            modified_lines = []
+            for line in original_lines:
+                if "FixedRun =" in line:
+                    val = "True" #if modetype == "fixed" else "False"
+                    modified_lines.append(f"FixedRun = {val}\n")
+                elif "AdaptiveRun =" in line:
+                    val = "False" #if modetype == "fixed" else "True"
+                    modified_lines.append(f"AdaptiveRun = {val}\n")
+                else:
+                    modified_lines.append(line)
+                
+            # write the modified line to the python script
+            with open(datafile, "w") as f:
+                f.writelines(modified_lines)
+
             ## running python file to plot pressure and density
             sspcommand = " python ./plot_hyperbolic_relaxation.py"
             ssp_result = subprocess.run(shlex.split(sspcommand), stdout=subprocess.PIPE)   
-            new_fileName = f"hyperbolic_graph_{solver['name']}_{runN}.png"
+            new_fileName = f"hyperbolic_graph_{solver['name']}_{runN}_{kstiffname}.png"
             # rename plot file
             if os.path.exists("hyperbolic_relaxation_frames.png"):
                 os.rename("hyperbolic_relaxation_frames.png", new_fileName)
                 print(f"Plot saved as: {new_fileName}")
             else:
                 print("Warning: hyperbolic_relaxation_frames.png not found.")
+            #end
+
+            ssp_stdout_lines = str(ssp_result.stdout).split('\\n')
+            for line in ssp_stdout_lines:
+                txt = line.split()
+                if (("Lmax" in txt) and ("reference" in txt) and ("solution" in txt)):
+                    print("error %.14e" %float(txt[6]))
+                    stats['error'] = float(txt[6])
+                #end
             #end
         
     return stats
@@ -172,7 +225,7 @@ for i in range(7):
 
 ## parameters
 nonstiff_params = [1e2]
-stiff_params    = [1e8]
+stiff_params    = {'ks1e8': 1e8}
 
 ## Integrator types
 solvertype = [{'name': 'SSP212',  'exe': SSP212},
@@ -185,17 +238,17 @@ fname = 'hyperbolic_relaxation_stats'
 RunStats = []
 
 for knonstiff in nonstiff_params:
-    for kstiff in stiff_params:
+    for kstiffname, kstiff in stiff_params.items():
         for runname, runvalue in adaptive_params.items():
             for solver_adapt in solvertype:
-                adaptive_stat = runtest(solver_adapt, "adaptive", runvalue, runname, kstiff, knonstiff, showcommand=True, sspcommand=True)
+                adaptive_stat = runtest(solver_adapt, "adaptive", runvalue, runname, kstiff, knonstiff, kstiffname, showcommand=True, sspcommand=True)
                 RunStats.append(adaptive_stat)
 
 for knonstiff in nonstiff_params:
-    for kstiff in stiff_params:
+    for kstiffname, kstiff in stiff_params.items():
         for runname, runvalue in fixed_params.items():
             for solver_fixed in solvertype:
-                fixed_stat = runtest(solver_fixed, "fixed", runvalue, runname, kstiff, knonstiff, showcommand=True, sspcommand=True)
+                fixed_stat = runtest(solver_fixed, "fixed", runvalue, runname, kstiff, knonstiff, kstiffname, showcommand=True, sspcommand=True)
                 RunStats.append(fixed_stat)
 RunStatsDf = pd.DataFrame.from_records(RunStats)
 
@@ -204,3 +257,7 @@ print("RunStatsDf object:")
 print(RunStatsDf)
 print("Saving as Excel")
 RunStatsDf.to_excel(fname + '.xlsx', index=False)
+
+
+
+

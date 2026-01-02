@@ -7,7 +7,8 @@ set(sources hyperbolic_relaxation.cpp)
 #   extra installation files
 set(extras 
     plot_hyperbolic_relaxation.py
-    runtests_hyperbolic_relaxation.py)
+    runtests_hyperbolic_relaxation.py
+    runtests_hyperbolic_relaxation_refSol.py)
 
 #   set the target name
 set(target hyperbolic_relaxation)

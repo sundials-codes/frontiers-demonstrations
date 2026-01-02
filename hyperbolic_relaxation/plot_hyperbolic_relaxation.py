@@ -93,18 +93,20 @@ for it in range(nsteps):
 #end
 # print(largeDev_xgrid)
 # print(largeDev_time)
-
+tstar = None
 # determine the shock speed and its corresponding time step
 for i in range(len(largeDev_xgrid)):
     if largeDev_xgrid[i] >= 0.5:
         xgrid_star = largeDev_xgrid[i]
-        t_star     = largeDev_time[i]
+        tstar     = largeDev_time[i]
         # iloc = i
         break
 # print (xgrid_star)#,iloc
-print ("Time step where grid point is not less than the shock value = %f\n" % t_star)
+if tstar is not None:
+    print ("Time step where grid point is not less than the shock value = %f" %tstar)
 # print(t[iloc])
 
+# solution at the final time step
 gamma   = 7.0/5.0
 przdata = np.zeros((nx), dtype=float) #pressure
 rhodata = np.zeros((nx), dtype=float) #density
@@ -117,13 +119,6 @@ for i in range(nx):
     veldata[i] = mx[nsteps-1, i]/rho[nsteps-1, i]
     etdiff[i] = ( (et[nsteps-1, i]/rho[nsteps-1, i]) - 0.5 * ((mx[nsteps-1, i]/rho[nsteps-1, i])**2) ) - eknot[i] 
 # end
-
-# confirm the L2 error norm for (p - rho)
-# sumerror = 0.0
-# for i in range(len(rhodata)):
-#     sumerror = sumerror + (rhodata[i]-przdata[i])*(rhodata[i]-przdata[i])
-# l2error = np.sqrt(sumerror/nx)
-# print("L2 error norm: %.6e" %l2error)
 
 fig = plt.figure(figsize=(10, 5))
 gs  = GridSpec(2, 2, figure=fig)
@@ -160,7 +155,7 @@ plt.savefig("hyperbolic_relaxation_frames.png")
 # plt.show()
 
 # ## ==============================================================================
-# ## use the t_star value in the time step history to determine time history 
+# ## use the tstar value in the time step history to determine time history 
 # ## on the left and right side of the shock (only use this part of the script
 # ## when doing a single run and not running multiple tests at a time using 
 # ## runtests_hyperbolic_relaxation.py)
@@ -178,20 +173,19 @@ plt.savefig("hyperbolic_relaxation_frames.png")
 # # print("New directory:", new_directory)
 
 # # add tstar to time histroy plot
-# runcommand = f"./log_example.py {file_to_copy} --tstar %f  --save sun_save " %(t_star)
-# # runcommand = f"./log_example.py {file_to_copy} --tstar %f " %(t_star)
+# runcommand = f"./log_example.py {file_to_copy} --tstar %f  --save sun_save " %(tstar)
+# # runcommand = f"./log_example.py {file_to_copy} --tstar %f " %(tstar)
 # result = subprocess.run(shlex.split(runcommand), stdout=subprocess.PIPE)
 
 
 
 ## ------------------ Extract Reference Solution at Final Time Step -----------------------
-def read_ref_solution(filename, N):
+def read_ref_solution(filename):
     """
     This script extract the solution at the final time step of the reference solution 
     required to compute the error norm at the final time step.
 
     Input: filename: reference solution filename
-           N : the length of the solution at the final time step
 
     Output: returns the solution vector at the final time step
     """
@@ -233,7 +227,7 @@ def read_ref_solution(filename, N):
         for it in range(nsteps_ref):
             line_ref  = (lines_ref.pop(0)).split()
             t_ref[it] = line_ref.pop(0)
-            for ix in range(nx):
+            for ix in range(nx_ref):
                 rho_ref[it, ix] = line_ref.pop(0)
                 mx_ref[it, ix]  = line_ref.pop(0)
                 my_ref[it, ix]  = line_ref.pop(0)
@@ -246,77 +240,40 @@ def read_ref_solution(filename, N):
     velRefFinal = np.zeros((nx_ref), dtype=float) #velocity
     etRefFinal  = np.zeros((nx_ref), dtype=float) #energy
     przRefFinal = np.zeros((nx_ref), dtype=float) #pressure
-    for i in range(nx):
+    for i in range(nx_ref):
         rhoRefFinal[i] = rho_ref[nsteps_ref-1,i] 
         velRefFinal[i] = mx_ref[nsteps_ref-1,i]/rho_ref[nsteps_ref-1,i] 
         etRefFinal[i]  = et_ref[nsteps_ref-1,i] 
         przRefFinal[i] = (gamma-1.0) * (et_ref[nsteps_ref-1, i] - (mx_ref[nsteps_ref-1, i] * mx_ref[nsteps_ref-1, i] + my_ref[nsteps_ref-1, i] * my_ref[nsteps_ref-1, i] + mz_ref[nsteps_ref-1, i] * mz_ref[nsteps_ref-1, i]) * 0.5 / rho_ref[nsteps_ref-1, i])
     
-    return rhoRefFinal
+    return rhoRefFinal, velRefFinal, etRefFinal, przRefFinal
 
 # fixed runs
-fixedk0_refSoln_lastStep = read_ref_solution("fixed_referenceSoln_k0.txt", N)
-fixedk2_refSoln_lastStep = read_ref_solution("fixed_referenceSoln_k2.txt", N)
-fixedk4_refSoln_lastStep = read_ref_solution("fixed_referenceSoln_k4.txt", N)
+fixed_ks1e8_refLastSoln_rho, _, _, _ = read_ref_solution("fixed_referenceSoln_ks1_kns1.out")
 # adaptive runs
-adaptk0_refSoln_lastStep = read_ref_solution("adaptive_referenceSoln_k0.txt", N)
-adaptk2_refSoln_lastStep = read_ref_solution("adaptive_referenceSoln_k2.txt", N)
-adaptk4_refSoln_lastStep = read_ref_solution("adaptive_referenceSoln_k4.txt", N)
+adapt_ks1e8_refLastSoln_rho, _, _, _ = read_ref_solution("adaptive_referenceSoln_ks1_kns1.out")
 
 
 ## -------------------- Compute L-infinty norm using the reference solution -----------------------
-AdaptiveRun = True
+AdaptiveRun = False
 FixedRun    = True
 elmax       = 0.0 #l-infinity error
 if (FixedRun):
-    if (diff_k==0.0):
-        for i in range(N):
-            errV = np.abs(fixedk0_refSoln_lastStep[i] - rho_lastStep[i])
-            if (errV > elmax):
-                elmax = errV
-            # end
+    for i in range(nx):
+        errV = np.abs(fixed_ks1e8_refLastSoln_rho[i] - rhodata[i])
+        if (errV > elmax):
+            elmax = errV
         # end
-    elif (diff_k==0.02):
-        for i in range(N):
-            errV = np.abs(fixedk2_refSoln_lastStep[i] - rho_lastStep[i])
-            if (errV > elmax):
-                elmax = errV
-            # end
+    # end
+elif (AdaptiveRun):
+    for i in range(nx):
+        errV = np.abs(adapt_ks1e8_refLastSoln_rho[i] - rhodata[i])
+        if (errV > elmax):
+            elmax = errV
         # end
-    elif (diff_k==0.04):
-        for i in range(N):
-            errV = np.abs(fixedk4_refSoln_lastStep[i] - rho_lastStep[i])
-            if (errV > elmax):
-                elmax = errV
-            # end
-        # end
-if (AdaptiveRun):
-    if (diff_k==0.0):
-        for i in range(N):
-            errV = np.abs(adaptk0_refSoln_lastStep[i] - rho_lastStep[i])
-            if (errV > elmax):
-                elmax = errV
-            # end
-        # end
-    elif (diff_k==0.02):
-        for i in range(N):
-            errV = np.abs(adaptk2_refSoln_lastStep[i] - pSol_lastStep[i])
-            if (errV > elmax):
-                elmax = errV
-            # end
-        # end
-    elif (diff_k==0.04):
-        for i in range(N):
-            errV = np.abs(adaptk4_refSoln_lastStep[i] - pSol_lastStep[i])
-            if (errV > elmax):
-                elmax = errV
-            # end
-        # end
+    # end
 
-print("Lmax error using reference solution: %.6e" %elmax)
+print("Lmax error using reference solution = %.4e" %elmax)
 # end if statement
-
-##### end of script #####
-
 
 ##### end of script #####
