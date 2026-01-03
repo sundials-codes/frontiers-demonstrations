@@ -91,20 +91,20 @@ for it in range(nsteps):
     largeDev_xgrid.append(float(x[largeDev_xloc]))
     largeDev_time.append(float(t[timeV]))
 #end
-# print(largeDev_xgrid)
-# print(largeDev_time)
-tstar = None
+
 # determine the shock speed and its corresponding time step
+tstar = None
 for i in range(len(largeDev_xgrid)):
     if largeDev_xgrid[i] >= 0.5:
         xgrid_star = largeDev_xgrid[i]
         tstar     = largeDev_time[i]
         # iloc = i
         break
-# print (xgrid_star)#,iloc
+    # end
+# end
 if tstar is not None:
     print ("Time step where grid point is not less than the shock value = %f" %tstar)
-# print(t[iloc])
+# end
 
 # solution at the final time step
 gamma   = 7.0/5.0
@@ -120,39 +120,63 @@ for i in range(nx):
     etdiff[i] = ( (et[nsteps-1, i]/rho[nsteps-1, i]) - 0.5 * ((mx[nsteps-1, i]/rho[nsteps-1, i])**2) ) - eknot[i] 
 # end
 
+# determine interface location
+iloc = 0
+for i in range(nx):
+    if x[i]>=0.5:
+        iloc = i
+        break
+
+# energy error in the stiff region (E - E_{0})
+etdiff_stiff  = np.zeros((len(x[iloc:])), dtype=float) 
+etdiff_stiff = etdiff[iloc:]
+
+# Lmax error for between the energy at the final time step and the equilibrium energy
+energy_errMax = 0.0
+for i in range(len(etdiff_stiff)):
+    energy_err = np.abs(etdiff_stiff[i])
+    if (energy_err > energy_errMax) :
+       energy_errMax = energy_err
+    # end
+#end
+print("Maximum energy error = %.4e" %energy_errMax)
+
+# plot solutions
 fig = plt.figure(figsize=(10, 5))
 gs  = GridSpec(2, 2, figure=fig)
 
 ## density 
 ax00 = fig.add_subplot(gs[0, 0])  
-ax00.plot(x, rhodata, marker='x', markersize=6, linestyle='-',  color='blue', label="density",  linewidth=0.8)
+ax00.plot(x, rhodata, linestyle='-',  color='blue', label="density", linewidth=0.8)
 ax00.set_ylabel(r"density")
 ax00.set_xlabel(r"x")
 plt.legend()
 
 ## pressure
 ax01 = fig.add_subplot(gs[0, 1]) 
-ax01.plot(x, przdata, marker='o', markersize=6, linestyle='-.', color='red',  label="pressure", linewidth=0.8)
+ax01.plot(x, przdata, linestyle='-.', color='red', label="pressure", linewidth=0.8)
 ax01.set_ylabel(r"pressure")
 ax01.set_xlabel(r"x")
 plt.legend()
 
 ## velocity
 ax03 = fig.add_subplot(gs[1, 0]) 
-ax03.plot(x, veldata, marker='s', markersize=6, linestyle='--', color='black',  label="velocity", linewidth=0.8)
+ax03.plot(x, veldata, linestyle='--', color='black',  label="velocity", linewidth=0.8)
 ax03.set_ylabel(r"velocity")
 ax03.set_xlabel(r"x")
 plt.legend()
 
 ## E - E_{0}
 ax04 = fig.add_subplot(gs[1, 1]) 
-ax04.plot(x, etdiff, marker='+', markersize=6, linestyle=':', color='green',  label="$E - E_{0}$", linewidth=0.8)
+ax04.plot(x[iloc:], etdiff_stiff, linestyle=':', color='green', label="$E - E_{0}$", linewidth=0.8)
 ax04.set_ylabel(r"$E - E_{0}$")
 ax04.set_xlabel(r"x")
 plt.legend()
 
 plt.savefig("hyperbolic_relaxation_frames.png")
 # plt.show()
+
+
 
 # ## ==============================================================================
 # ## use the tstar value in the time step history to determine time history 
@@ -173,8 +197,8 @@ plt.savefig("hyperbolic_relaxation_frames.png")
 # # print("New directory:", new_directory)
 
 # # add tstar to time histroy plot
-# runcommand = f"./log_example.py {file_to_copy} --tstar %f  --save sun_save " %(tstar)
-# # runcommand = f"./log_example.py {file_to_copy} --tstar %f " %(tstar)
+# # runcommand = f"./log_example.py {file_to_copy} --tstar %f  --save sun_save " %(tstar)
+# runcommand = f"./log_example.py {file_to_copy} --tstar %f " %(tstar)
 # result = subprocess.run(shlex.split(runcommand), stdout=subprocess.PIPE)
 
 
@@ -249,29 +273,86 @@ def read_ref_solution(filename):
     return rhoRefFinal, velRefFinal, etRefFinal, przRefFinal
 
 # fixed runs
-fixed_ks1e8_refLastSoln_rho, _, _, _ = read_ref_solution("fixed_referenceSoln_ks1_kns1.out")
+fixed_ks1e6_refLastSoln_rho, _, _, _  = read_ref_solution("fixed_referenceSoln_ks1e6.out")
+fixed_ks1e8_refLastSoln_rho, _, _, _  = read_ref_solution("fixed_referenceSoln_ks1e8.out")
+fixed_ks1e10_refLastSoln_rho, _, _, _ = read_ref_solution("fixed_referenceSoln_ks1e10.out")
+fixed_ks1e12_refLastSoln_rho, _, _, _ = read_ref_solution("fixed_referenceSoln_ks1e12.out")
 # adaptive runs
-adapt_ks1e8_refLastSoln_rho, _, _, _ = read_ref_solution("adaptive_referenceSoln_ks1_kns1.out")
+adapt_ks1e6_refLastSoln_rho, _, _, _  = read_ref_solution("adaptive_referenceSoln_ks1e6.out")
+adapt_ks1e8_refLastSoln_rho, _, _, _  = read_ref_solution("adaptive_referenceSoln_ks1e8.out")
+adapt_ks1e10_refLastSoln_rho, _, _, _ = read_ref_solution("adaptive_referenceSoln_ks1e10.out")
+adapt_ks1e12_refLastSoln_rho, _, _, _ = read_ref_solution("adaptive_referenceSoln_ks1e12.out")
 
 
 ## -------------------- Compute L-infinty norm using the reference solution -----------------------
-AdaptiveRun = False
-FixedRun    = True
-elmax       = 0.0 #l-infinity error
+stiff1e6 = False #only one type of stiffness parameter option cna be true at a time (keep as only "1" space before and after =)
+stiff1e8 = True
+stiff1e10 = False
+stiff1e12 = False
+
+AdaptiveRun = False #only one type of run can be true at a time (keep as only "1" space before and after =)
+FixedRun = True
+
+elmax = 0.0 #l-infinity error
 if (FixedRun):
-    for i in range(nx):
-        errV = np.abs(fixed_ks1e8_refLastSoln_rho[i] - rhodata[i])
-        if (errV > elmax):
-            elmax = errV
+    if(stiff1e6):
+        for i in range(nx):
+            errV = np.abs(fixed_ks1e6_refLastSoln_rho[i] - rhodata[i])
+            if (errV > elmax):
+                elmax = errV
+            # end
         # end
-    # end
+    if(stiff1e8):
+        for i in range(nx):
+            errV = np.abs(fixed_ks1e8_refLastSoln_rho[i] - rhodata[i])
+            if (errV > elmax):
+                elmax = errV
+            # end
+        # end
+    elif(stiff1e10):
+        for i in range(nx):
+            errV = np.abs(fixed_ks1e10_refLastSoln_rho[i] - rhodata[i])
+            if (errV > elmax):
+                elmax = errV
+            # end
+        # end
+    elif(stiff1e12):
+        for i in range(nx):
+            errV = np.abs(fixed_ks1e12_refLastSoln_rho[i] - rhodata[i])
+            if (errV > elmax):
+                elmax = errV
+            # end
+        # end
 elif (AdaptiveRun):
-    for i in range(nx):
-        errV = np.abs(adapt_ks1e8_refLastSoln_rho[i] - rhodata[i])
-        if (errV > elmax):
-            elmax = errV
+    if (stiff1e6): 
+        for i in range(nx):
+            errV = np.abs(adapt_ks1e6_refLastSoln_rho[i] - rhodata[i])
+            if (errV > elmax):
+                elmax = errV
+            # end
         # end
-    # end
+    if (stiff1e8): 
+        for i in range(nx):
+            errV = np.abs(adapt_ks1e8_refLastSoln_rho[i] - rhodata[i])
+            if (errV > elmax):
+                elmax = errV
+            # end
+        # end
+    elif (stiff1e10): 
+        for i in range(nx):
+            errV = np.abs(adapt_ks1e10_refLastSoln_rho[i] - rhodata[i])
+            if (errV > elmax):
+                elmax = errV
+            # end
+        # end
+    elif (stiff1e12): 
+        for i in range(nx):
+            errV = np.abs(adapt_ks1e12_refLastSoln_rho[i] - rhodata[i])
+            if (errV > elmax):
+                elmax = errV
+            # end
+        # end
+# end
 
 print("Lmax error using reference solution = %.4e" %elmax)
 # end if statement
