@@ -39,9 +39,9 @@ def runtest(solver, modetype, runV, runN, kstiff, knonstiff, kstiffname, showcom
 
     Output: returns the statistics
     """
-    stats = {'Runtype': modetype,'ReturnCode': 0, 'IMEX_method': solver['name'], 'runVal': runV, 'runtime':0.0,
-             'stiff_param': 0.0, 'nonstiff_param': 0.0, 'Steps': 0, 'StepAttempts': 0, 'ErrTestFails': 0, 
-             'Explicit_RHS': 0, 'Implicit_RHS': 0, 'err_rho': 0.0, 'energy_err': 0.0}
+    stats = {'Runtype': modetype,'ReturnCode': 0, 'IMEX_method': solver['name'], 'nonstiff_param': 0.0, 'stiff_param': 0.0,
+             'runVal': runV, 'runtime':0.0, 'Steps': 0, 'StepAttempts': 0, 'ErrTestFails': 0, 'Explicit_RHS': 0, 
+             'Implicit_RHS': 0, 'Implicit_solves': 0, 'err_rho': 0.0, 'energy_err': 0.0}
 
     if (modetype == "adaptive"):
         runcommand = "SUNLOGGER_INFO_FILENAME=sun-%s-%s.log %s  --rtol %.2e  --eps_stiff %.2e  --eps_nonstiff %.2e" % (solver['name'], runN, solver['exe'], runV, kstiff, knonstiff)
@@ -73,8 +73,10 @@ def runtest(solver, modetype, runV, runN, kstiff, knonstiff, kstiffname, showcom
         stats['StepAttempts']    = 0
         stats['ErrTestFails']    = 0
         stats['Explicit_RHS']    = 0 
-        stats['Implicit_RHS']    = 0   
+        stats['Implicit_RHS']    = 0  
+        stats['Implicit_solves'] = 0  
         stats['err_rho']         = 0 
+        stats['energy_err']      = 0
 
     # If SUNDIALS did not fail
     if not sundials_failed:
@@ -91,6 +93,17 @@ def runtest(solver, modetype, runV, runN, kstiff, knonstiff, kstiffname, showcom
                 stats['Explicit_RHS'] = int(txt[5])       #right hand side evaluations for explicit method
             elif (("Implicit" in txt) and ("RHS" in txt)):
                 stats['Implicit_RHS'] = int(txt[5])       #right hand side evaluations for implicit method
+
+        # number of implicit solves for each method
+        if (solver['name']== 'SSP212'):
+            stats['Implicit_solves'] = 2
+        elif (solver['name']== 'SSP312'):
+            stats['Implicit_solves'] = 3
+        elif (solver['name']== 'SSPL312'):
+            stats['Implicit_solves'] = 3
+        elif (solver['name']== 'SSP423'):
+            stats['Implicit_solves'] = 3
+        # end
 
         datafile = "plot_hyperbolic_relaxation.py"
         # return with an error if the file does not exist
@@ -240,12 +253,12 @@ def runtest(solver, modetype, runV, runN, kstiff, knonstiff, kstiffname, showcom
                 txt = line.split()
                 if (("grid" in txt) and ("point" in txt) and ("shock" in txt)):
                     tstar = float(txt[13])
-                    print("tstar is %f\n" %tstar)
+                    # print("tstar is %f\n" %tstar)
                 elif (("Lmax" in txt) and ("reference" in txt) and ("solution" in txt)):
-                    print("error %.14e" %float(txt[6]))
+                    # print("error %.14e" %float(txt[6]))
                     stats['err_rho'] = float(txt[6])
                 elif (("Maximum" in txt) and ("energy" in txt) and ("error" in txt)):
-                    print("energy error %.14e" %float(txt[4]))
+                    # print("energy error %.14e" %float(txt[4]))
                     stats['energy_err'] = float(txt[4])
                 #end
             # #end
@@ -311,10 +324,10 @@ def runtest(solver, modetype, runV, runN, kstiff, knonstiff, kstiffname, showcom
             for line in ssp_stdout_lines:
                 txt = line.split()
                 if (("Lmax" in txt) and ("reference" in txt) and ("solution" in txt)):
-                    print("error %.14e" %float(txt[6]))
+                    # print("error %.14e" %float(txt[6]))
                     stats['err_rho'] = float(txt[6])
                 elif (("Maximum" in txt) and ("energy" in txt) and ("error" in txt)):
-                    print("energy error %.14e" %float(txt[4]))
+                    # print("energy error %.14e" %float(txt[4]))
                     stats['energy_err'] = float(txt[4])
                 #end
             #end
@@ -376,6 +389,71 @@ RunStatsDf.to_excel(fname + '.xlsx', index=False)
 # ===============================================================================================================================
 #  Generate plots to test the efficiency and accuracy of the IMEX SSP methods
 # ===============================================================================================================================
+
+df = pd.read_excel('hyperbolic_relaxation_stats' + '.xlsx') # excel file
+
+stiff_param = {'ks1e6': 1e6, 'ks1e8': 1e8, 'ks1e10': 1e10, 'ks1e12': 1e12}
+
+fixed_accuracy = True
+fixed_efficiency = True
+fixed_time = True
+
+for stiffNm, stiffVal in stiff_param.items():
+    # ---------- fixed runs -----------
+    data_fixed = df[(df["stiff_param"] == stiffVal) & (df["Runtype"] == "fixed")][["Runtype", "IMEX_method", "nonstiff_param", "stiff_param", 
+                                                                                   "runVal", "runtime", "Steps", "StepAttempts", "ErrTestFails"
+                                                                                   "Explicit_RHS", "Implicit_RHS", "Implicit_solves", 
+                                                                                   "err_rho", "energy_err"]]
+    linestyles = itertools.cycle(['-', '--', ':', '-.'])
+    # accuracy plot
+    if (fixed_accuracy):
+        plt.figure()
+        for SSPmethodFix in data_fixed['IMEX_method'].unique():
+            SSPmethodFix_data = data_fixed[data_fixed['IMEX_method'] == SSPmethodFix]
+            plt.plot(SSPmethodFix_data['runVal'], SSPmethodFix_data['err_rho'], linestyle=next(linestyles), label=SSPmethodFix)
+        plt.xscale('log')
+        plt.yscale('log')
+        plt.xlabel('h')
+        plt.ylabel('$L_{\\infty}$ error')
+        plt.legend()
+        plt.savefig(f"accuracy_hyperbolic_{stiffNm}_fixedRun.pdf")
+        # plt.show()
+    
+    # efficiency plot
+    if (fixed_efficiency):
+        plt.figure()
+        for SSPmethodFix in data_fixed['IMEX_method'].unique():
+            SSPmethodFix_data = data_fixed[data_fixed['IMEX_method'] == SSPmethodFix]
+            plt.plot(SSPmethodFix_data['Implicit_solves'], SSPmethodFix_data['err_rho'], linestyle=next(linestyles), label=SSPmethodFix)
+        plt.xscale('log')
+        plt.yscale('log')
+        plt.xlabel('Number of Implicit Solves')
+        plt.ylabel('$L_{\\infty}$ error')
+        plt.legend()
+        plt.savefig(f"efficiency_hyperbolic_{stiffNm}_fixedRun.pdf")
+        # plt.show()
+
+    # efficiency plot
+    if (fixed_time):
+        plt.figure()
+        for SSPmethodFix in data_fixed['IMEX_method'].unique():
+            SSPmethodFix_data = data_fixed[data_fixed['IMEX_method'] == SSPmethodFix]
+            plt.plot(SSPmethodFix_data['runtime'], SSPmethodFix_data['err_rho'], linestyle=next(linestyles), label=SSPmethodFix)
+        plt.xscale('log')
+        plt.yscale('log')
+        plt.xlabel('runtime')
+        plt.ylabel('$L_{\\infty}$ error')
+        plt.legend()
+        plt.savefig(f"efficiency_hyperbolic_{stiffNm}_fixedRun.pdf")
+        # plt.show()
+    
+
+    
+
+
+
+
+
 
 
 
