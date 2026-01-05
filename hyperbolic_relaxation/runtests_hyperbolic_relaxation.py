@@ -272,12 +272,19 @@ def runtest(solver, modetype, runV, runN, kstiff, knonstiff, kstiffname, showcom
                 file_to_copy = "sun-%s-%s.log" % (solver['name'], runN) #'./sun.log'
                 save_file = "sun-%s-%s-%s" % (solver['name'], runN, kstiffname)
                 destination_directory = './../deps/sundials/tools'
+                # # destination_directory = os.getcwd()
+                # print('destination_directory:', destination_directory)
+                # print("CWD:", os.getcwd())
+                # print("Looking for:", file_to_copy)
+                # print("Exists?", os.path.exists(file_to_copy))
                 shutil.copy(file_to_copy, destination_directory)
-
+                
                 # change the working directory to sundials/tools
                 curent_directory = os.getcwd()
+                # print('curent_directory:', curent_directory)
                 tools_directory  = os.chdir("../deps/sundials/tools")
                 tools_directory  = os.getcwd()
+                # print('tools_directory:', tools_directory)
 
                 # add tstar to time histroy plot
                 logcommand = f"./log_example.py {file_to_copy} --tstar %f  --save {save_file}" %(tstar)
@@ -287,6 +294,7 @@ def runtest(solver, modetype, runV, runN, kstiff, knonstiff, kstiffname, showcom
                 # after the tools directory come back to the bin directory
                 bin_directory = os.chdir("../../../bin")
                 bin_directory  = os.getcwd()
+                # print('bin_directory:', bin_directory)
 
         elif (modetype == "fixed"):
             # FixedRun = True and AdaptiveRun = False to compute the Lmax error

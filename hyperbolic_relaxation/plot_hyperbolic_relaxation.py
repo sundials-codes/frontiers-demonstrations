@@ -270,28 +270,28 @@ def read_ref_solution(filename):
         etRefFinal[i]  = et_ref[nsteps_ref-1,i] 
         przRefFinal[i] = (gamma-1.0) * (et_ref[nsteps_ref-1, i] - (mx_ref[nsteps_ref-1, i] * mx_ref[nsteps_ref-1, i] + my_ref[nsteps_ref-1, i] * my_ref[nsteps_ref-1, i] + mz_ref[nsteps_ref-1, i] * mz_ref[nsteps_ref-1, i]) * 0.5 / rho_ref[nsteps_ref-1, i])
     
-    return rhoRefFinal, velRefFinal, etRefFinal, przRefFinal
+    return rhoRefFinal
 
 # fixed runs
-fixed_ks1e6_refLastSoln_rho, _, _, _  = read_ref_solution("fixed_referenceSoln_ks1e6.out")
-fixed_ks1e8_refLastSoln_rho, _, _, _  = read_ref_solution("fixed_referenceSoln_ks1e8.out")
-fixed_ks1e10_refLastSoln_rho, _, _, _ = read_ref_solution("fixed_referenceSoln_ks1e10.out")
-fixed_ks1e12_refLastSoln_rho, _, _, _ = read_ref_solution("fixed_referenceSoln_ks1e12.out")
+fixed_ks1e6_refLastSoln_rho  = read_ref_solution("fixed_referenceSoln_ks1e6.out")
+fixed_ks1e8_refLastSoln_rho  = read_ref_solution("fixed_referenceSoln_ks1e8.out")
+fixed_ks1e10_refLastSoln_rho = read_ref_solution("fixed_referenceSoln_ks1e10.out")
+fixed_ks1e12_refLastSoln_rho = read_ref_solution("fixed_referenceSoln_ks1e12.out")
 # adaptive runs
-adapt_ks1e6_refLastSoln_rho, _, _, _  = read_ref_solution("adaptive_referenceSoln_ks1e6.out")
-adapt_ks1e8_refLastSoln_rho, _, _, _  = read_ref_solution("adaptive_referenceSoln_ks1e8.out")
-adapt_ks1e10_refLastSoln_rho, _, _, _ = read_ref_solution("adaptive_referenceSoln_ks1e10.out")
-adapt_ks1e12_refLastSoln_rho, _, _, _ = read_ref_solution("adaptive_referenceSoln_ks1e12.out")
+adapt_ks1e6_refLastSoln_rho  = read_ref_solution("adaptive_referenceSoln_ks1e6.out")
+adapt_ks1e8_refLastSoln_rho  = read_ref_solution("adaptive_referenceSoln_ks1e8.out")
+adapt_ks1e10_refLastSoln_rho = read_ref_solution("adaptive_referenceSoln_ks1e10.out")
+adapt_ks1e12_refLastSoln_rho = read_ref_solution("adaptive_referenceSoln_ks1e12.out")
 
 
 ## -------------------- Compute L-infinty norm using the reference solution -----------------------
-stiff1e6 = False #only one type of stiffness parameter option cna be true at a time (keep as only "1" space before and after =)
-stiff1e8 = True
+stiff1e6 = True #only one type of stiffness parameter option cna be true at a time (keep as only "1" space before and after =)
+stiff1e8 = False
 stiff1e10 = False
 stiff1e12 = False
 
-AdaptiveRun = False #only one type of run can be true at a time (keep as only "1" space before and after =)
-FixedRun = True
+AdaptiveRun = True #only one type of run can be true at a time (keep as only "1" space before and after =)
+FixedRun = False
 
 elmax = 0.0 #l-infinity error
 if (FixedRun):
@@ -302,7 +302,7 @@ if (FixedRun):
                 elmax = errV
             # end
         # end
-    if(stiff1e8):
+    elif(stiff1e8):
         for i in range(nx):
             errV = np.abs(fixed_ks1e8_refLastSoln_rho[i] - rhodata[i])
             if (errV > elmax):
@@ -331,7 +331,7 @@ elif (AdaptiveRun):
                 elmax = errV
             # end
         # end
-    if (stiff1e8): 
+    elif (stiff1e8): 
         for i in range(nx):
             errV = np.abs(adapt_ks1e8_refLastSoln_rho[i] - rhodata[i])
             if (errV > elmax):
