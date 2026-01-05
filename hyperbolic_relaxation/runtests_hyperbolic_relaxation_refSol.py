@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 #------------------------------------------------------------------------------------------------------------------------------------
-# Programmer(s):  Sylvia Amihere @ SMU
+# Programmer(s):  Sylvia Amihere @ UMBC
 #------------------------------------------------------------------------------------------------------------------------------------
-# Copyright (c) 2025, Southern Methodist University.
+# Copyright (c) 2025, University of Maryland Baltimore County.
 # All rights reserved.
 # For details, see the LICENSE file.
 #------------------------------------------------------------------------------------------------------------------------------------
@@ -67,11 +67,10 @@ def refSoln(solver, modetype, runV, kstiff, ksN, knonstiff, showcommand=True):
 # method to generate reference solution
 SSP423 = "./hyperbolic_relaxation  --IMintegrator ARKODE_SSP_ESDIRK_4_2_3  --EXintegrator ARKODE_SSP_ERK_4_2_3  --output 2"     
 
-adaptive_params = [1e-10] ## relative tolerance for reference solution
+adaptive_params = [1e-3] ## relative tolerance for reference solution
 fixed_params    = [1e-4] ## fixed time step size for reference solution
 nonstiff_params = [1e2]
-# stiff_params    = {'ks1e6': 1e6, 'ks1e8': 1e8, 'ks1e10': 1e10, 'ks1e12': 1e12}
-stiff_params    = {'ks1e8': 1e8}
+stiff_params    = {'ks1e6': 1e6, 'ks1e8': 1e8, 'ks1e10': 1e10, 'ks1e12': 1e12}
 
 ## Integrator types
 solvertype = [{'name': 'SSP-ARK-4-2-3', 'exe': SSP423}]
