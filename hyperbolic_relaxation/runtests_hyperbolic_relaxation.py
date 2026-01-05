@@ -272,11 +272,7 @@ def runtest(solver, modetype, runV, runN, kstiff, knonstiff, kstiffname, showcom
                 file_to_copy = "sun-%s-%s.log" % (solver['name'], runN) #'./sun.log'
                 save_file = "sun-%s-%s-%s" % (solver['name'], runN, kstiffname)
                 destination_directory = './../deps/sundials/tools'
-                # # destination_directory = os.getcwd()
                 # print('destination_directory:', destination_directory)
-                # print("CWD:", os.getcwd())
-                # print("Looking for:", file_to_copy)
-                # print("Exists?", os.path.exists(file_to_copy))
                 shutil.copy(file_to_copy, destination_directory)
                 
                 # change the working directory to sundials/tools
