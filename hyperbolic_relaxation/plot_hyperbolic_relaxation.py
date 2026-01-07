@@ -202,7 +202,6 @@ plt.savefig("hyperbolic_relaxation_frames.png")
 # result = subprocess.run(shlex.split(runcommand), stdout=subprocess.PIPE)
 
 
-
 ## ------------------ Extract Reference Solution at Final Time Step -----------------------
 def read_ref_solution(filename):
     """
@@ -219,135 +218,118 @@ def read_ref_solution(filename):
     
     # read solution file, storing each line as a string in a list
     with open(filename, "r") as file_ref:
-        lines_ref = file_ref.readlines()
 
         # extract header information
-        title_ref     = lines_ref.pop(0)
-        nvar_ref      = int((lines_ref.pop(0).split())[2])
-        varnames_ref  = lines_ref.pop(0)
-        nt_ref        = int((lines_ref.pop(0).split())[2])
-        nx_ref        = int((lines_ref.pop(0).split())[2])
-        xl_ref        = float((lines_ref.pop(0).split())[2])
-        xr_ref        = float((lines_ref.pop(0).split())[2])
-        lastline_ref  = (lines_ref[-1])
-        num_steps_ref = lastline_ref.split(':')
-        nsteps_ref    = int(num_steps_ref[1].strip()) # total number of steps taken
-        lines_ref.pop()   # remove "Number of Time Steps Taken: 2604"
+        title_ref     = file_ref.readline()
+        nvar_ref      = int((file_ref.readline().split())[2])
+        varnames_ref  = file_ref.readline()
+        nt_ref        = int((file_ref.readline().split())[2])
+        nx_ref        = int((file_ref.readline().split())[2])
+        xl_ref        = float((file_ref.readline().split())[2])
+        xr_ref        = float((file_ref.readline().split())[2])
 
-        # allocate solution data as 2D Python arrays
-        t_ref   = np.zeros((nsteps_ref), dtype=float)
-        rho_ref = np.zeros((nsteps_ref, nx_ref), dtype=float)
-        mx_ref  = np.zeros((nsteps_ref, nx_ref), dtype=float)
-        my_ref  = np.zeros((nsteps_ref, nx_ref), dtype=float)
-        mz_ref  = np.zeros((nsteps_ref, nx_ref), dtype=float)
-        et_ref  = np.zeros((nsteps_ref, nx_ref), dtype=float)
-        x_ref   = np.linspace(xl_ref, xr_ref, nx_ref)
-        dx_ref  = (xr_ref - xl_ref)/nx_ref
+        last_line = ""
+        for line in file_ref:
+            if "Number of Time Steps" in line:
+                nsteps_ref = int(line.split(':')[1].strip()) # extract total number of steps taken
+                break
+            # track the last non-empty solution, every nonempty line overwrites the last line
+            if line.strip():
+                last_line = line
 
-        lines_ref.pop(0) #remove the initial solution
+    # store only solution at the final step
+    last_data = last_line.split()
+    last_data.pop(0) #ignore the time step at each solution
+
+    rho_ref = np.zeros((nx_ref), dtype=float)
+    mx_ref  = np.zeros((nx_ref), dtype=float)
+    my_ref  = np.zeros((nx_ref), dtype=float)
+    mz_ref  = np.zeros((nx_ref), dtype=float)
+    et_ref  = np.zeros((nx_ref), dtype=float)
         
-        # store remaining data into numpy arrays (ignoring the initial solution and time step)
-        # the first element in each array is the time step
-        for it in range(nsteps_ref):
-            line_ref  = (lines_ref.pop(0)).split()
-            t_ref[it] = line_ref.pop(0)
-            for ix in range(nx_ref):
-                rho_ref[it, ix] = line_ref.pop(0)
-                mx_ref[it, ix]  = line_ref.pop(0)
-                my_ref[it, ix]  = line_ref.pop(0)
-                mz_ref[it, ix]  = line_ref.pop(0)
-                et_ref[it, ix]  = line_ref.pop(0)
+    for ix in range(nx_ref):
+        rho_ref[ix] = float(last_data.pop(0))
+        mx_ref[ix]  = float(last_data.pop(0))
+        my_ref[ix]  = float(last_data.pop(0))
+        mz_ref[ix]  = float(last_data.pop(0))
+        et_ref[ix]  = float(last_data.pop(0))
 
-    # extract the solutiion at the final time step
-    gamma = 7.0/5.0
     rhoRefFinal = np.zeros((nx_ref), dtype=float) #density
     velRefFinal = np.zeros((nx_ref), dtype=float) #velocity
     etRefFinal  = np.zeros((nx_ref), dtype=float) #energy
     przRefFinal = np.zeros((nx_ref), dtype=float) #pressure
+
+    gamma = 7.0/5.0
     for i in range(nx_ref):
-        rhoRefFinal[i] = rho_ref[nsteps_ref-1,i] 
-        velRefFinal[i] = mx_ref[nsteps_ref-1,i]/rho_ref[nsteps_ref-1,i] 
-        etRefFinal[i]  = et_ref[nsteps_ref-1,i] 
-        przRefFinal[i] = (gamma-1.0) * (et_ref[nsteps_ref-1, i] - (mx_ref[nsteps_ref-1, i] * mx_ref[nsteps_ref-1, i] + my_ref[nsteps_ref-1, i] * my_ref[nsteps_ref-1, i] + mz_ref[nsteps_ref-1, i] * mz_ref[nsteps_ref-1, i]) * 0.5 / rho_ref[nsteps_ref-1, i])
+        rhoRefFinal[i] = rho_ref[i] 
+        velRefFinal[i] = mx_ref[i]/rho_ref[i] 
+        etRefFinal[i]  = et_ref[i] 
+        przRefFinal[i] = (gamma-1.0) * (et_ref[i] - (mx_ref[i] * mx_ref[i] + my_ref[i] * my_ref[i] + mz_ref[i] * mz_ref[i]) * 0.5 / rho_ref[i])
     
     return rhoRefFinal
 
-# fixed runs
-fixed_ks1e6_refLastSoln_rho  = read_ref_solution("fixed_referenceSoln_ks1e6.out")
-fixed_ks1e8_refLastSoln_rho  = read_ref_solution("fixed_referenceSoln_ks1e8.out")
-fixed_ks1e10_refLastSoln_rho = read_ref_solution("fixed_referenceSoln_ks1e10.out")
-fixed_ks1e12_refLastSoln_rho = read_ref_solution("fixed_referenceSoln_ks1e12.out")
-# adaptive runs
-adapt_ks1e6_refLastSoln_rho  = read_ref_solution("adaptive_referenceSoln_ks1e6.out")
-adapt_ks1e8_refLastSoln_rho  = read_ref_solution("adaptive_referenceSoln_ks1e8.out")
-adapt_ks1e10_refLastSoln_rho = read_ref_solution("adaptive_referenceSoln_ks1e10.out")
-adapt_ks1e12_refLastSoln_rho = read_ref_solution("adaptive_referenceSoln_ks1e12.out")
-
 
 ## -------------------- Compute L-infinty norm using the reference solution -----------------------
-stiff1e6 = True #only one type of stiffness parameter option cna be true at a time (keep as only "1" space before and after =)
-stiff1e8 = False
-stiff1e10 = False
-stiff1e12 = False
+stiff1e7 = False #only one type of stiffness parameter option cna be true at a time (keep as only "1" space before and after =)
+stiff1e8 = True
+stiff1e9 = False
 
 AdaptiveRun = True #only one type of run can be true at a time (keep as only "1" space before and after =)
 FixedRun = False
 
 elmax = 0.0 #l-infinity error
 if (FixedRun):
-    if(stiff1e6):
+    if(stiff1e7):
+        #load file
+        fixed_ks1e7_refLastSoln_rho  = read_ref_solution("fixed_referenceSoln_ks1e7.out")
         for i in range(nx):
-            errV = np.abs(fixed_ks1e6_refLastSoln_rho[i] - rhodata[i])
+            errV = np.abs(fixed_ks1e7_refLastSoln_rho[i] - rhodata[i])
             if (errV > elmax):
                 elmax = errV
             # end
         # end
     elif(stiff1e8):
+        #load file
+        fixed_ks1e8_refLastSoln_rho  = read_ref_solution("fixed_referenceSoln_ks1e8.out")
         for i in range(nx):
             errV = np.abs(fixed_ks1e8_refLastSoln_rho[i] - rhodata[i])
             if (errV > elmax):
                 elmax = errV
             # end
         # end
-    elif(stiff1e10):
+    elif(stiff1e9):
+        #load file
+        fixed_ks1e9_refLastSoln_rho = read_ref_solution("fixed_referenceSoln_ks1e9.out")
         for i in range(nx):
-            errV = np.abs(fixed_ks1e10_refLastSoln_rho[i] - rhodata[i])
-            if (errV > elmax):
-                elmax = errV
-            # end
-        # end
-    elif(stiff1e12):
-        for i in range(nx):
-            errV = np.abs(fixed_ks1e12_refLastSoln_rho[i] - rhodata[i])
+            errV = np.abs(fixed_ks1e9_refLastSoln_rho[i] - rhodata[i])
             if (errV > elmax):
                 elmax = errV
             # end
         # end
 elif (AdaptiveRun):
-    if (stiff1e6): 
+    if (stiff1e7): 
+        #load file
+        adapt_ks1e7_refLastSoln_rho  = read_ref_solution("adaptive_referenceSoln_ks1e7.out")
         for i in range(nx):
-            errV = np.abs(adapt_ks1e6_refLastSoln_rho[i] - rhodata[i])
+            errV = np.abs(adapt_ks1e7_refLastSoln_rho[i] - rhodata[i])
             if (errV > elmax):
                 elmax = errV
             # end
         # end
     elif (stiff1e8): 
+        #load file
+        adapt_ks1e8_refLastSoln_rho  = read_ref_solution("adaptive_referenceSoln_ks1e8.out")
         for i in range(nx):
             errV = np.abs(adapt_ks1e8_refLastSoln_rho[i] - rhodata[i])
             if (errV > elmax):
                 elmax = errV
             # end
         # end
-    elif (stiff1e10): 
+    elif (stiff1e9): 
+        #load file
+        adapt_ks1e9_refLastSoln_rho = read_ref_solution("adaptive_referenceSoln_ks1e9.out")
         for i in range(nx):
-            errV = np.abs(adapt_ks1e10_refLastSoln_rho[i] - rhodata[i])
-            if (errV > elmax):
-                elmax = errV
-            # end
-        # end
-    elif (stiff1e12): 
-        for i in range(nx):
-            errV = np.abs(adapt_ks1e12_refLastSoln_rho[i] - rhodata[i])
+            errV = np.abs(adapt_ks1e9_refLastSoln_rho[i] - rhodata[i])
             if (errV > elmax):
                 elmax = errV
             # end
