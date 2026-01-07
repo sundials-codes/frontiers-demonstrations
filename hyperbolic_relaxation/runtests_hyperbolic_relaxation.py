@@ -114,63 +114,63 @@ def runtest(solver, modetype, runV, runN, kstiff, knonstiff, kstiffname, showcom
         # ====== in the plot script, only one stiffness value can be true at a time =========
         # so that you can use the correct reference solution for each stiffness parameter
         # ===================================================================================
-        # K = 1e7
-        if (kstiffname == "ks1e7"):
+        # K = 1e6
+        if (kstiffname == "ks1e6"):
             with open(datafile, "r") as file:
                 original_lines = file.readlines()
             modified_lines = []
             for line in original_lines:
-                if "stiff1e7 =" in line:
+                if "stiff1e6 =" in line:
                     val = "True" 
+                    modified_lines.append(f"stiff1e6 = {val}\n")
+                elif "stiff1e7 =" in line:
+                    val = "False" 
                     modified_lines.append(f"stiff1e7 = {val}\n")
                 elif "stiff1e8 =" in line:
                     val = "False" 
                     modified_lines.append(f"stiff1e8 = {val}\n")
-                elif "stiff1e9 =" in line:
-                    val = "False" 
-                    modified_lines.append(f"stiff1e9 = {val}\n")
                 else:
                     modified_lines.append(line)
             # write the modified line to the python script
             with open(datafile, "w") as f:
                 f.writelines(modified_lines)
 
-        # K = 1e8
-        elif (kstiffname == "ks1e8"):
+        # K = 1e7
+        elif (kstiffname == "ks1e7"):
             with open(datafile, "r") as file:
                 original_lines = file.readlines()
             modified_lines = []
             for line in original_lines:
-                if "stiff1e7 =" in line:
+                if "stiff1e6 =" in line:
                     val = "False" 
+                    modified_lines.append(f"stiff1e6 = {val}\n")
+                elif "stiff1e7 =" in line:
+                    val = "True" 
                     modified_lines.append(f"stiff1e7 = {val}\n")
                 elif "stiff1e8 =" in line:
-                    val = "True" 
-                    modified_lines.append(f"stiff1e8 = {val}\n")
-                elif "stiff1e9 =" in line:
                     val = "False" 
-                    modified_lines.append(f"stiff1e9 = {val}\n")
+                    modified_lines.append(f"stiff1e8 = {val}\n")
                 else:
                     modified_lines.append(line)
             # write the modified line to the python script
             with open(datafile, "w") as f:
                 f.writelines(modified_lines)
         
-        # K = 1e9
-        elif (kstiffname == "ks1e9"):
+        # K = 1e8
+        elif (kstiffname == "ks1e8"):
             with open(datafile, "r") as file:
                 original_lines = file.readlines()
             modified_lines = []
             for line in original_lines:
-                if "stiff1e7 =" in line:
+                if "stiff1e6 =" in line:
+                    val = "False" 
+                    modified_lines.append(f"stiff1e6 = {val}\n")
+                elif "stiff1e7 =" in line:
                     val = "False" 
                     modified_lines.append(f"stiff1e7 = {val}\n")
                 elif "stiff1e8 =" in line:
-                    val = "False" 
-                    modified_lines.append(f"stiff1e8 = {val}\n")
-                elif "stiff1e9 =" in line:
                     val = "True" 
-                    modified_lines.append(f"stiff1e9 = {val}\n")
+                    modified_lines.append(f"stiff1e8 = {val}\n")
                 else:
                     modified_lines.append(line)
             # write the modified line to the python script
@@ -315,14 +315,14 @@ SSPL312 = "  ./hyperbolic_relaxation  --IMintegrator ARKODE_SSP_LSPUM_SDIRK_3_1_
 SSP423  = "  ./hyperbolic_relaxation  --IMintegrator ARKODE_SSP_ESDIRK_4_2_3       --EXintegrator ARKODE_SSP_ERK_4_2_3        --output 2"    
 
 ## common testing parameters
-adaptive_params = {'r1': 1e-5, 'r2':1e-4, 'r3':1e-3, 'r4':1e-2, 'r5':1e-1, 'r6':1.0} #relative tolerances
+adaptive_params = {'r1': 1e-5, 'r2':1e-4, 'r3':1e-3, 'r4':1e-2, 'r5':1e-1} #relative tolerances
 fixed_params    = {} #fixed time step sizes
-for i in range(5, -1, -1):
+for i in range(4, -1, -1):
     fixed_params[f"h{i}"] = 0.01/(2.0**i)
 
 ## stiffness parameters
 nonstiff_params = [1e2]
-stiff_params    = {'ks1e7': 1e7, 'ks1e8': 1e8, 'ks1e9': 1e9}
+stiff_params    = {'ks1e6': 1e6, 'ks1e7': 1e7, 'ks1e8': 1e8}
 
 ## Integrator types
 solvertype = [{'name': 'SSP212',  'exe': SSP212},
@@ -361,7 +361,7 @@ RunStatsDf.to_excel(fname + '.xlsx', index=False)
 #  Generate plots to test the efficiency and accuracy of the IMEX SSP methods
 # ===============================================================================================================================
 df = pd.read_excel('hyperbolic_relaxation_stats' + '.xlsx') # excel file
-stiff_param = {'ks1e7': 1e7, 'ks1e8': 1e8, 'ks1e9': 1e9}
+stiff_param = {'ks1e6': 1e6, 'ks1e7': 1e7, 'ks1e8': 1e8}
 
 fixed_accuracy   = True
 fixed_efficiency = True

@@ -270,16 +270,25 @@ def read_ref_solution(filename):
 
 
 ## -------------------- Compute L-infinty norm using the reference solution -----------------------
-stiff1e7 = False #only one type of stiffness parameter option cna be true at a time (keep as only "1" space before and after =)
-stiff1e8 = True
-stiff1e9 = False
+stiff1e6 = False #only one type of stiffness parameter option cna be true at a time (keep as only "1" space before and after =)
+stiff1e7 = True
+stiff1e8 = False
 
 AdaptiveRun = True #only one type of run can be true at a time (keep as only "1" space before and after =)
 FixedRun = False
 
 elmax = 0.0 #l-infinity error
 if (FixedRun):
-    if(stiff1e7):
+    if(stiff1e6):
+        #load file
+        fixed_ks1e6_refLastSoln_rho  = read_ref_solution("fixed_referenceSoln_ks1e6.out")
+        for i in range(nx):
+            errV = np.abs(fixed_ks1e6_refLastSoln_rho[i] - rhodata[i])
+            if (errV > elmax):
+                elmax = errV
+            # end
+        # end
+    elif(stiff1e7):
         #load file
         fixed_ks1e7_refLastSoln_rho  = read_ref_solution("fixed_referenceSoln_ks1e7.out")
         for i in range(nx):
@@ -290,24 +299,24 @@ if (FixedRun):
         # end
     elif(stiff1e8):
         #load file
-        fixed_ks1e8_refLastSoln_rho  = read_ref_solution("fixed_referenceSoln_ks1e8.out")
+        fixed_ks1e8_refLastSoln_rho = read_ref_solution("fixed_referenceSoln_ks1e8.out")
         for i in range(nx):
             errV = np.abs(fixed_ks1e8_refLastSoln_rho[i] - rhodata[i])
             if (errV > elmax):
                 elmax = errV
             # end
         # end
-    elif(stiff1e9):
+elif (AdaptiveRun):
+    if (stiff1e6): 
         #load file
-        fixed_ks1e9_refLastSoln_rho = read_ref_solution("fixed_referenceSoln_ks1e9.out")
+        adapt_ks1e6_refLastSoln_rho  = read_ref_solution("adaptive_referenceSoln_ks1e6.out")
         for i in range(nx):
-            errV = np.abs(fixed_ks1e9_refLastSoln_rho[i] - rhodata[i])
+            errV = np.abs(adapt_ks1e6_refLastSoln_rho[i] - rhodata[i])
             if (errV > elmax):
                 elmax = errV
             # end
         # end
-elif (AdaptiveRun):
-    if (stiff1e7): 
+    elif (stiff1e7): 
         #load file
         adapt_ks1e7_refLastSoln_rho  = read_ref_solution("adaptive_referenceSoln_ks1e7.out")
         for i in range(nx):
@@ -318,18 +327,9 @@ elif (AdaptiveRun):
         # end
     elif (stiff1e8): 
         #load file
-        adapt_ks1e8_refLastSoln_rho  = read_ref_solution("adaptive_referenceSoln_ks1e8.out")
+        adapt_ks1e8_refLastSoln_rho = read_ref_solution("adaptive_referenceSoln_ks1e8.out")
         for i in range(nx):
             errV = np.abs(adapt_ks1e8_refLastSoln_rho[i] - rhodata[i])
-            if (errV > elmax):
-                elmax = errV
-            # end
-        # end
-    elif (stiff1e9): 
-        #load file
-        adapt_ks1e9_refLastSoln_rho = read_ref_solution("adaptive_referenceSoln_ks1e9.out")
-        for i in range(nx):
-            errV = np.abs(adapt_ks1e9_refLastSoln_rho[i] - rhodata[i])
             if (errV > elmax):
                 elmax = errV
             # end
