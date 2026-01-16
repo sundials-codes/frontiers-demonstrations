@@ -33,6 +33,7 @@ if not os.path.isfile(datafile):
     msg = "Error: file " + datafile + " does not exist"
     sys.exit(msg)
 
+gamma = 7.0/5.0
 # read solution file, storing each line as a string in a list
 with open(datafile, "r") as file:
     lines = file.readlines()
@@ -50,7 +51,6 @@ with open(datafile, "r") as file:
     nsteps    = int(num_steps[1].strip()) # total number of steps taken
     lines.pop()   # remove "Number of Time Steps Taken: 2604"
 
-
     # allocate solution data as 2D Python arrays
     t = np.zeros((nsteps), dtype=float)
     rho = np.zeros((nsteps, nx), dtype=float)
@@ -61,10 +61,9 @@ with open(datafile, "r") as file:
     x = np.linspace(xl, xr, nx)
     dx = (xr - xl)/nx
 
-    lines.pop(0) #remove the initial solution
+    # lines.pop(0) #remove the initial solution
     
-    # store remaining data into numpy arrays (ignoring the initial solution and time step)
-    # the first element in each array is the time step
+    # store remaining data into numpy arrays, the first element in each array is the time step
     for it in range(nsteps):
         line = (lines.pop(0)).split()
         t[it] = line.pop(0)
@@ -98,7 +97,6 @@ for i in range(len(largeDev_xgrid)):
     if largeDev_xgrid[i] >= 0.5:
         xgrid_star = largeDev_xgrid[i]
         tstar     = largeDev_time[i]
-        # iloc = i
         break
     # end
 # end
@@ -107,7 +105,6 @@ if tstar is not None:
 # end
 
 # solution at the final time step
-gamma   = 7.0/5.0
 przdata = np.zeros((nx), dtype=float) #pressure
 rhodata = np.zeros((nx), dtype=float) #density
 veldata = np.zeros((nx), dtype=float) #velocity
@@ -141,40 +138,94 @@ for i in range(len(etdiff_stiff)):
 #end
 print("Maximum energy error = %.4e" %energy_errMax)
 
-# plot solutions
-fig = plt.figure(figsize=(10, 5))
-gs  = GridSpec(2, 2, figure=fig)
+# # plot solutions
+# fig = plt.figure(figsize=(10, 5))
+# gs  = GridSpec(2, 2, figure=fig)
 
-## density 
-ax00 = fig.add_subplot(gs[0, 0])  
-ax00.plot(x, rhodata, linestyle='-',  color='blue', label="density", linewidth=0.8)
-ax00.set_ylabel(r"density")
-ax00.set_xlabel(r"x")
-plt.legend()
+# ## density 
+# ax00 = fig.add_subplot(gs[0, 0])  
+# ax00.plot(x, rhodata, linestyle='-',  color='blue', label="density", linewidth=0.8)
+# ax00.set_ylabel(r"density")
+# ax00.set_xlabel(r"x")
+# plt.legend()
 
-## pressure
-ax01 = fig.add_subplot(gs[0, 1]) 
-ax01.plot(x, przdata, linestyle='-.', color='red', label="pressure", linewidth=0.8)
-ax01.set_ylabel(r"pressure")
-ax01.set_xlabel(r"x")
-plt.legend()
+# ## pressure
+# ax01 = fig.add_subplot(gs[0, 1]) 
+# ax01.plot(x, przdata, linestyle='-.', color='red', label="pressure", linewidth=0.8)
+# ax01.set_ylabel(r"pressure")
+# ax01.set_xlabel(r"x")
+# plt.legend()
 
-## velocity
-ax03 = fig.add_subplot(gs[1, 0]) 
-ax03.plot(x, veldata, linestyle='--', color='black',  label="velocity", linewidth=0.8)
-ax03.set_ylabel(r"velocity")
-ax03.set_xlabel(r"x")
-plt.legend()
+# ## velocity
+# ax03 = fig.add_subplot(gs[1, 0]) 
+# ax03.plot(x, veldata, linestyle='--', color='black',  label="velocity", linewidth=0.8)
+# ax03.set_ylabel(r"velocity")
+# ax03.set_xlabel(r"x")
+# plt.legend()
 
-## E - E_{0}
-ax04 = fig.add_subplot(gs[1, 1]) 
-ax04.plot(x[iloc:], etdiff_stiff, linestyle=':', color='green', label="$E - E_{0}$", linewidth=0.8)
-ax04.set_ylabel(r"$E - E_{0}$")
-ax04.set_xlabel(r"x")
-plt.legend()
+# ## E - E_{0}
+# ax04 = fig.add_subplot(gs[1, 1]) 
+# ax04.plot(x[iloc:], etdiff_stiff, linestyle=':', color='green', label="$E - E_{0}$", linewidth=0.8)
+# ax04.set_ylabel(r"$E - E_{0}$")
+# ax04.set_xlabel(r"x")
+# plt.legend()
 
-plt.savefig("hyperbolic_relaxation_frames.png")
+# # plt.savefig("hyperbolic_relaxation_frames.png")
 # plt.show()
+
+
+## plot defaults: increase default font size, increase plot width, enable LaTeX rendering
+plt.rc("font", size=15)
+plt.rcParams["figure.figsize"] = [7.2, 4.8]
+plt.rcParams["text.usetex"] = True
+plt.rcParams["figure.constrained_layout.use"] = True
+
+## subplots with time snapshots of the density, x-velocity, and pressure
+fig = plt.figure(figsize=(10, 5))
+gs = GridSpec(1, 5, figure=fig)
+ax00 = fig.add_subplot(gs[0, 0])  # 1st column - initial time step
+ax01 = fig.add_subplot(gs[0, 1])  # 2nd column
+ax02 = fig.add_subplot(gs[0, 2])  # 3rd column
+ax03 = fig.add_subplot(gs[0, 3])  # 4th column
+ax04 = fig.add_subplot(gs[0, 4])  # 5th colum - final time step
+
+it = 0
+tval = repr(float(t[it])).zfill(3)
+ax00.plot(x, rho[it, :], "-b",)
+ax00.set_title(r"$t =$ " + tval)
+ax00.set_ylabel(r"$P(t,x)$")
+ax00.set_xlabel(r"$x$")
+
+it = 1
+tval = repr(float(t[it])).zfill(3)
+ax01.plot(x, rho[it, :], "-b")
+ax01.set_title(r"$t =$ " + tval)
+ax01.set_xlabel(r"$x$")
+
+it = 10
+tval = repr(float(t[it])).zfill(3)
+ax02.plot(x, rho[it, :], "-b")
+ax02.set_title(r"$t =$ " + tval)
+ax02.set_xlabel(r"$x$")
+
+middleval = int(np.ceil(nsteps/2))
+it = middleval
+tval = repr(float(t[it])).zfill(3)
+ax03.plot(x, rho[it, :], "-b")
+ax03.set_title(r"$t =$ " + tval)
+ax03.set_xlabel(r"$x$")
+
+it = -1
+tval = repr(float(t[it])).zfill(3)
+ax04.plot(x, rho[it, :], "-b")
+ax04.set_title(r"$t =$ " + tval)
+ax04.set_xlabel(r"$x$")
+
+plt.rc("font", size=15)
+plt.rcParams["figure.figsize"] = [7.2, 4.8]
+plt.rcParams["text.usetex"] = True
+plt.rcParams["figure.constrained_layout.use"] = True
+plt.savefig("hyperbolic_relaxation_frames.png")
 
 
 
@@ -197,8 +248,9 @@ plt.savefig("hyperbolic_relaxation_frames.png")
 # # print("New directory:", new_directory)
 
 # # add tstar to time histroy plot
-# # runcommand = f"./log_example.py {file_to_copy} --tstar %f  --save sun_save " %(tstar)
-# runcommand = f"./log_example.py {file_to_copy} --tstar %f " %(tstar)
+# runcommand = f"./log_example.py {file_to_copy} --tstar %f  --save sun_save " %(tstar)
+# # runcommand = f"./log_example.py {file_to_copy} --tstar %f " %(tstar)
+# # runcommand = f"./log_example.py {file_to_copy}  "
 # result = subprocess.run(shlex.split(runcommand), stdout=subprocess.PIPE)
 
 
@@ -271,8 +323,8 @@ def read_ref_solution(filename):
 
 ## -------------------- Compute L-infinty norm using the reference solution -----------------------
 stiff1e6 = False #only one type of stiffness parameter option cna be true at a time (keep as only "1" space before and after =)
-stiff1e7 = True
-stiff1e8 = False
+stiff1e7 = False
+stiff1e8 = True
 
 AdaptiveRun = True #only one type of run can be true at a time (keep as only "1" space before and after =)
 FixedRun = False
@@ -281,7 +333,7 @@ elmax = 0.0 #l-infinity error
 if (FixedRun):
     if(stiff1e6):
         #load file
-        fixed_ks1e6_refLastSoln_rho  = read_ref_solution("fixed_referenceSoln_ks1e6.out")
+        fixed_ks1e6_refLastSoln_rho  = read_ref_solution("referenceSoln_ks1e6.out")
         for i in range(nx):
             errV = np.abs(fixed_ks1e6_refLastSoln_rho[i] - rhodata[i])
             if (errV > elmax):
@@ -290,7 +342,7 @@ if (FixedRun):
         # end
     elif(stiff1e7):
         #load file
-        fixed_ks1e7_refLastSoln_rho  = read_ref_solution("fixed_referenceSoln_ks1e7.out")
+        fixed_ks1e7_refLastSoln_rho = read_ref_solution("referenceSoln_ks1e7.out")
         for i in range(nx):
             errV = np.abs(fixed_ks1e7_refLastSoln_rho[i] - rhodata[i])
             if (errV > elmax):
@@ -299,7 +351,7 @@ if (FixedRun):
         # end
     elif(stiff1e8):
         #load file
-        fixed_ks1e8_refLastSoln_rho = read_ref_solution("fixed_referenceSoln_ks1e8.out")
+        fixed_ks1e8_refLastSoln_rho = read_ref_solution("referenceSoln_ks1e8.out")
         for i in range(nx):
             errV = np.abs(fixed_ks1e8_refLastSoln_rho[i] - rhodata[i])
             if (errV > elmax):
@@ -309,7 +361,7 @@ if (FixedRun):
 elif (AdaptiveRun):
     if (stiff1e6): 
         #load file
-        adapt_ks1e6_refLastSoln_rho  = read_ref_solution("adaptive_referenceSoln_ks1e6.out")
+        adapt_ks1e6_refLastSoln_rho = read_ref_solution("referenceSoln_ks1e6.out")
         for i in range(nx):
             errV = np.abs(adapt_ks1e6_refLastSoln_rho[i] - rhodata[i])
             if (errV > elmax):
@@ -318,7 +370,7 @@ elif (AdaptiveRun):
         # end
     elif (stiff1e7): 
         #load file
-        adapt_ks1e7_refLastSoln_rho  = read_ref_solution("adaptive_referenceSoln_ks1e7.out")
+        adapt_ks1e7_refLastSoln_rho = read_ref_solution("referenceSoln_ks1e7.out")
         for i in range(nx):
             errV = np.abs(adapt_ks1e7_refLastSoln_rho[i] - rhodata[i])
             if (errV > elmax):
@@ -327,7 +379,7 @@ elif (AdaptiveRun):
         # end
     elif (stiff1e8): 
         #load file
-        adapt_ks1e8_refLastSoln_rho = read_ref_solution("adaptive_referenceSoln_ks1e8.out")
+        adapt_ks1e8_refLastSoln_rho = read_ref_solution("referenceSoln_ks1e8.out")
         for i in range(nx):
             errV = np.abs(adapt_ks1e8_refLastSoln_rho[i] - rhodata[i])
             if (errV > elmax):

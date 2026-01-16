@@ -176,7 +176,8 @@ int main(int argc, char* argv[])
   //   tout = (tout > udata.tf) ? udata.tf : tout;
   // }
 
-  /* print the solution at all time steps in the .out file */
+
+    /* print the solution at all time steps in the .out file */
   while (t < udata.tf)
   {
     //   Advance in time
@@ -268,7 +269,7 @@ int fe_rhs(sunrealtype t, N_Vector y, N_Vector f, void* user_data)
   const sunrealtype dx           = udata->dx;
   sunrealtype* flux              = udata->flux;
   const sunrealtype xl           = udata->xl;
-  const sunrealtype eps_nonstiff = udata->eps_nonstiff; 
+  const sunrealtype eps_stiff = udata->eps_stiff; 
   const sunrealtype gamma        = udata->gamma; 
 
   // compute face-centered fluxes over domain interior: pack 1D x-directional array
@@ -303,18 +304,18 @@ int fe_rhs(sunrealtype t, N_Vector y, N_Vector f, void* user_data)
     etdot[i] -= (flux[(i + 1) * NSPECIES + 4] - flux[i * NSPECIES + 4]) / dx;
   }
 
-  for (long int i = 0; i < nx; i++) //SA
+  for (long int i = 0; i < nx; i++) 
   {
-    eKnot_data[i] = 1.0;
+    eKnot_data[i] = ONE;
   }  
 
-  for (long int i = 0; i < nx; i++) //SA
+  for (long int i = 0; i < nx; i++) 
   {
     sunrealtype xloc = ((sunrealtype)i) * dx + xl;
     if (xloc < HALF)
     {
       /* -K * rho*/ 
-      sunrealtype coef = -eps_nonstiff*rho[i];
+      sunrealtype coef = -eps_stiff*rho[i];
 
       /* 1.0 / rho*/
       sunrealtype rhoth = 1.0/rho[i];
@@ -331,7 +332,7 @@ int fe_rhs(sunrealtype t, N_Vector y, N_Vector f, void* user_data)
 }
 
 
-// ODE Implicit RHS function //SA
+// ODE Implicit RHS function 
 int fi_rhs(sunrealtype t, N_Vector y, N_Vector f, void* user_data)
 {
   // Access problem data
@@ -374,13 +375,13 @@ int fi_rhs(sunrealtype t, N_Vector y, N_Vector f, void* user_data)
   const long int nx           = udata->nx;
   const sunrealtype dx        = udata->dx;
   const sunrealtype xl        = udata->xl;
-  const sunrealtype eps_stiff = udata->eps_stiff; 
+  const sunrealtype eps_nonstiff = udata->eps_nonstiff; 
   const sunrealtype gamma     = udata->gamma; 
   sunrealtype* flux           = udata->flux;
 
   for (long int i = 0; i < nx; i++)
   {
-    eKnot_data[i] = 1.0;
+    eKnot_data[i] = ONE;
   }     
 
   // iterate over subdomain, updating RHS
@@ -395,7 +396,7 @@ int fi_rhs(sunrealtype t, N_Vector y, N_Vector f, void* user_data)
       mzdot[i]  = ZERO;
 
       /* -K * rho*/ 
-      sunrealtype coef = -eps_stiff*rho[i];
+      sunrealtype coef = -eps_nonstiff*rho[i];
 
       /* 1.0 / rho*/
       sunrealtype rhoth = 1.0/rho[i];
@@ -404,7 +405,7 @@ int fi_rhs(sunrealtype t, N_Vector y, N_Vector f, void* user_data)
       sunrealtype rhoe = et[i] - ((mx[i] * mx[i] + my[i] * my[i] + mz[i] * mz[i]) * HALF / rho[i]);
 
       /* relaxation term */
-      etdot[i] = coef*(rhoth*rhoe - eKnot_data[i]);
+      etdot[i] = etdot[i] + coef*(rhoth*rhoe - eKnot_data[i]);
     }
   }
 
@@ -669,19 +670,21 @@ int SetIC(N_Vector y, EulerData& udata)
   sunrealtype* et = N_VGetSubvectorArrayPointer_ManyVector(y, 4);
   if (check_ptr(et, "N_VGetSubvectorArrayPointer_ManyVector")) { return -1; }
 
+  const double PI = 3.141592653589793;
+
   for (long int i = 0; i < udata.nx; i++)
   {
     // sunrealtype xloc = ((sunrealtype)i + HALF) * udata.dx + udata.xl;
     sunrealtype xloc = ((sunrealtype)i) * udata.dx + udata.xl;
     if (xloc < HALF)
     {
-      rho[i] = rhoL;
+      rho[i] = rhoL;//(3.857143 + HALF * sin(TEN * PI * xloc)); //rhoL;
       mx[i]  = rhoL * uL;
       et[i]  = udata.eos_inv(rhoL, rhoL*uL, ZERO, ZERO, pL);
     }
     else
     {
-      rho[i] = rhoR;
+      rho[i] = rhoR;//(3.857143 + HALF * sin(TEN * PI * xloc));//rhoR;
       mx[i]  = rhoR * uR;
       et[i]  = udata.eos_inv(rhoR, rhoR*uR, ZERO, ZERO, pR);
     }

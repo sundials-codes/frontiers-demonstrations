@@ -37,7 +37,7 @@
 
 // Macros for problem constants
 #define rhoL   SUN_RCONST(1.0)
-#define rhoR   SUN_RCONST(0.2)
+#define rhoR   SUN_RCONST(0.2) 
 #define uL     SUN_RCONST(0.0)
 #define uR     SUN_RCONST(0.0)
 #define pL     SUN_RCONST(0.4)
@@ -46,6 +46,7 @@
 #define ZERO   SUN_RCONST(0.0)
 #define ONE    SUN_RCONST(1.0)
 #define TWO    SUN_RCONST(2.0)
+#define TEN    SUN_RCONST(10.0)
 #define FOURTH SUN_RCONST(0.25)
 
 #define NSPECIES 5
@@ -88,8 +89,8 @@ public:
 
   // constructor (with default values)
   ARKODEParameters()
-    : IMintegrator("ARKODE_SSP_ESDIRK_4_2_3"),
-      EXintegrator("ARKODE_SSP_ERK_4_2_3"),
+    : IMintegrator("ARKODE_SSP_DIRK_3_1_2"),
+      EXintegrator("ARKODE_SSP_ERK_3_1_2"),
       rtol(SUN_RCONST(1.e-4)),
       atol(SUN_RCONST(1.e-11)),
       fixed_h(ZERO),
@@ -509,7 +510,6 @@ static int WriteOutput(sunrealtype t, N_Vector y, EulerData& udata,
       sunrealtype* etdata = N_VGetArrayPointer(et);
       if (check_ptr(etdata, "N_VGetArrayPointer")) { return -1; }
 
-      // uopts.uout << "Time step size: " << t << std::endl;
       uopts.uout << t;
       for (sunindextype i = 0; i < udata.nx; i++)
       {
