@@ -67,6 +67,8 @@ with open(datafile, "r") as file:
             mz[it, ix] = line.pop(0)
             et[it, ix] = line.pop(0)
 
+# print(t)
+
 
 # utility routines for computing the analytical solution
 def advection_solution(t, x):
