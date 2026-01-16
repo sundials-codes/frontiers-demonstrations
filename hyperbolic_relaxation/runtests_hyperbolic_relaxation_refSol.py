@@ -39,7 +39,10 @@ def refSoln(solver, runV, kstiff, ksN, knonstiff, showcommand=True):
     Output: returns the reference solution as a textfile
     """
 
-    runcommand = " %s  --rtol %e  --eps_stiff %e  --eps_nonstiff %e" % (solver['exe'], runV, kstiff, knonstiff)
+    # if (modetype == "adaptive"):
+    runcommand = " %s  --rtol %.6e  --eps_stiff %.2e  --eps_nonstiff %.2e" % (solver['exe'], runV, kstiff, knonstiff)
+    # elif (modetype == "fixed"):
+    #     runcommand = " %s  --fixed_h %.6e  --eps_stiff %.2e  --eps_nonstiff %.2e" % (solver['exe'], runV, kstiff, knonstiff)
 
     result = subprocess.run(shlex.split(runcommand), stdout=subprocess.PIPE)
 
@@ -48,6 +51,8 @@ def refSoln(solver, runV, kstiff, ksN, knonstiff, showcommand=True):
         print(result.stderr)
     else:
         if (showcommand):
+            # print(f"Running {modetype} reference solution : " + runcommand + " SUCCESS")
+            # new_fileName = f"{modetype}_referenceSoln_{ksN}.out"
             print(f"Running reference solution : " + runcommand + " SUCCESS")
             new_fileName = f"referenceSoln_{ksN}.out"
 
@@ -66,6 +71,7 @@ def refSoln(solver, runV, kstiff, ksN, knonstiff, showcommand=True):
 SSP423 = "./hyperbolic_relaxation  --IMintegrator ARKODE_SSP_ESDIRK_4_2_3  --EXintegrator ARKODE_SSP_ERK_4_2_3  --output 2"     
 
 adaptive_params = [1e-14] #relative tolerance for reference solution
+# fixed_params    = [1e-10]  #fixed time step size for reference solution
 nonstiff_params = [1e2]
 stiff_params    = {'ks1e6': 1e6, 'ks1e7': 1e7, 'ks1e8': 1e8}
 
@@ -78,4 +84,10 @@ for knsval in nonstiff_params:
         for run_val in adaptive_params:
             for solver in solvertype:
                 adapt_refSoln = refSoln(solver, run_val, ksval, ksname, knsval, showcommand=True)
+
+# for knsval in nonstiff_params:
+#     for ksname, ksval in stiff_params.items():
+#         for run_val in fixed_params:
+#             for solver in solvertype:
+#                 fixed_refSoln = refSoln(solver, "fixed", run_val, ksval, ksname, knsval, showcommand=True)
 

@@ -389,13 +389,11 @@ for col_ind, (stiffNm, stiffVal) in enumerate(stiff_param.items()):
         SSPmethodAdapt_data = data_adaptive[data_adaptive['IMEX_method'] == method]
         ax.plot(SSPmethodAdapt_data['Steps'], SSPmethodAdapt_data['err_rho'], color = color, marker = next(markers_adaptive), markersize=5, linestyle=linestyle, label="adaptive")
 
-        if col_ind == 0:
-            ax.set_xlabel(f"{method}")
-        #end
+        ax.set_ylabel(f"{method}", fontsize=15)
 
         # each column should correspond to a stiffness parameter
         if row_ind == 0:
-            ax.set_title(f"K = {stiffVal}")
+            ax.set_title(f"K = {stiffVal}", fontsize=18)
         #end
         
         ax.set_xscale('log')
@@ -404,9 +402,9 @@ for col_ind, (stiffNm, stiffVal) in enumerate(stiff_param.items()):
         ax.legend(loc="best")
     #end
 #end
-fig.supxlabel('accepted steps')
-fig.supylabel('$L_{\\infty}$ error')
-fig.suptitle("accepted steps vs error")
+fig.supxlabel('accepted steps', fontsize=18)
+fig.supylabel('$L_{\\infty}$ error', fontsize=18)
+fig.suptitle("accepted steps vs error", fontsize=20)
 fig.tight_layout()
 plt.savefig("accepted_steps_error.pdf")
 
@@ -431,13 +429,11 @@ for col_ind, (stiffNm, stiffVal) in enumerate(stiff_param.items()):
         SSPmethodAdapt_data = data_adaptive[data_adaptive['IMEX_method'] == method]
         ax.plot(SSPmethodAdapt_data['Implicit_solves'], SSPmethodAdapt_data['err_rho'], color = color, marker = next(markers_adaptive), markersize=5, linestyle=linestyle, label="adaptive")
 
-        if col_ind == 0:
-            ax.set_xlabel(f"{method}")
-        #end
+        ax.set_ylabel(f"{method}", fontsize=15)
 
         # each column should correspond to a stiffness parameter
         if row_ind == 0:
-            ax.set_title(f"K = {stiffVal}")
+            ax.set_title(f"K = {stiffVal}", fontsize=18)
         #end
         
         ax.set_xscale('log')
@@ -446,9 +442,9 @@ for col_ind, (stiffNm, stiffVal) in enumerate(stiff_param.items()):
         ax.legend(loc="best")
     #end
 #end
-fig.supxlabel('implicit solves')
-fig.supylabel('$L_{\\infty}$ error')
-fig.suptitle("implicit solves vs error")
+fig.supxlabel('implicit solves', fontsize=18)
+fig.supylabel('$L_{\\infty}$ error', fontsize=18)
+fig.suptitle("implicit solves vs error", fontsize=20)
 fig.tight_layout()
 plt.savefig("implicit_solves_error.pdf")
 
@@ -473,13 +469,11 @@ for col_ind, (stiffNm, stiffVal) in enumerate(stiff_param.items()):
         SSPmethodAdapt_data = data_adaptive[data_adaptive['IMEX_method'] == method]
         ax.plot(SSPmethodAdapt_data['runtime'], SSPmethodAdapt_data['err_rho'], color = color, marker = next(markers_adaptive), markersize=5, linestyle=linestyle, label="adaptive")
 
-        if col_ind == 0:
-            ax.set_xlabel(f"{method}")
-        #end
+        ax.set_ylabel(f"{method}", fontsize=15)
 
         # each column should correspond to a stiffness parameter
         if row_ind == 0:
-            ax.set_title(f"K = {stiffVal}")
+            ax.set_title(f"K = {stiffVal}", fontsize=18)
         #end
         
         ax.set_xscale('log')
@@ -488,9 +482,9 @@ for col_ind, (stiffNm, stiffVal) in enumerate(stiff_param.items()):
         ax.legend(loc="best")
     #end
 #end
-fig.supxlabel('runtime')
-fig.supylabel('$L_{\\infty}$ error')
-fig.suptitle("runtime vs error")
+fig.supxlabel('runtime', fontsize=18)
+fig.supylabel('$L_{\\infty}$ error', fontsize=18)
+fig.suptitle("runtime vs error", fontsize=20)
 fig.tight_layout()
 plt.savefig("runtime_error.pdf")
 
@@ -508,16 +502,16 @@ for col_ind, (stiffNm, stiffVal) in enumerate(stiff_param.items()):
         SSPmethodAdapt_data = data_adaptive[data_adaptive['IMEX_method'] == SSPmethodAdaptive]
         ax.plot(SSPmethodAdapt_data['runVal'], SSPmethodAdapt_data['ErrTestFails'], color = color, marker = next(markers_adaptive), markersize=5, linestyle=linestyle, label=SSPmethodAdaptive)
 
-    ax.set_title(f"K = {stiffVal}")
+    ax.set_title(f"K = {stiffVal}", fontsize=18)
     ax.set_xscale('log')
     ax.set_yscale('log')
     ax.grid()
     ax.legend(loc="best")
     #end
 #end
-fig.supxlabel('rtol')
-fig.supylabel('rejected steps')
-fig.suptitle("rtol vs rejected steps")
+fig.supxlabel('rtol', fontsize=18)
+fig.supylabel('rejected steps', fontsize=18)
+fig.suptitle("rtol vs rejected steps", fontsize=20)
 fig.tight_layout()
 plt.savefig("rtol_rejectedSteps.pdf")
 

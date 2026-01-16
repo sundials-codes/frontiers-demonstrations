@@ -173,6 +173,9 @@ print("Maximum energy error = %.4e" %energy_errMax)
 # # plt.savefig("hyperbolic_relaxation_frames.png")
 # plt.show()
 
+# plt.plot(x, rho[-1, :])
+# plt.show()
+
 
 ## plot defaults: increase default font size, increase plot width, enable LaTeX rendering
 plt.rc("font", size=15)

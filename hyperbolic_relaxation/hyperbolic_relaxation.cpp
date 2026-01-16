@@ -269,7 +269,7 @@ int fe_rhs(sunrealtype t, N_Vector y, N_Vector f, void* user_data)
   const sunrealtype dx           = udata->dx;
   sunrealtype* flux              = udata->flux;
   const sunrealtype xl           = udata->xl;
-  const sunrealtype eps_stiff = udata->eps_stiff; 
+  const sunrealtype eps_nonstiff = udata->eps_nonstiff;
   const sunrealtype gamma        = udata->gamma; 
 
   // compute face-centered fluxes over domain interior: pack 1D x-directional array
@@ -315,7 +315,7 @@ int fe_rhs(sunrealtype t, N_Vector y, N_Vector f, void* user_data)
     if (xloc < HALF)
     {
       /* -K * rho*/ 
-      sunrealtype coef = -eps_stiff*rho[i];
+      sunrealtype coef = -eps_nonstiff*rho[i];
 
       /* 1.0 / rho*/
       sunrealtype rhoth = 1.0/rho[i];
@@ -375,7 +375,7 @@ int fi_rhs(sunrealtype t, N_Vector y, N_Vector f, void* user_data)
   const long int nx           = udata->nx;
   const sunrealtype dx        = udata->dx;
   const sunrealtype xl        = udata->xl;
-  const sunrealtype eps_nonstiff = udata->eps_nonstiff; 
+  const sunrealtype eps_stiff = udata->eps_stiff; 
   const sunrealtype gamma     = udata->gamma; 
   sunrealtype* flux           = udata->flux;
 
@@ -390,13 +390,9 @@ int fi_rhs(sunrealtype t, N_Vector y, N_Vector f, void* user_data)
     sunrealtype xloc = ((sunrealtype)i) * dx + xl;
     if (xloc >= HALF)
     {
-      rhodot[i] = ZERO;
-      mxdot[i]  = ZERO;
-      mydot[i]  = ZERO;
-      mzdot[i]  = ZERO;
 
       /* -K * rho*/ 
-      sunrealtype coef = -eps_nonstiff*rho[i];
+      sunrealtype coef = -eps_stiff*rho[i];
 
       /* 1.0 / rho*/
       sunrealtype rhoth = 1.0/rho[i];
@@ -684,7 +680,7 @@ int SetIC(N_Vector y, EulerData& udata)
     }
     else
     {
-      rho[i] = rhoR;//(3.857143 + HALF * sin(TEN * PI * xloc));//rhoR;
+      rho[i] = rhoL;//(3.857143 + HALF * sin(TEN * PI * xloc));//rhoR;
       mx[i]  = rhoR * uR;
       et[i]  = udata.eos_inv(rhoR, rhoR*uR, ZERO, ZERO, pR);
     }

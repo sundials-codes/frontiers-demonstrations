@@ -37,7 +37,7 @@
 
 // Macros for problem constants
 #define rhoL   SUN_RCONST(1.0)
-#define rhoR   SUN_RCONST(0.2) 
+#define rhoR   SUN_RCONST(0.2)
 #define uL     SUN_RCONST(0.0)
 #define uR     SUN_RCONST(0.0)
 #define pL     SUN_RCONST(0.4)
