@@ -206,22 +206,22 @@ def runtest(solver, modetype, runV, runN, kstiff, knonstiff, kstiffname, showcom
             # running python file to plot pressure and density
             sspcommand = " python ./plot_hyperbolic_relaxation.py"
             ssp_result = subprocess.run(shlex.split(sspcommand), stdout=subprocess.PIPE) 
-            new_fileName = f"hyperbolic_graph_{solver['name']}_{runN}_{kstiffname}.png"
-            # rename plot file
-            if os.path.exists("hyperbolic_relaxation_frames.png"):
-                os.rename("hyperbolic_relaxation_frames.png", new_fileName)
-                print(f"Plot saved as: {new_fileName}")
-            else:
-                print("Warning: hyperbolic_relaxation_frames.png not found.")
-            #end
+            # new_fileName = f"hyperbolic_graph_{solver['name']}_{runN}_{kstiffname}.png"
+            # # rename plot file
+            # if os.path.exists("hyperbolic_relaxation_frames.png"):
+            #     os.rename("hyperbolic_relaxation_frames.png", new_fileName)
+            #     print(f"Plot saved as: {new_fileName}")
+            # else:
+            #     print("Warning: hyperbolic_relaxation_frames.png not found.")
+            # #end
 
             ssp_stdout_lines = str(ssp_result.stdout).split('\\n')
             for line in ssp_stdout_lines:
                 txt = line.split()
-                if (("grid" in txt) and ("point" in txt) and ("shock" in txt)):
-                    tstar = float(txt[13])
+                # if (("grid" in txt) and ("point" in txt) and ("shock" in txt)):
+                #     tstar = float(txt[13])
                     # print("tstar is %f\n" %tstar)
-                elif (("Lmax" in txt) and ("reference" in txt) and ("solution" in txt)):
+                if (("Lmax" in txt) and ("reference" in txt) and ("solution" in txt)):
                     # print("error %.14e" %float(txt[6]))
                     stats['err_rho'] = float(txt[6])
                 elif (("Maximum" in txt) and ("energy" in txt) and ("error" in txt)):
@@ -231,33 +231,33 @@ def runtest(solver, modetype, runV, runN, kstiff, knonstiff, kstiffname, showcom
             # #end
 
             #tstar should not be None for adaptive runs.
-            if tstar is not None:
-                ## ==============================================================================
-                ## use the t_star to determine time history on the left and right side of the shock
-                ## ==============================================================================
-                # copy sun.log file into the /sundials/tools folder
-                file_to_copy = "sun-%s-%s.log" % (solver['name'], runN) #'./sun.log'
-                save_file = "sun-%s-%s-%s" % (solver['name'], runN, kstiffname)
-                destination_directory = './../deps/sundials/tools'
-                # print('destination_directory:', destination_directory)
-                shutil.copy(file_to_copy, destination_directory)
+            # if tstar is not None:
+            #     ## ==============================================================================
+            #     ## use the t_star to determine time history on the left and right side of the shock
+            #     ## ==============================================================================
+            #     # copy sun.log file into the /sundials/tools folder
+            #     file_to_copy = "sun-%s-%s.log" % (solver['name'], runN) #'./sun.log'
+            #     save_file = "sun-%s-%s-%s" % (solver['name'], runN, kstiffname)
+            #     destination_directory = './../deps/sundials/tools'
+            #     # print('destination_directory:', destination_directory)
+            #     shutil.copy(file_to_copy, destination_directory)
                 
-                # change the working directory to sundials/tools
-                curent_directory = os.getcwd()
-                # print('curent_directory:', curent_directory)
-                tools_directory  = os.chdir("../deps/sundials/tools")
-                tools_directory  = os.getcwd()
-                # print('tools_directory:', tools_directory)
+            #     # change the working directory to sundials/tools
+            #     curent_directory = os.getcwd()
+            #     # print('curent_directory:', curent_directory)
+            #     tools_directory  = os.chdir("../deps/sundials/tools")
+            #     tools_directory  = os.getcwd()
+            #     # print('tools_directory:', tools_directory)
 
-                # add tstar to time histroy plot
-                logcommand = f"./log_example.py {file_to_copy} --tstar %f  --save {save_file}" %(tstar)
-                # logcommand = f"./log_example.py {file_to_copy} --tstar %f" %(tstar)
-                log_result = subprocess.run(shlex.split(logcommand), stdout=subprocess.PIPE)
+            #     # add tstar to time histroy plot
+            #     logcommand = f"./log_example.py {file_to_copy} --tstar %f  --save {save_file}" %(tstar)
+            #     # logcommand = f"./log_example.py {file_to_copy} --tstar %f" %(tstar)
+            #     log_result = subprocess.run(shlex.split(logcommand), stdout=subprocess.PIPE)
 
-                # after the tools directory come back to the bin directory
-                bin_directory = os.chdir("../../../bin")
-                bin_directory  = os.getcwd()
-                # print('bin_directory:', bin_directory)
+            #     # after the tools directory come back to the bin directory
+            #     bin_directory = os.chdir("../../../bin")
+            #     bin_directory  = os.getcwd()
+            #     # print('bin_directory:', bin_directory)
 
         elif (modetype == "fixed"):
             # FixedRun = True and AdaptiveRun = False to compute the Lmax error
@@ -282,14 +282,14 @@ def runtest(solver, modetype, runV, runN, kstiff, knonstiff, kstiffname, showcom
             ## running python file to plot pressure and density
             sspcommand = " python ./plot_hyperbolic_relaxation.py"
             ssp_result = subprocess.run(shlex.split(sspcommand), stdout=subprocess.PIPE)   
-            new_fileName = f"hyperbolic_graph_{solver['name']}_{runN}_{kstiffname}.png"
-            # rename plot file
-            if os.path.exists("hyperbolic_relaxation_frames.png"):
-                os.rename("hyperbolic_relaxation_frames.png", new_fileName)
-                print(f"Plot saved as: {new_fileName}")
-            else:
-                print("Warning: hyperbolic_relaxation_frames.png not found.")
-            #end
+            # new_fileName = f"hyperbolic_graph_{solver['name']}_{runN}_{kstiffname}.png"
+            # # rename plot file
+            # if os.path.exists("hyperbolic_relaxation_frames.png"):
+            #     os.rename("hyperbolic_relaxation_frames.png", new_fileName)
+            #     print(f"Plot saved as: {new_fileName}")
+            # else:
+            #     print("Warning: hyperbolic_relaxation_frames.png not found.")
+            # #end
 
             ssp_stdout_lines = str(ssp_result.stdout).split('\\n')
             for line in ssp_stdout_lines:
@@ -379,7 +379,7 @@ for col_ind, (stiffNm, stiffVal) in enumerate(stiff_param.items()):
     for row_ind, method in enumerate(methods):
         ax = axes[row_ind, col_ind]
         color = next(colors)
-        linestyle = linestyle=next(linestyles)
+        linestyle = next(linestyles)
 
         #fixed run
         SSPmethodFix_data = data_fixed[data_fixed['IMEX_method'] == method]
@@ -421,7 +421,7 @@ for col_ind, (stiffNm, stiffVal) in enumerate(stiff_param.items()):
     for row_ind, method in enumerate(methods):
         ax = axes[row_ind, col_ind]
         color = next(colors)
-        linestyle = linestyle=next(linestyles)
+        linestyle = next(linestyles)
 
         #fixed run
         SSPmethodFix_data = data_fixed[data_fixed['IMEX_method'] == method]
@@ -463,7 +463,7 @@ for col_ind, (stiffNm, stiffVal) in enumerate(stiff_param.items()):
     for row_ind, method in enumerate(methods):
         ax = axes[row_ind, col_ind]
         color = next(colors)
-        linestyle = linestyle=next(linestyles)
+        linestyle = next(linestyles)
 
         #fixed run
         SSPmethodFix_data = data_fixed[data_fixed['IMEX_method'] == method]
@@ -495,8 +495,55 @@ fig.tight_layout()
 plt.savefig("runtime_error.pdf")
 
 
+# --------------------------- rtol vs rejected steps (adaptive run) ----------------------------------
+#create a figure of subplots (columns are stiffness parameters)
+fig, axes = plt.subplots(1, len(stiff_param), figsize=(10, 5), sharex=True, sharey=True)
+for col_ind, (stiffNm, stiffVal) in enumerate(stiff_param.items()):
+    data_adaptive = df[(df["stiff_param"] == stiffVal) & (df["Runtype"] == "adaptive")]
+    for SSPmethodAdaptive in data_adaptive['IMEX_method'].unique():
+        ax = axes[col_ind]
+        color = next(colors)
+        linestyle = next(linestyles)
+
+        SSPmethodAdapt_data = data_adaptive[data_adaptive['IMEX_method'] == SSPmethodAdaptive]
+        ax.plot(SSPmethodAdapt_data['runVal'], SSPmethodAdapt_data['ErrTestFails'], color = color, marker = next(markers_adaptive), markersize=5, linestyle=linestyle, label=SSPmethodAdaptive)
+
+    ax.set_title(f"K = {stiffVal}")
+    ax.set_xscale('log')
+    ax.set_yscale('log')
+    ax.grid()
+    ax.legend(loc="best")
+    #end
+#end
+fig.supxlabel('rtol')
+fig.supylabel('rejected steps')
+fig.suptitle("rtol vs rejected steps")
+fig.tight_layout()
+plt.savefig("rtol_rejectedSteps.pdf")
 
 
+# for stiffNm, stiffVal in stiff_param.items():
+#     # -------------------------------------------------- adaptive runs ----------------------------------------------------------------
+#     data_adaptive = df[(df["stiff_param"] == stiffVal) & (df["Runtype"] == "adaptive")][["Runtype", "IMEX_method", "nonstiff_param", "stiff_param", 
+#                                                                                    "runVal", "runtime", "Steps", "StepAttempts", "ErrTestFails",
+#                                                                                    "Explicit_RHS", "Implicit_RHS", "Implicit_solves", 
+#                                                                                    "err_rho", "energy_err"]]
+#     linestyles = itertools.cycle(['-', '--', ':', '-.'])
+#     markers = itertools.cycle(['o', '*', 's', '^'])
+#     # rejected steps
+#     if (adaptive_rejectSteps):
+#         plt.figure()
+#         for SSPmethodFix in data_adaptive['IMEX_method'].unique():
+#             SSPmethodFix_data = data_adaptive[data_adaptive['IMEX_method'] == SSPmethodFix]
+#             plt.plot(SSPmethodFix_data['runVal'], SSPmethodFix_data['ErrTestFails'], marker = next(markers), markersize=5, linestyle=next(linestyles), label=SSPmethodFix)
+#         plt.xscale('log')
+#         # plt.yscale('log')
+#         plt.xlabel('rtol')
+#         plt.ylabel('number of rejected steps')
+#         plt.title(f"rtol vs rejected steps for K = {stiffVal}")
+#         plt.legend(loc="best")
+#         plt.savefig(f"rejectSteps_hyperbolic_{stiffNm}_adaptiveRun.pdf")
+#         # plt.show()
 
 
 # fixed_accuracy   = True
@@ -506,50 +553,6 @@ plt.savefig("runtime_error.pdf")
 # adaptive_rejectSteps = True
 # adaptive_efficiency  = True
 # adaptive_time        = True
-
-
-# for stiffNm, stiffVal in stiff_param.items():
-#     # -------------------------------------------------- fixed runs ----------------------------------------------------------------
-#     data_fixed = df[(df["stiff_param"] == stiffVal) & (df["Runtype"] == "fixed")][["Runtype", "IMEX_method", "nonstiff_param", "stiff_param", 
-#                                                                                    "runVal", "runtime", "Steps", "StepAttempts", "ErrTestFails",
-#                                                                                    "Explicit_RHS", "Implicit_RHS", "Implicit_solves", 
-#                                                                                    "err_rho", "energy_err"]]
-#     data_adaptive = df[(df["stiff_param"] == stiffVal) & (df["Runtype"] == "adaptive")][["Runtype", "IMEX_method", "nonstiff_param", "stiff_param", 
-#                                                                                    "runVal", "runtime", "Steps", "StepAttempts", "ErrTestFails",
-#                                                                                    "Explicit_RHS", "Implicit_RHS", "Implicit_solves", 
-#                                                                                    "err_rho", "energy_err"]]
-    
-    
-#     markers = itertools.cycle(['o', '*', 's', '^'])
-#     markers_adaptive = itertools.cycle(['<', '>', 'P', 'D'])
-#     colors = itertools.cycle(['red', 'green', 'blue', 'black']) 
-#     linestyles = itertools.cycle(['-', '--', ':', '-.'])
-    
-#     # computational efficiency plot
-#     plt.figure()
-#     for SSPmethod in data_fixed['IMEX_method'].unique():
-#         color = next(colors)
-#         linestyle = linestyle=next(linestyles)
-
-#         SSPmethodFix_data = data_fixed[data_fixed['IMEX_method'] == SSPmethod]
-#         plt.plot(SSPmethodFix_data['Steps'], SSPmethodFix_data['err_rho'], color = color, marker = next(markers), markersize=5, linestyle=linestyle, label=SSPmethod)
-
-#         SSPmethodAdapt_data = data_adaptive[data_adaptive['IMEX_method'] == SSPmethod]
-#         plt.plot(SSPmethodAdapt_data['Steps'], SSPmethodAdapt_data['err_rho'], color = color, marker = next(markers_adaptive), markersize=5, linestyle=linestyle, label=SSPmethod)
-    
-#     # plt.xscale('log')
-#     # plt.yscale('log')
-#     plt.xlabel('h')
-#     plt.ylabel('$L_{\\infty}$ error')
-#     plt.title(f"step size vs error for K = {stiffVal}")
-#     plt.legend(loc="best")
-#     plt.savefig(f"computational_efficiency_hyperbolic_{stiffNm}.pdf")
-#     # plt.show()
-
-
-
-
-
 
 
 # for stiffNm, stiffVal in stiff_param.items():

@@ -225,7 +225,8 @@ plt.rc("font", size=15)
 plt.rcParams["figure.figsize"] = [7.2, 4.8]
 plt.rcParams["text.usetex"] = True
 plt.rcParams["figure.constrained_layout.use"] = True
-plt.savefig("hyperbolic_relaxation_frames.png")
+# plt.savefig("hyperbolic_relaxation_frames.png")
+plt.close()
 
 
 
