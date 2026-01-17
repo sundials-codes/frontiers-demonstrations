@@ -130,7 +130,7 @@ public:
 
   // constructor
   EulerData()
-    : nx(100),
+    : nx(200),
       t0(ZERO),
       tf(SUN_RCONST(0.3)),
       xl(ZERO),
