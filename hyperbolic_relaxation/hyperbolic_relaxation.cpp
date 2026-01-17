@@ -680,7 +680,7 @@ int SetIC(N_Vector y, EulerData& udata)
     }
     else
     {
-      rho[i] = rhoL;//(3.857143 + HALF * sin(TEN * PI * xloc));//rhoR;
+      rho[i] = rhoR;//(3.857143 + HALF * sin(TEN * PI * xloc));//rhoR;
       mx[i]  = rhoR * uR;
       et[i]  = udata.eos_inv(rhoR, rhoR*uR, ZERO, ZERO, pR);
     }
