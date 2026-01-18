@@ -389,7 +389,9 @@ for col_ind, (stiffNm, stiffVal) in enumerate(stiff_param.items()):
         SSPmethodAdapt_data = data_adaptive[data_adaptive['IMEX_method'] == method]
         ax.plot(SSPmethodAdapt_data['Steps'], SSPmethodAdapt_data['err_rho'], color = color, marker = next(markers_adaptive), markersize=5, linestyle=linestyle, label="adaptive")
 
-        ax.set_ylabel(f"{method}", fontsize=15)
+        if col_ind==0:
+            ax.set_ylabel(f"{method}", fontsize=15)
+        #end
 
         # each column should correspond to a stiffness parameter
         if row_ind == 0:
@@ -429,7 +431,9 @@ for col_ind, (stiffNm, stiffVal) in enumerate(stiff_param.items()):
         SSPmethodAdapt_data = data_adaptive[data_adaptive['IMEX_method'] == method]
         ax.plot(SSPmethodAdapt_data['Implicit_solves'], SSPmethodAdapt_data['err_rho'], color = color, marker = next(markers_adaptive), markersize=5, linestyle=linestyle, label="adaptive")
 
-        ax.set_ylabel(f"{method}", fontsize=15)
+        if col_ind==0:
+            ax.set_ylabel(f"{method}", fontsize=15)
+        #end
 
         # each column should correspond to a stiffness parameter
         if row_ind == 0:
@@ -469,7 +473,9 @@ for col_ind, (stiffNm, stiffVal) in enumerate(stiff_param.items()):
         SSPmethodAdapt_data = data_adaptive[data_adaptive['IMEX_method'] == method]
         ax.plot(SSPmethodAdapt_data['runtime'], SSPmethodAdapt_data['err_rho'], color = color, marker = next(markers_adaptive), markersize=5, linestyle=linestyle, label="adaptive")
 
-        ax.set_ylabel(f"{method}", fontsize=15)
+        if col_ind==0:
+            ax.set_ylabel(f"{method}", fontsize=15)
+        #end
 
         # each column should correspond to a stiffness parameter
         if row_ind == 0:
