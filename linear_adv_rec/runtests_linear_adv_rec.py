@@ -38,7 +38,7 @@ def runtest(solver, modetype, runV, k1Val, k2Val, showcommand=True):
     Output: returns the statistics
     """
     stats = {'Runtype': modetype,'ReturnCode': 0, 'IMEX_method': solver['name'], 'runVal': runV, 
-             'k1': k1Val, 'k2': k2Val, 'Steps': 0, 'StepAttempts': 0, 'ErrTestFails': 0,
+             'k1': k1Val, 'k2': k2Val, 'Steps': 0, 'StepAttempts': 0, 'ErrTestFails': 0, 'Implicit solves': 0,
              'Explicit_RHS': 0, 'Implicit_RHS': 0,  'L1_norm': 0.0, 'runtime':0.0}
 
     if (modetype == "adaptive"):
@@ -86,22 +86,33 @@ def runtest(solver, modetype, runV, k1Val, k2Val, showcommand=True):
                 stats['Steps'] = int(txt[2])
             elif (("Step" in txt) and ("attempts" in txt)):
                 stats['StepAttempts'] = int(txt[3])
-            elif (("Error" in txt) and ("Fails" in txt)):
+            elif (("Error" in txt) and ("fails" in txt)):
                 stats['ErrTestFails'] = float(txt[4])
             elif (("Explicit" in txt) and ("RHS" in txt)):
                 stats['Explicit_RHS'] = int(txt[5])       #right hand side evaluations for explicit method
             elif (("Implicit" in txt) and ("RHS" in txt)):
                 stats['Implicit_RHS'] = int(txt[5])       #right hand side evaluations for implicit method   
+
+        # number of implicit solves for each method
+        if (solver['name']== 'SSP212'):
+            stats['Implicit_solves'] = 2 * stats['StepAttempts']
+        elif (solver['name']== 'SSP312'):
+            stats['Implicit_solves'] = 3 * stats['StepAttempts']
+        elif (solver['name']== 'SSPL312'):
+            stats['Implicit_solves'] = 3 * stats['StepAttempts']
+        elif (solver['name']== 'SSP423'):
+            stats['Implicit_solves'] = 3 * stats['StepAttempts']
+        # end
         
     return stats
 ## end of function
 
 
 # shortcuts to executable/configuration of different embedded IMEX SSP methods
-SSP_ARK_212       = "./linear_adv_rec --IMintegrator ARKODE_SSP_SDIRK_2_1_2       --EXintegrator ARKODE_SSP_ERK_2_1_2" 
-SSP_ARK_312       = "./linear_adv_rec --IMintegrator ARKODE_SSP_DIRK_3_1_2        --EXintegrator ARKODE_SSP_ERK_3_1_2"           
-SSP_LSPUM_ARK_312 = "./linear_adv_rec --IMintegrator ARKODE_SSP_LSPUM_SDIRK_3_1_2 --EXintegrator ARKODE_SSP_LSPUM_ERK_3_1_2"  
-SSP_ARK_423       = "./linear_adv_rec --IMintegrator ARKODE_SSP_ESDIRK_4_2_3      --EXintegrator ARKODE_SSP_ERK_4_2_3"     
+SSP212  = "./linear_adv_rec --IMintegrator ARKODE_SSP_SDIRK_2_1_2       --EXintegrator ARKODE_SSP_ERK_2_1_2" 
+SSP312  = "./linear_adv_rec --IMintegrator ARKODE_SSP_DIRK_3_1_2        --EXintegrator ARKODE_SSP_ERK_3_1_2"           
+SSPL312 = "./linear_adv_rec --IMintegrator ARKODE_SSP_LSPUM_SDIRK_3_1_2 --EXintegrator ARKODE_SSP_LSPUM_ERK_3_1_2"  
+SSP423  = "./linear_adv_rec --IMintegrator ARKODE_SSP_ESDIRK_4_2_3      --EXintegrator ARKODE_SSP_ERK_4_2_3"     
 
 adaptive_params = [1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 1.0]          # relative tolerances
 # fixed_params  = [6.25*1e-4, 1.25*1e-3, 2.50*1e-3, 5.00*1e-3, 1.00*1e-2] # fixed time step sizes
@@ -118,10 +129,10 @@ k2values = [1.0, 2e6]
 # ----------------------------------------------------------------------------------------------------
 
 # Integrator types
-solvertype = [{'name': 'SSP-ARK-2-1-2',       'exe': SSP_ARK_212},
-              {'name': 'SSP-ARK-3-1-2',       'exe': SSP_ARK_312},
-              {'name': 'SSP-LSPUM-ARK-3-1-2', 'exe': SSP_LSPUM_ARK_312},
-              {'name': 'SSP-ARK-4-2-3',       'exe': SSP_ARK_423}]
+solvertype = [{'name': 'SSP212',  'exe': SSP212},
+              {'name': 'SSP312',  'exe': SSP312},
+              {'name': 'SSPL312', 'exe': SSPL312},
+              {'name': 'SSP423',  'exe': SSP423}]
 
 # run tests and collect results as a pandas data frame
 fname = 'linear_adv_rec_stats' 
