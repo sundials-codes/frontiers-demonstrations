@@ -134,7 +134,7 @@ public:
     : IMintegrator("ARKODE_SSP_SDIRK_2_1_2"),
       EXintegrator("ARKODE_SSP_ERK_2_1_2"),
       rtol(SUN_RCONST(1.e-4)),
-      atol(SUN_RCONST(1.e-10)),
+      atol(SUN_RCONST(1.e-11)),
       fixed_h(ZERO),
       maxsteps(10000),
       output(1),
@@ -315,6 +315,7 @@ int main(int argc, char* argv[])
   /* find the L1 norm */
   sunrealtype sum_error = 0.0;
   for (int i = udata.N; i < 2*udata.N; i++)
+  // for (int i = 0; i < 2*udata.N; i++)
   {
     sum_error += SUNRabs(true_data[i]-data[i]);
   }

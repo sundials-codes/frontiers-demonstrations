@@ -77,6 +77,7 @@ def runtest(solver, modetype, runV, runN, kstiff, knonstiff, kstiffname, showcom
         stats['Implicit_solves'] = 0  
         stats['err_rho']         = 0 
         stats['energy_err']      = 0
+        stats['runtime']      = 0     # runtime should be 0 is test failed
 
     # If SUNDIALS did not fail
     if not sundials_failed:
@@ -366,7 +367,8 @@ methods = df['IMEX_method'].unique()
 
 markers_fixed    = itertools.cycle(['o', '*', 's', '^'])
 markers_adaptive = itertools.cycle(['<', '>', 'P', 'D'])
-colors           = itertools.cycle(['red', 'black', 'blue', 'green']) 
+method_colors = {'SSP212': 'red', 'SSP312': 'black', 'SSPL312': 'blue', 'SSP423': 'green',}
+colors           = itertools.cycle(['red', 'black'])#, 'blue', 'green']) 
 linestyles       = itertools.cycle(['-', '--', ':', '-.'])
 
 # --------------------------- accepted steps vs error ----------------------------------
@@ -378,16 +380,16 @@ for col_ind, (stiffNm, stiffVal) in enumerate(stiff_param.items()):
 
     for row_ind, method in enumerate(methods):
         ax = axes[row_ind, col_ind]
-        color = next(colors)
-        linestyle = next(linestyles)
+        # color = method_colors[method]
+        # linestyle = next(linestyles)
 
         #fixed run
         SSPmethodFix_data = data_fixed[data_fixed['IMEX_method'] == method]
-        ax.plot(SSPmethodFix_data['Steps'], SSPmethodFix_data['err_rho'], color = color, marker = next(markers_fixed), markersize=5, linestyle=linestyle, label="fixed")
+        ax.plot(SSPmethodFix_data['Steps'], SSPmethodFix_data['err_rho'], color = 'red', marker = 'o', markersize=5, linestyle=linestyle, label="fixed")
 
         #adaptive run
         SSPmethodAdapt_data = data_adaptive[data_adaptive['IMEX_method'] == method]
-        ax.plot(SSPmethodAdapt_data['Steps'], SSPmethodAdapt_data['err_rho'], color = color, marker = next(markers_adaptive), markersize=5, linestyle=linestyle, label="adaptive")
+        ax.plot(SSPmethodAdapt_data['Steps'], SSPmethodAdapt_data['err_rho'], color = 'blue', marker = '*', markersize=5, linestyle=linestyle, label="adaptive")
 
         if col_ind==0:
             ax.set_ylabel(f"{method}", fontsize=15)
@@ -413,23 +415,23 @@ plt.savefig("accepted_steps_error.pdf")
 
 # --------------------------- implicit solves vs error ----------------------------------
 #create a figure of subplots (columns are stiffness parameters and rows are methods)
-fig, axes = plt.subplots(len(methods), len(stiff_param), figsize=(15, 12), sharex=True, sharey=True)
+fig, axes = plt.subplots(len(methods), len(stiff_param), figsize=(15, 12))
 for col_ind, (stiffNm, stiffVal) in enumerate(stiff_param.items()):
     data_fixed    = df[(df["stiff_param"] == stiffVal) & (df["Runtype"] == "fixed")]
     data_adaptive = df[(df["stiff_param"] == stiffVal) & (df["Runtype"] == "adaptive")]
 
     for row_ind, method in enumerate(methods):
         ax = axes[row_ind, col_ind]
-        color = next(colors)
-        linestyle = next(linestyles)
+        # color = method_colors[method]
+        # linestyle = next(linestyles)
 
         #fixed run
         SSPmethodFix_data = data_fixed[data_fixed['IMEX_method'] == method]
-        ax.plot(SSPmethodFix_data['Implicit_solves'], SSPmethodFix_data['err_rho'], color = color, marker = next(markers_fixed), markersize=5, linestyle=linestyle, label="fixed")
+        ax.plot(SSPmethodFix_data['Implicit_solves'], SSPmethodFix_data['err_rho'], color = 'red', marker = 'o', markersize=5, linestyle=linestyle, label="fixed")
 
         #adaptive run
         SSPmethodAdapt_data = data_adaptive[data_adaptive['IMEX_method'] == method]
-        ax.plot(SSPmethodAdapt_data['Implicit_solves'], SSPmethodAdapt_data['err_rho'], color = color, marker = next(markers_adaptive), markersize=5, linestyle=linestyle, label="adaptive")
+        ax.plot(SSPmethodAdapt_data['Implicit_solves'], SSPmethodAdapt_data['err_rho'], color = 'blue', marker = '*', markersize=5, linestyle=linestyle, label="adaptive")
 
         if col_ind==0:
             ax.set_ylabel(f"{method}", fontsize=15)
@@ -455,23 +457,23 @@ plt.savefig("implicit_solves_error.pdf")
 
 # --------------------------- runtime vs error ----------------------------------
 #create a figure of subplots (columns are stiffness parameters and rows are methods)
-fig, axes = plt.subplots(len(methods), len(stiff_param), figsize=(15, 12), sharex=True, sharey=True)
+fig, axes = plt.subplots(len(methods), len(stiff_param), figsize=(15, 12))
 for col_ind, (stiffNm, stiffVal) in enumerate(stiff_param.items()):
     data_fixed    = df[(df["stiff_param"] == stiffVal) & (df["Runtype"] == "fixed")]
     data_adaptive = df[(df["stiff_param"] == stiffVal) & (df["Runtype"] == "adaptive")]
 
     for row_ind, method in enumerate(methods):
         ax = axes[row_ind, col_ind]
-        color = next(colors)
-        linestyle = next(linestyles)
+        # color = method_colors[method]
+        # linestyle = next(linestyles)
 
         #fixed run
         SSPmethodFix_data = data_fixed[data_fixed['IMEX_method'] == method]
-        ax.plot(SSPmethodFix_data['runtime'], SSPmethodFix_data['err_rho'], color = color, marker = next(markers_fixed), markersize=5, linestyle=linestyle, label="fixed")
+        ax.plot(SSPmethodFix_data['runtime'], SSPmethodFix_data['err_rho'], color = 'red', marker = 'o', markersize=5, linestyle=linestyle, label="fixed")
 
         #adaptive run
         SSPmethodAdapt_data = data_adaptive[data_adaptive['IMEX_method'] == method]
-        ax.plot(SSPmethodAdapt_data['runtime'], SSPmethodAdapt_data['err_rho'], color = color, marker = next(markers_adaptive), markersize=5, linestyle=linestyle, label="adaptive")
+        ax.plot(SSPmethodAdapt_data['runtime'], SSPmethodAdapt_data['err_rho'], color = 'blue', marker = '*', markersize=5, linestyle=linestyle, label="adaptive")
 
         if col_ind==0:
             ax.set_ylabel(f"{method}", fontsize=15)
@@ -497,13 +499,13 @@ plt.savefig("runtime_error.pdf")
 
 # --------------------------- rtol vs rejected steps (adaptive run) ----------------------------------
 #create a figure of subplots (columns are stiffness parameters)
-fig, axes = plt.subplots(1, len(stiff_param), figsize=(10, 5), sharex=True, sharey=True)
+fig, axes = plt.subplots(1, len(stiff_param), figsize=(10, 5))
 for col_ind, (stiffNm, stiffVal) in enumerate(stiff_param.items()):
     data_adaptive = df[(df["stiff_param"] == stiffVal) & (df["Runtype"] == "adaptive")]
     for SSPmethodAdaptive in data_adaptive['IMEX_method'].unique():
         ax = axes[col_ind]
-        color = next(colors)
-        linestyle = next(linestyles)
+        color = method_colors[method]
+        # linestyle = next(linestyles)
 
         SSPmethodAdapt_data = data_adaptive[data_adaptive['IMEX_method'] == SSPmethodAdaptive]
         ax.plot(SSPmethodAdapt_data['runVal'], SSPmethodAdapt_data['ErrTestFails'], color = color, marker = next(markers_adaptive), markersize=5, linestyle=linestyle, label=SSPmethodAdaptive)
@@ -521,31 +523,6 @@ fig.suptitle("rtol vs rejected steps", fontsize=20)
 fig.tight_layout()
 plt.savefig("rtol_rejectedSteps.pdf")
 
-
-# for stiffNm, stiffVal in stiff_param.items():
-#     # -------------------------------------------------- adaptive runs ----------------------------------------------------------------
-#     data_adaptive = df[(df["stiff_param"] == stiffVal) & (df["Runtype"] == "adaptive")][["Runtype", "IMEX_method", "nonstiff_param", "stiff_param", 
-#                                                                                    "runVal", "runtime", "Steps", "StepAttempts", "ErrTestFails",
-#                                                                                    "Explicit_RHS", "Implicit_RHS", "Implicit_solves", 
-#                                                                                    "err_rho", "energy_err"]]
-#     linestyles = itertools.cycle(['-', '--', ':', '-.'])
-#     markers = itertools.cycle(['o', '*', 's', '^'])
-#     # rejected steps
-#     if (adaptive_rejectSteps):
-#         plt.figure()
-#         for SSPmethodFix in data_adaptive['IMEX_method'].unique():
-#             SSPmethodFix_data = data_adaptive[data_adaptive['IMEX_method'] == SSPmethodFix]
-#             plt.plot(SSPmethodFix_data['runVal'], SSPmethodFix_data['ErrTestFails'], marker = next(markers), markersize=5, linestyle=next(linestyles), label=SSPmethodFix)
-#         plt.xscale('log')
-#         # plt.yscale('log')
-#         plt.xlabel('rtol')
-#         plt.ylabel('number of rejected steps')
-#         plt.title(f"rtol vs rejected steps for K = {stiffVal}")
-#         plt.legend(loc="best")
-#         plt.savefig(f"rejectSteps_hyperbolic_{stiffNm}_adaptiveRun.pdf")
-#         # plt.show()
-
-
 # fixed_accuracy   = True
 # fixed_efficiency = True
 # fixed_time       = True
@@ -553,113 +530,6 @@ plt.savefig("rtol_rejectedSteps.pdf")
 # adaptive_rejectSteps = True
 # adaptive_efficiency  = True
 # adaptive_time        = True
-
-
-# for stiffNm, stiffVal in stiff_param.items():
-#     # -------------------------------------------------- fixed runs ----------------------------------------------------------------
-#     data_fixed = df[(df["stiff_param"] == stiffVal) & (df["Runtype"] == "fixed")][["Runtype", "IMEX_method", "nonstiff_param", "stiff_param", 
-#                                                                                    "runVal", "runtime", "Steps", "StepAttempts", "ErrTestFails",
-#                                                                                    "Explicit_RHS", "Implicit_RHS", "Implicit_solves", 
-#                                                                                    "err_rho", "energy_err"]]
-#     linestyles = itertools.cycle(['-', '--', ':', '-.'])
-#     markers = itertools.cycle(['o', '*', 's', '^'])
-#     # accuracy plot
-#     if (fixed_accuracy):
-#         plt.figure()
-#         for SSPmethodFix in data_fixed['IMEX_method'].unique():
-#             SSPmethodFix_data = data_fixed[data_fixed['IMEX_method'] == SSPmethodFix]
-#             plt.plot(SSPmethodFix_data['runVal'], SSPmethodFix_data['err_rho'], marker = next(markers), markersize=5, linestyle=next(linestyles), label=SSPmethodFix)
-#         plt.xscale('log')
-#         plt.yscale('log')
-#         plt.xlabel('h')
-#         plt.ylabel('$L_{\\infty}$ error')
-#         plt.title(f"step size vs error for K = {stiffVal}")
-#         plt.legend(loc="best")
-#         plt.savefig(f"accuracy_hyperbolic_{stiffNm}_fixedRun.pdf")
-#         # plt.show()
-    
-#     # # efficiency plot (number of implicit solves)
-#     # if (fixed_efficiency):
-#     #     plt.figure()
-#     #     for SSPmethodFix in data_fixed['IMEX_method'].unique():
-#     #         SSPmethodFix_data = data_fixed[data_fixed['IMEX_method'] == SSPmethodFix]
-#     #         plt.plot(SSPmethodFix_data['err_rho'], SSPmethodFix_data['Implicit_solves'], marker = next(markers), markersize=5, linestyle=next(linestyles), label=SSPmethodFix)
-#     #     plt.xscale('log')
-#     #     # plt.yscale('log')
-#     #     plt.xlabel('$L_{\\infty}$ error')
-#     #     plt.ylabel('number of Implicit Solves')
-#     #     plt.title(f"error vs implicit solves for K = {stiffVal}")
-#     #     plt.legend(loc="best")
-#     #     plt.savefig(f"efficiency_hyperbolic_{stiffNm}_fixedRun.pdf")
-#     #     # plt.show()
-
-#     # efficiency plot (runtime)
-#     if (fixed_time):
-#         plt.figure()
-#         for SSPmethodFix in data_fixed['IMEX_method'].unique():
-#             SSPmethodFix_data = data_fixed[data_fixed['IMEX_method'] == SSPmethodFix]
-#             plt.plot(SSPmethodFix_data['runtime'], SSPmethodFix_data['err_rho'], marker = next(markers), markersize=5, linestyle=next(linestyles), label=SSPmethodFix)
-#         plt.xscale('log')
-#         plt.yscale('log')
-#         plt.xlabel('runtime')
-#         plt.ylabel('$L_{\\infty}$ error')
-#         plt.title(f"runtime vs error for K = {stiffVal}")
-#         plt.legend(loc="best")
-#         plt.savefig(f"time_hyperbolic_{stiffNm}_fixedRun.pdf")
-#         # plt.show()
-
-
-#     # -------------------------------------------------- adaptive runs ----------------------------------------------------------------
-#     data_adaptive = df[(df["stiff_param"] == stiffVal) & (df["Runtype"] == "adaptive")][["Runtype", "IMEX_method", "nonstiff_param", "stiff_param", 
-#                                                                                    "runVal", "runtime", "Steps", "StepAttempts", "ErrTestFails",
-#                                                                                    "Explicit_RHS", "Implicit_RHS", "Implicit_solves", 
-#                                                                                    "err_rho", "energy_err"]]
-#     linestyles = itertools.cycle(['-', '--', ':', '-.'])
-#     markers = itertools.cycle(['o', '*', 's', '^'])
-#     # rejected steps
-#     if (adaptive_rejectSteps):
-#         plt.figure()
-#         for SSPmethodFix in data_adaptive['IMEX_method'].unique():
-#             SSPmethodFix_data = data_adaptive[data_adaptive['IMEX_method'] == SSPmethodFix]
-#             plt.plot(SSPmethodFix_data['runVal'], SSPmethodFix_data['ErrTestFails'], marker = next(markers), markersize=5, linestyle=next(linestyles), label=SSPmethodFix)
-#         plt.xscale('log')
-#         # plt.yscale('log')
-#         plt.xlabel('rtol')
-#         plt.ylabel('number of rejected steps')
-#         plt.title(f"rtol vs rejected steps for K = {stiffVal}")
-#         plt.legend(loc="best")
-#         plt.savefig(f"rejectSteps_hyperbolic_{stiffNm}_adaptiveRun.pdf")
-#         # plt.show()
-    
-#     # # efficiency plot (number of implicit solves)
-#     # if (adaptive_efficiency):
-#     #     plt.figure()
-#     #     for SSPmethodFix in data_adaptive['IMEX_method'].unique():
-#     #         SSPmethodFix_data = data_adaptive[data_adaptive['IMEX_method'] == SSPmethodFix]
-#     #         plt.plot(SSPmethodFix_data['err_rho'], SSPmethodFix_data['Implicit_solves'], marker = next(markers), markersize=5, linestyle=next(linestyles), label=SSPmethodFix)
-#     #     plt.xscale('log')
-#     #     # plt.yscale('log')
-#     #     plt.xlabel('$L_{\\infty}$ error')
-#     #     plt.ylabel('number of Implicit Solves')
-#     #     plt.title(f"error vs implicit solves for K = {stiffVal}")
-#     #     plt.legend(loc="best")
-#     #     plt.savefig(f"efficiency_hyperbolic_{stiffNm}_adaptiveRun.pdf")
-#     #     # plt.show()
-
-#     # efficiency plot (runtime)
-#     if (adaptive_time):
-#         plt.figure()
-#         for SSPmethodFix in data_adaptive['IMEX_method'].unique():
-#             SSPmethodFix_data = data_adaptive[data_adaptive['IMEX_method'] == SSPmethodFix]
-#             plt.plot(SSPmethodFix_data['runtime'], SSPmethodFix_data['err_rho'], marker = next(markers), markersize=5, linestyle=next(linestyles), label=SSPmethodFix)
-#         plt.xscale('log')
-#         plt.yscale('log')
-#         plt.xlabel('runtime')
-#         plt.ylabel('$L_{\\infty}$ error')
-#         plt.title(f"runtime vs error for K = {stiffVal}")
-#         plt.legend(loc="best")
-#         plt.savefig(f"time_hyperbolic_{stiffNm}_adaptiveRun.pdf")
-#         # plt.show()
 
 
 # # =================================================================================================================
