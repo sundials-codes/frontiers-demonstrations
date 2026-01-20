@@ -304,29 +304,29 @@ int fe_rhs(sunrealtype t, N_Vector y, N_Vector f, void* user_data)
     etdot[i] -= (flux[(i + 1) * NSPECIES + 4] - flux[i * NSPECIES + 4]) / dx;
   }
 
-  for (long int i = 0; i < nx; i++) 
-  {
-    eKnot_data[i] = ONE;
-  }  
+  // for (long int i = 0; i < nx; i++) 
+  // {
+  //   eKnot_data[i] = ONE;
+  // }  
 
-  for (long int i = 0; i < nx; i++) 
-  {
-    sunrealtype xloc = ((sunrealtype)i) * dx + xl;
-    if (xloc < HALF)
-    {
-      /* -K * rho*/ 
-      sunrealtype coef = -eps_nonstiff*rho[i];
+  // for (long int i = 0; i < nx; i++) 
+  // {
+  //   sunrealtype xloc = ((sunrealtype)i) * dx + xl;
+  //   if (xloc < HALF)
+  //   {
+  //     /* -K * rho*/ 
+  //     sunrealtype coef = -eps_nonstiff*rho[i];
 
-      /* 1.0 / rho*/
-      sunrealtype rhoth = 1.0/rho[i];
+  //     /* 1.0 / rho*/
+  //     sunrealtype rhoth = 1.0/rho[i];
 
-      /* E - 0.5 * rho * u^2 */
-      sunrealtype rhoe = et[i] - ((mx[i] * mx[i] + my[i] * my[i] + mz[i] * mz[i]) * HALF / rho[i]);
+  //     /* E - 0.5 * rho * u^2 */
+  //     sunrealtype rhoe = et[i] - ((mx[i] * mx[i] + my[i] * my[i] + mz[i] * mz[i]) * HALF / rho[i]);
 
-      /* relaxation term */
-      etdot[i] = etdot[i] + coef*(rhoth*rhoe - eKnot_data[i]);
-    }
-  }
+  //     /* relaxation term */
+  //     etdot[i] = etdot[i] + coef*(rhoth*rhoe - eKnot_data[i]);
+  //   }
+  // }
 
   return 0;
 }
@@ -387,10 +387,13 @@ int fi_rhs(sunrealtype t, N_Vector y, N_Vector f, void* user_data)
   // iterate over subdomain, updating RHS
   for (long int i = 0; i < nx; i++)
   {
-    sunrealtype xloc = ((sunrealtype)i) * dx + xl;
-    if (xloc >= HALF)
-    {
-
+    // sunrealtype xloc = ((sunrealtype)i) * dx + xl;
+    // if (xloc >= HALF)
+    // {
+      rhodot[i] = ZERO;
+      mxdot[i] = ZERO;
+      mydot[i] = ZERO;
+      mzdot[i] = ZERO;
       /* -K * rho*/ 
       sunrealtype coef = -eps_stiff*rho[i];
 
@@ -402,7 +405,7 @@ int fi_rhs(sunrealtype t, N_Vector y, N_Vector f, void* user_data)
 
       /* relaxation term */
       etdot[i] = etdot[i] + coef*(rhoth*rhoe - eKnot_data[i]);
-    }
+    // }
   }
 
   return 0;

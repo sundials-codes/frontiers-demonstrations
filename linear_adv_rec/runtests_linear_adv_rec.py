@@ -106,6 +106,8 @@ def runtest(solver, modetype, runV, k1Val, showcommand=True):
             stats['Implicit_solves'] = 3 * stats['StepAttempts']
         elif (solver['name']== 'SSP423'):
             stats['Implicit_solves'] = 3 * stats['StepAttempts']
+        # elif (solver['name']== 'SSP923'):
+        #     stats['Implicit_solves'] = 4 * stats['StepAttempts']
         # end
         
     return stats
@@ -116,16 +118,16 @@ def runtest(solver, modetype, runV, k1Val, showcommand=True):
 SSP212  = "./linear_adv_rec --IMintegrator ARKODE_SSP_SDIRK_2_1_2       --EXintegrator ARKODE_SSP_ERK_2_1_2" 
 SSP312  = "./linear_adv_rec --IMintegrator ARKODE_SSP_DIRK_3_1_2        --EXintegrator ARKODE_SSP_ERK_3_1_2"           
 SSPL312 = "./linear_adv_rec --IMintegrator ARKODE_SSP_LSPUM_SDIRK_3_1_2 --EXintegrator ARKODE_SSP_LSPUM_ERK_3_1_2"  
-SSP423  = "./linear_adv_rec --IMintegrator ARKODE_SSP_ESDIRK_4_2_3      --EXintegrator ARKODE_SSP_ERK_4_2_3"     
+SSP423  = "./linear_adv_rec --IMintegrator ARKODE_SSP_ESDIRK_4_2_3      --EXintegrator ARKODE_SSP_ERK_4_2_3"  
+# SSP923  = "./linear_adv_rec --IMintegrator ARKODE_SSP_ESDIRK_9_2_3      --EXintegrator ARKODE_SSP_ERK_9_2_3"    
 
 adaptive_params = [1e-3, 1e-4, 1e-5, 1e-6, 1e-7]          # relative tolerances
-fixed_params  = [1.00*1e-2, 5.00*1e-3, 2.50*1e-3, 1.25*1e-3, 6.25*1e-4] # fixed time step sizes
+# fixed_params  = [1.00*1e-2, 5.00*1e-3, 2.50*1e-3, 1.25*1e-3, 6.25*1e-4] # fixed time step sizes
 fixed_params    = [] # fixed time step sizes
-for i in range(4,-1,-1):
+for i in range(0,5,1):
     fixed_params.append(0.01/(2.0**i))
 #end
-k1values = [1.0, 1e6]
-# k2values = [1.0, 2e6]
+k1values = [1.0, 1e6, 1e8]
 
 
 # ----------------------------------------------------------------------------------------------------
@@ -137,6 +139,8 @@ solvertype = [{'name': 'SSP212',  'exe': SSP212},
               {'name': 'SSP312',  'exe': SSP312},
               {'name': 'SSPL312', 'exe': SSPL312},
               {'name': 'SSP423',  'exe': SSP423}]
+            #   {'name': 'SSP923',  'exe': SSP923}
+              
 
 # run tests and collect results as a pandas data frame
 fname = 'linear_adv_rec_stats' 
@@ -204,7 +208,7 @@ for col_ind, k1Val in enumerate(k1values):
 
         # each column should correspond to a stiffness parameter
         if row_ind == 0:
-            ax.set_title(f"k1 = {k1Val}, k2 = {k2Val}", fontsize=18)
+            ax.set_title(f"k1 = {k1Val: .1e}, k2 = {k2Val: .1e}", fontsize=18)
         #end
         
         ax.set_xscale('log')
@@ -247,7 +251,7 @@ for col_ind, k1Val in enumerate(k1values):
 
         # each column should correspond to a stiffness parameter
         if row_ind == 0:
-            ax.set_title(f"k1 = {k1Val}, k2 = {k2Val}", fontsize=18)
+            ax.set_title(f"k1 = {k1Val: .1e}, k2 = {k2Val: .1e}", fontsize=18)
         #end
         
         ax.set_xscale('log')
@@ -290,7 +294,7 @@ for col_ind, k1Val in enumerate(k1values):
 
        # each column should correspond to a stiffness parameter
         if row_ind == 0:
-            ax.set_title(f"k1 = {k1Val}, k2 = {k2Val}", fontsize=18)
+            ax.set_title(f"k1 = {k1Val: .1e}, k2 = {k2Val: .1e}", fontsize=18)
         #end
         
         ax.set_xscale('log')
