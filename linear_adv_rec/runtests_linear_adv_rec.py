@@ -76,6 +76,7 @@ def runtest(solver, modetype, runV, k1Val, showcommand=True):
         stats['Explicit_RHS'] = 0     #right hand side evaluations for explicit method
         stats['Implicit_RHS'] = 0     #right hand side evaluations for implicit method
         stats['runtime']      = 0     # runtime should be 0 is test failed
+        stats['Implicit_solves'] = 0
 
     # If SUNDIALS did not fail
     if not sundials_failed:
@@ -119,10 +120,9 @@ SSPL312 = "./linear_adv_rec --IMintegrator ARKODE_SSP_LSPUM_SDIRK_3_1_2 --EXinte
 SSP423  = "./linear_adv_rec --IMintegrator ARKODE_SSP_ESDIRK_4_2_3      --EXintegrator ARKODE_SSP_ERK_4_2_3"  
 SSP923  = "./linear_adv_rec --IMintegrator ARKODE_SSP_ESDIRK_9_2_3      --EXintegrator ARKODE_SSP_ERK_9_2_3"    
 
-adaptive_params = [1e-3, 1e-4, 1e-5, 1e-6, 1e-7]          # relative tolerances
-# fixed_params  = [1.00*1e-2, 5.00*1e-3, 2.50*1e-3, 1.25*1e-3, 6.25*1e-4] # fixed time step sizes
+adaptive_params = [1e-1, 1e-2, 1e-3, 1e-4, 1e-5, 1e-6, 1e-7]          # relative tolerances
 fixed_params    = [] # fixed time step sizes
-for i in range(0,6,1):
+for i in range(-4,10,1):
     fixed_params.append(0.01/(2.0**i))
 #end
 k1values = [1.0, 1e6]
@@ -171,92 +171,97 @@ RunStatsDf.to_excel(fname + '.xlsx', index=False)
 #  Generate plots to test the efficiency and accuracy of the IMEX SSP methods
 # ===============================================================================================================================
 df = pd.read_excel('linear_adv_rec_stats' + '.xlsx') # excel file
-methods = df['IMEX_method'].sort_values().unique()
+methods = df['IMEX_method'].unique()
 
-markers_fixed    = itertools.cycle(['o', '*', 's', '^'])
-markers_adaptive = itertools.cycle(['<', '>', 'P', 'D'])
-# method_colors = {'SSP212': 'red', 'SSP312': 'black', 'SSPL312': 'blue', 'SSP423': 'green',}
-# colors           = itertools.cycle(['red', 'black'])#, 'blue', 'green']) 
-linestyles       = itertools.cycle(['-', '--', '-.', ':'])
+colors   = ['red', 'black', 'blue', 'green', 'orange'] 
+markers  = ['o', '*', 's', '^', '+']
+modetype = ['fixed', 'adaptive']
 
 # --------------------------- accepted steps vs error ----------------------------------
 #create a figure of subplots (columns are stiffness parameters and rows are methods)
-fig, axes = plt.subplots(len(methods), len(k1values), figsize=(15, 12))
+fig, axes = plt.subplots(2, len(k1values), figsize=(15, 12))
 for col_ind, k1Val in enumerate(k1values):
     k2Val = 2.0 * k1Val
     data_fixed    = df[(df["k1"] == k1Val) & (df["k2"] == k2Val) & (df["Runtype"] == "fixed")]
     data_adaptive = df[(df["k1"] == k1Val) & (df["k2"] == k2Val) & (df["Runtype"] == "adaptive")]
 
-    for row_ind, method in enumerate(methods):
-        ax = axes[row_ind, col_ind]
-        # color = method_colors[method]
-        # linestyle = next(linestyles)
+    for row_ind, runtype in enumerate(modetype):
+        if row_ind == 0:
+        # fixed run
+            for i, SSPmethodFix in enumerate(data_fixed['IMEX_method'].unique()):
+                SSPmethodFix_data = data_fixed[data_fixed['IMEX_method'] == SSPmethodFix]
+                x = SSPmethodFix_data['StepAttempts'].where(SSPmethodFix_data['StepAttempts'] != 0)
+                y = SSPmethodFix_data['L1_norm'].where(SSPmethodFix_data['L1_norm'] != 0)
+                axes[row_ind,col_ind].plot(x, y, color = colors[i], marker = markers[i], markersize=5, linestyle=':', label=SSPmethodFix)
 
-        #fixed run
-        SSPmethodFix_data = data_fixed[data_fixed['IMEX_method'] == method]#.sort_values('Steps')
-        ax.plot(SSPmethodFix_data['Steps'], SSPmethodFix_data['L1_norm'], color = 'red', marker = 'o', markersize=5, linestyle='-', label="fixed")
+        elif row_ind == 1:
+        # adaptive run
+            for i, SSPmethodAdapt in enumerate(data_adaptive['IMEX_method'].unique()):
+                SSPmethodAdapt_data = data_adaptive[data_adaptive['IMEX_method'] == SSPmethodAdapt]
+                x = SSPmethodAdapt_data['StepAttempts'].where(SSPmethodAdapt_data['StepAttempts'] != 0)
+                y = SSPmethodAdapt_data['L1_norm'].where(SSPmethodAdapt_data['L1_norm'] != 0)
+                axes[row_ind,col_ind].plot(x, y, color = colors[i], marker = markers[i], markersize=5, linestyle='-.', label=SSPmethodAdapt)
 
-        #adaptive run
-        SSPmethodAdapt_data = data_adaptive[data_adaptive['IMEX_method'] == method]#.sort_values('Steps')
-        ax.plot(SSPmethodAdapt_data['Steps'], SSPmethodAdapt_data['L1_norm'], color = 'blue', marker = '*', markersize=5, linestyle='--', label="adaptive")
-
+        # each row should correspond to a runtype
         if col_ind==0:
-            ax.set_ylabel(f"{method}", fontsize=15)
+            axes[row_ind,col_ind].set_ylabel(f"{runtype}", fontsize=15)
         #end
 
         # each column should correspond to a stiffness parameter
         if row_ind == 0:
-            ax.set_title(f"k1 = {k1Val: .1e}, k2 = {k2Val: .1e}", fontsize=18)
+            axes[row_ind,col_ind].set_title(f"k1 = {k1Val: .1e}, k2 = {k2Val: .1e}", fontsize=18)
         #end
         
-        ax.set_xscale('log')
-        ax.set_yscale('log')
-        # ax.grid()
-        ax.legend(loc="best")
     #end
+        axes[row_ind,col_ind].set_xscale('log')
+        axes[row_ind,col_ind].set_yscale('log')
+        axes[row_ind,col_ind].legend(loc="best")
 #end
-fig.supxlabel('accepted steps', fontsize=18)
+fig.supxlabel('step attempts', fontsize=18)
 fig.supylabel('$L_{1}$ error', fontsize=18)
-fig.suptitle("accepted steps vs error", fontsize=20)
+fig.suptitle("step attempts vs error", fontsize=20)
 fig.tight_layout()
-plt.savefig("accepted_steps_error_linear_adv_rec.png")
+plt.savefig("step_attempts_error_linear_adv_rec.png")
 
 
 # --------------------------- implicit solves vs error ----------------------------------
 #create a figure of subplots (columns are stiffness parameters and rows are methods)
-fig, axes = plt.subplots(len(methods), len(k1values), figsize=(15, 12))
+fig, axes = plt.subplots(2, len(k1values), figsize=(15, 12))
 for col_ind, k1Val in enumerate(k1values):
     k2Val = 2.0 * k1Val
     data_fixed    = df[(df["k1"] == k1Val) & (df["k2"] == k2Val) & (df["Runtype"] == "fixed")]
     data_adaptive = df[(df["k1"] == k1Val) & (df["k2"] == k2Val) & (df["Runtype"] == "adaptive")]
 
-    for row_ind, method in enumerate(methods):
-        ax = axes[row_ind, col_ind]
-        # color = next(colors)
-        # linestyle = next(linestyles)
-
-        #fixed run
-        SSPmethodFix_data = data_fixed[data_fixed['IMEX_method'] == method]#.sort_values('Implicit_solves')
-        ax.plot(SSPmethodFix_data['Implicit_solves'], SSPmethodFix_data['L1_norm'], color = 'red', marker = 'o', markersize=5, linestyle='-', label="fixed")
+    for row_ind, runtype in enumerate(modetype):
+        # fixed run
+        if row_ind == 0:
+            for i, SSPmethodFix in enumerate(data_fixed['IMEX_method'].unique()):
+                SSPmethodFix_data = data_fixed[data_fixed['IMEX_method'] == SSPmethodFix]
+                x = SSPmethodFix_data['Implicit_solves'].where(SSPmethodFix_data['Implicit_solves'] != 0)
+                y = SSPmethodFix_data['L1_norm'].where(SSPmethodFix_data['L1_norm'] != 0)
+                axes[row_ind,col_ind].plot(x, y, color = colors[i], marker = markers[i], markersize=5, linestyle=':', label=SSPmethodFix)
 
         #adaptive run
-        SSPmethodAdapt_data = data_adaptive[data_adaptive['IMEX_method'] == method]#.sort_values('Implicit_solves')
-        ax.plot(SSPmethodAdapt_data['Implicit_solves'], SSPmethodAdapt_data['L1_norm'], color = 'blue', marker = '*', markersize=5, linestyle='--', label="adaptive")
+        elif row_ind == 1:
+            for i, SSPmethodAdapt in enumerate(data_adaptive['IMEX_method'].unique()):
+                SSPmethodAdapt_data = data_adaptive[data_adaptive['IMEX_method'] == SSPmethodAdapt]
+                x = SSPmethodAdapt_data['Implicit_solves'].where(SSPmethodAdapt_data['Implicit_solves'] != 0)
+                y = SSPmethodAdapt_data['L1_norm'].where(SSPmethodAdapt_data['L1_norm'] != 0)
+                axes[row_ind,col_ind].plot(x, y, color = colors[i], marker = markers[i], markersize=5, linestyle='-.', label=SSPmethodAdapt)
 
+        # each row should correspond to a runtype
         if col_ind==0:
-            ax.set_ylabel(f"{method}", fontsize=15)
+            axes[row_ind,col_ind].set_ylabel(f"{runtype}", fontsize=15)
         #end
 
         # each column should correspond to a stiffness parameter
         if row_ind == 0:
-            ax.set_title(f"k1 = {k1Val: .1e}, k2 = {k2Val: .1e}", fontsize=18)
+            axes[row_ind,col_ind].set_title(f"k1 = {k1Val: .1e}, k2 = {k2Val: .1e}", fontsize=18)
         #end
-        
-        ax.set_xscale('log')
-        ax.set_yscale('log')
-        # ax.grid()
-        ax.legend(loc="best")
     #end
+        axes[row_ind,col_ind].set_xscale('log')
+        axes[row_ind,col_ind].set_yscale('log')
+        axes[row_ind,col_ind].legend(loc="best")
 #end
 fig.supxlabel('implicit solves', fontsize=18)
 fig.supylabel('$L_{1}$ error', fontsize=18)
@@ -267,44 +272,45 @@ plt.savefig("implicit_solves_error_linear_adv_rec.png")
 
 # --------------------------- runtime vs error ----------------------------------
 #create a figure of subplots (columns are stiffness parameters and rows are methods)
-fig, axes = plt.subplots(len(methods), len(k1values), figsize=(15, 12))
+fig, axes = plt.subplots(2, len(k1values), figsize=(15, 12))
 for col_ind, k1Val in enumerate(k1values):
     k2Val = 2.0 * k1Val
     data_fixed    = df[(df["k1"] == k1Val) & (df["k2"] == k2Val) & (df["Runtype"] == "fixed")]
     data_adaptive = df[(df["k1"] == k1Val) & (df["k2"] == k2Val) & (df["Runtype"] == "adaptive")]
 
-    for row_ind, method in enumerate(methods):
-        ax = axes[row_ind, col_ind]
-        # color = next(colors)
-        # linestyle = next(linestyles)
-
-        #fixed run
-        SSPmethodFix_data = data_fixed[data_fixed['IMEX_method'] == method]#.sort_values('runtime')
-        ax.plot(SSPmethodFix_data['runtime'], SSPmethodFix_data['L1_norm'], color = 'red', marker = 'o', markersize=5, linestyle='-', label="fixed")
+    for row_ind, runtype in enumerate(modetype):
+        # fixed run
+        if row_ind == 0:
+            for i, SSPmethodFix in enumerate(data_fixed['IMEX_method'].unique()):
+                SSPmethodFix_data = data_fixed[data_fixed['IMEX_method'] == SSPmethodFix]
+                x = SSPmethodFix_data['runtime'].where(SSPmethodFix_data['runtime'] != 0)
+                y = SSPmethodFix_data['L1_norm'].where(SSPmethodFix_data['L1_norm'] != 0)
+                axes[row_ind,col_ind].plot(x, y, color = colors[i], marker = markers[i], markersize=5, linestyle=':', label=SSPmethodFix)
 
         #adaptive run
-        SSPmethodAdapt_data = data_adaptive[data_adaptive['IMEX_method'] == method]#.sort_values('runtime')
-        ax.plot(SSPmethodAdapt_data['runtime'], SSPmethodAdapt_data['L1_norm'], color = 'blue', marker = '*', markersize=5, linestyle='--', label="adaptive")
+        elif row_ind == 1:
+            for i, SSPmethodAdapt in enumerate(data_adaptive['IMEX_method'].unique()):
+                SSPmethodAdapt_data = data_adaptive[data_adaptive['IMEX_method'] == SSPmethodAdapt]
+                x = SSPmethodAdapt_data['runtime'].where(SSPmethodAdapt_data['runtime'] != 0)
+                y = SSPmethodAdapt_data['L1_norm'].where(SSPmethodAdapt_data['L1_norm'] != 0)
+                axes[row_ind,col_ind].plot(x, y, color = colors[i], marker = markers[i], markersize=5, linestyle='-.', label=SSPmethodAdapt)
 
+        # each row should correspond to a runtype
         if col_ind==0:
-            ax.set_ylabel(f"{method}", fontsize=15)
+            axes[row_ind,col_ind].set_ylabel(f"{runtype}", fontsize=15)
         #end
 
-       # each column should correspond to a stiffness parameter
+        # each column should correspond to a stiffness parameter
         if row_ind == 0:
-            ax.set_title(f"k1 = {k1Val: .1e}, k2 = {k2Val: .1e}", fontsize=18)
+            axes[row_ind,col_ind].set_title(f"k1 = {k1Val: .1e}, k2 = {k2Val: .1e}", fontsize=18)
         #end
-        
-        ax.set_xscale('log')
-        ax.set_yscale('log')
-        # ax.grid()
-        ax.legend(loc="best")
     #end
+        axes[row_ind,col_ind].set_xscale('log')
+        axes[row_ind,col_ind].set_yscale('log')
+        axes[row_ind,col_ind].legend(loc="best")
 #end
 fig.supxlabel('runtime', fontsize=18)
 fig.supylabel('$L_{1}$ error', fontsize=18)
 fig.suptitle("runtime vs error", fontsize=20)
 fig.tight_layout()
 plt.savefig("runtime_error_linear_adv_rec.png")
-
-

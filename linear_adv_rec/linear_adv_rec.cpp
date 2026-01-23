@@ -133,8 +133,8 @@ public:
    ARKODEParameters()
     : IMintegrator("ARKODE_SSP_SDIRK_2_1_2"),
       EXintegrator("ARKODE_SSP_ERK_2_1_2"),
-      rtol(SUN_RCONST(1.e-4)),
-      atol(SUN_RCONST(1.e-11)),
+      rtol(SUN_RCONST(1.e-12)),
+      atol(SUN_RCONST(1.e-14)),
       fixed_h(ZERO),
       maxsteps(10000),
       output(1),
@@ -260,6 +260,10 @@ int main(int argc, char* argv[])
 
   flag = ARKodeSetStopTime(arkode_mem, uopts.Tf);
   if (check_flag(&flag, "ARKodeSetStopTime", 1)) { return 1; }
+
+  /* Specifies that the implicit portion of the problem is linear. */
+  flag = ARKodeSetLinear(arkode_mem, 0);
+  if (check_flag(&flag, "ARKodeSetLinear", 1)) { return 1; }
 
   /* Initialize GMRES solver -- no preconditioning, with up to 2*N iterations  */
   SUNLinearSolver LS = SUNLinSol_SPGMR(y, SUN_PREC_NONE, 2*udata.N, ctx);
