@@ -107,6 +107,12 @@ class ARKODEParameters
 {
 public:
    // Integration method
+     // Integration methods: 
+  //                    implicit methods (ARKODE_SSP_SDIRK_2_1_2, ARKODE_SSP_DIRK_3_1_2,  
+  //                                      ARKODE_SSP_LSPUM_SDIRK_3_1_2, ARKODE_SSP_ESDIRK_4_2_3)
+  //                    explicit methods (ARKODE_SSP_ERK_2_1_2, ARKODE_SSP_ERK_3_1_2,
+  //                                      ARKODE_SSP_LSPUM_ERK_3_1_2, ARKODE_SSP_ERK_4_2_3)
+
    std::string IMintegrator;
    std::string EXintegrator;
  
@@ -131,10 +137,10 @@ public:
  
    // constructor (with default values)
    ARKODEParameters()
-    : IMintegrator("ARKODE_SSP_SDIRK_2_1_2"),
-      EXintegrator("ARKODE_SSP_ERK_2_1_2"),
-      rtol(SUN_RCONST(1.e-12)),
-      atol(SUN_RCONST(1.e-14)),
+    : IMintegrator("ARKODE_SSP_DIRK_3_1_2"),
+      EXintegrator("ARKODE_SSP_ERK_3_1_2"),
+      rtol(SUN_RCONST(1.e-4)),
+      atol(SUN_RCONST(1.e-10)),
       fixed_h(ZERO),
       maxsteps(10000),
       output(1),
@@ -193,7 +199,7 @@ int main(int argc, char* argv[])
   
   /* Set initial conditions for u and v */
   sunrealtype* y_data = N_VGetArrayPointer(y);  
-  y_data[0]           = 1.0; //boundary on the left for u
+  y_data[0]           = 1.0; //boundary on the left for u given that boundary condtion is u(0,t)=1 - (sin(12t))^4
   y_data[udata.N]     = (udata.k1/udata.k2)*1.0 + (1.0/udata.k2)*udata.s2; 
   for (int i = 1; i < udata.N; i++){
     sunrealtype xi = udata.xstart + i * udata.dx;
@@ -300,6 +306,7 @@ int main(int argc, char* argv[])
      prints results.  Stops when the final time has been reached */
   sunrealtype t = uopts.T0;
 
+  sunrealtype sumIntStep = 0.0, hcur;
   while (t < uopts.Tf)
   {
     flag = ARKodeEvolve(arkode_mem, uopts.Tf, y, &t, ARK_ONE_STEP); /* call integrator */
@@ -309,6 +316,10 @@ int main(int argc, char* argv[])
       fprintf(stderr, "Solver failure, stopping integration\n");
       break;
     }
+
+    flag = ARKodeGetCurrentStep(arkode_mem, &hcur);
+    if (check_flag(&flag, "ARKodeGetCurrentStep", 1)) {return 1; }
+    sumIntStep = sumIntStep + hcur;
 
     /* output results to disk */
     fprintf(UFID, "Time step: %.2" FSYM "\n", t); 
@@ -328,6 +339,9 @@ int main(int argc, char* argv[])
   long int nsteps; //use the number of steps taken in the python plot
   ARKodeGetNumSteps(arkode_mem, &nsteps);
   fprintf(UFID, "Number of Time Steps Taken: %ld \n", nsteps);
+
+  /* Print the maximum internal step size */
+  printf(" Largest avg internal time step size = %.2" GSYM "\n", (sumIntStep/nsteps));
 
   printf(" ---------------------------------\n \n");
   fclose(UFID);
@@ -373,7 +387,7 @@ static int fe(sunrealtype t, N_Vector y, N_Vector ydot, void* user_data)
   sunrealtype* vdot = Ydot + N;
 
   //boundary conditions
-  udot[0]   = 0.0; 
+  udot[0]   = -48.0 * SUNRpowerI(sin(12.0 * t), 3) * cos(12.0 * t);//not 0.0 since u(0,t)=1 - (sin(12t))^4; 
   vdot[0]   = 0.0; 
 
   //interior points
@@ -410,7 +424,7 @@ static int f(sunrealtype t, N_Vector y, N_Vector ydot, void* user_data)
   sunrealtype* vdot = Ydot + N;
 
   //boundary conditions
-  udot[0]   = 0.0;
+  udot[0]   = -48.0 * pow(sin(12.0 * t),3) * cos(12.0 * t);//not 0.0 since u(0,t)=1 - (sin(12t))^4; 
 
   //interior points
   for (int i = 1; i < N; i++){
