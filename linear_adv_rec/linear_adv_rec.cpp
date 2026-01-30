@@ -137,8 +137,8 @@ public:
  
    // constructor (with default values)
    ARKODEParameters()
-    : IMintegrator("ARKODE_SSP_DIRK_3_1_2"),
-      EXintegrator("ARKODE_SSP_ERK_3_1_2"),
+    : IMintegrator("ARKODE_SSP_SDIRK_2_1_2"),
+      EXintegrator("ARKODE_SSP_ERK_2_1_2"),
       rtol(SUN_RCONST(1.e-4)),
       atol(SUN_RCONST(1.e-10)),
       fixed_h(ZERO),
@@ -157,7 +157,7 @@ static int Jac(N_Vector v, N_Vector Jv, sunrealtype t, N_Vector y, N_Vector fy, 
 static int ReadInputs(std::vector<std::string>& args, UserData& udata, ARKODEParameters& uopts, SUNContext ctx);
 static void InputHelp();
 static int PrintSetup(UserData& udata,ARKODEParameters& uopts);
-static int trueSol(sunrealtype t, N_Vector tSol, void* user_data); //Exact solution
+// static int trueSol(sunrealtype t, N_Vector tSol, void* user_data); //Exact solution
 
 /* Private function to check function return values */
 static int check_flag(void* flagvalue, const char* funcname, int opt);
@@ -192,10 +192,10 @@ int main(int argc, char* argv[])
   N_Vector y = N_VNew_Serial(2*udata.N, ctx); /* Create serial vector for solution */
   if (check_flag((void*)y, "N_VNew_Serial", 0)) { return 1; }
 
-  /* compute the true solution */
-  tSol = N_VClone(y);
-  flag = trueSol(0.0, tSol, &udata);
-  if (check_flag(&flag, "trueSol", 1)) { return 1;}
+  // /* compute the true solution */
+  // tSol = N_VClone(y);
+  // flag = trueSol(0.0, tSol, &udata);
+  // if (check_flag(&flag, "trueSol", 1)) { return 1;}
   
   /* Set initial conditions for u and v */
   sunrealtype* y_data = N_VGetArrayPointer(y);  
@@ -203,7 +203,7 @@ int main(int argc, char* argv[])
   y_data[udata.N]     = (udata.k1/udata.k2)*1.0 + (1.0/udata.k2)*udata.s2; 
   for (int i = 1; i < udata.N; i++){
     sunrealtype xi = udata.xstart + i * udata.dx;
-    sunrealtype u0 = 1.0 + udata.s2 * xi;
+    sunrealtype u0 = 1.0 + (udata.s2) * xi;
     sunrealtype v0 = (udata.k1/udata.k2)*u0 + (1.0/udata.k2)*udata.s2;
 
     y_data[i]           = u0;
@@ -295,8 +295,8 @@ int main(int argc, char* argv[])
   fprintf(UFID, "Left endpoint %f \n", udata.xstart);
   fprintf(UFID, "Right endpoint %f \n", udata.xend);
   sunrealtype* data = N_VGetArrayPointer(y);
-  sunrealtype* final_data = N_VGetArrayPointer(y); // solution at final time step
-  sunrealtype* true_data = N_VGetArrayPointer(tSol); // true solution 
+  // sunrealtype* final_data = N_VGetArrayPointer(y); // solution at final time step
+  // sunrealtype* true_data = N_VGetArrayPointer(tSol); // true solution 
 
   /* output initial condition (u and v) to disk */
   for (int i = 0; i < udata.N; i++) { fprintf(UFID, " %.16" ESYM " %.16" ESYM, data[i], data[udata.N + i]); }
@@ -327,14 +327,14 @@ int main(int argc, char* argv[])
     fprintf(UFID, "\n \n");
   }
 
-  /* find the L1 norm */
-  sunrealtype sum_error = 0.0;
-  for (int i = udata.N; i < 2*udata.N; i++)
-  // for (int i = 0; i < 2*udata.N; i++)
-  {
-    sum_error += SUNRabs(true_data[i]-data[i]);
-  }
-  printf(" L1-norm = %.16e\n", sum_error / udata.N);
+  // /* find the L1 norm */
+  // sunrealtype sum_error = 0.0;
+  // for (int i = udata.N; i < 2*udata.N; i++)
+  // // for (int i = 0; i < 2*udata.N; i++)
+  // {
+  //   sum_error += SUNRabs(true_data[i]-data[i]);
+  // }
+  // printf(" L1-norm = %.16e\n", sum_error / udata.N);
 
   long int nsteps; //use the number of steps taken in the python plot
   ARKodeGetNumSteps(arkode_mem, &nsteps);
@@ -386,15 +386,40 @@ static int fe(sunrealtype t, N_Vector y, N_Vector ydot, void* user_data)
   sunrealtype* udot = Ydot;
   sunrealtype* vdot = Ydot + N;
 
-  //boundary conditions
-  udot[0]   = -48.0 * SUNRpowerI(sin(12.0 * t), 3) * cos(12.0 * t);//not 0.0 since u(0,t)=1 - (sin(12t))^4; 
-  vdot[0]   = 0.0; 
+  // left boundary
+  u[0]    = 1.0 - pow(sin(12*t),4);
+  udot[0] = -4.0 * pow(sin(12.0*t), 3) * cos(12.0 * t) * 12.0;//not 0.0 since u(0,t)=1 - (sin(12t))^4; 
+  udot[1] = -alpha1*(u[1] - u[0])/(dx);
+  vdot[0] = 0.0; 
 
   //interior points
-  for (int i = 1; i < N; i++){
-    udot[i] = -alpha1*(u[i] - u[i-1])/(dx);
-    vdot[i] = -alpha2*(v[i] - v[i-1])/(dx);
+  for (int i = 2; i < N-2; i++){
+    udot[i] = -alpha1 * (u[i-2] - 8.0 * u[i-1] + 8.0 * u[i+1] - u[i+2])/(12.0 * dx);//(u[i] - u[i-1])/(dx);
+    vdot[i] = -alpha2 * (v[i-2] - 8.0 * v[i-1] + 8.0 * v[i+1] - v[i+2])/(12.0 * dx); //(v[i] - v[i-1])/(dx);
   }
+
+  //interior points
+  for (int i = N-2; i < N; i++){
+    udot[i] = -alpha1 * (u[i] - u[i-1])/(dx);
+    vdot[i] = -alpha2 * (v[i] - v[i-1])/(dx);
+  }
+
+  // // //left boundary
+  // u[0]    = 1.0 - pow(sin(12*t),4);
+  // udot[0] = -48.0 * SUNRpowerI(sin(12.0 * t), 3) * cos(12.0 * t); //not 0.0 since u(0,t)=1 - (sin(12t))^4; 
+  // udot[1] = -alpha1 * (-11.0 * u[1] + 18.0 * u[2] - 9.0 * u[3] - 2.0 * u[4]) / (6.0 * dx);
+  // vdot[0] = 0.0; 
+
+  // //interior points
+  // for (int i = 2; i < N-2; i++){
+  //   udot[i] = -alpha1 * (u[i-2] - 8.0 * u[i-1] + 8.0 * u[i+1] - u[i+2])/(12.0 * dx);
+  //   // vdot[i] = -alpha2 * (v[i-2] - 8.0 * v[i-1] + 8.0 * v[i+1] - v[i+2])/(12.0 * dx);
+  // }
+
+  // for (int i = N-2; i < N; i++){
+  //   udot[i] = -alpha1 * (-2.0 * u[i-3] + 9.0 * u[i-2] - 18.0 * u[i-1] + 11.0 * u[i]) / (6.0 * dx);
+  //   // vdot[i] = -alpha2 * (-2.0 * v[i-3] + 9.0 * v[i-2] - 18.0 * v[i-1] + 11.0 * v[i]) / (6.0 * dx);
+  // }
 
   return 0; /* Return with success */
 }
@@ -424,7 +449,7 @@ static int f(sunrealtype t, N_Vector y, N_Vector ydot, void* user_data)
   sunrealtype* vdot = Ydot + N;
 
   //boundary conditions
-  udot[0]   = -48.0 * pow(sin(12.0 * t),3) * cos(12.0 * t);//not 0.0 since u(0,t)=1 - (sin(12t))^4; 
+  udot[0] = 0.0;
 
   //interior points
   for (int i = 1; i < N; i++){
@@ -439,33 +464,33 @@ static int f(sunrealtype t, N_Vector y, N_Vector ydot, void* user_data)
 }
 
 /* function to return the exact solution*/
-static int trueSol(sunrealtype t, N_Vector tSol, void* user_data)
-{
-  UserData* udata = (UserData*)user_data; /* access problem data */
-  sunrealtype *TSol = NULL;
-  TSol = N_VGetArrayPointer(tSol);
-  if (check_flag((void*)TSol, "N_VGetArrayPointer", 0)) { return 1; }
-  N_VConst(0.0, tSol); /* Initialize tSol to zero */
+// static int trueSol(sunrealtype t, N_Vector tSol, void* user_data)
+// {
+//   UserData* udata = (UserData*)user_data; /* access problem data */
+//   sunrealtype *TSol = NULL;
+//   TSol = N_VGetArrayPointer(tSol);
+//   if (check_flag((void*)TSol, "N_VGetArrayPointer", 0)) { return 1; }
+//   N_VConst(0.0, tSol); /* Initialize tSol to zero */
 
-  /* set parameters */
-  const sunindextype N  = udata->N;
-  const sunrealtype dx  = udata->dx;
-  const sunrealtype k1  = udata->k1;
-  const sunrealtype k2  = udata->k2;
-  const sunrealtype s1  = udata->s1;
-  const sunrealtype s2  = udata->s2;
+//   /* set parameters */
+//   const sunindextype N  = udata->N;
+//   const sunrealtype dx  = udata->dx;
+//   const sunrealtype k1  = udata->k1;
+//   const sunrealtype k2  = udata->k2;
+//   const sunrealtype s1  = udata->s1;
+//   const sunrealtype s2  = udata->s2;
 
-  sunrealtype* uSol = TSol;
-  sunrealtype* vSol = TSol + N;
+//   sunrealtype* uSol = TSol;
+//   sunrealtype* vSol = TSol + N;
 
-  for (int i = 0; i < N; i++)
-  {
-    uSol[i] = i * dx + 1.0;
-    vSol[i] = (k1 * (i * dx + 1.0) + 1.0)/k2; //2k1 = k2
-  }
+//   for (int i = 0; i < N; i++)
+//   {
+//     uSol[i] = i * dx + 1.0;
+//     vSol[i] = (k1 * (i * dx + 1.0) + 1.0)/k2; //2k1 = k2
+//   }
 
-  return 0;
-}
+//   return 0;
+// }
 
 
 inline void find_arg(std::vector<std::string>& args, const std::string key,

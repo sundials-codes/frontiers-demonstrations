@@ -85,14 +85,21 @@ with open(datafile, "r") as file:
     vSol_lastStep = np.zeros((N), dtype=float)
     for i in range(len(vSol[nsteps-1, :])):
         vSol_lastStep[i] = vSol[nsteps-1, i]
-
-    ## plotting only the solution at the final time step 
-    plt.xlabel(r"$x$")
-    plt.ylabel(r"pSol")
-    plt.plot(x, vSol[0, :], 'r', label = "initial solution")
-    plt.plot(x, vSol[-1, :], 'b', label = "final solution")
-    plt.grid()
    
+
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 5))
+    # fig.suptitle('Horizontally stacked subplots')
+    ax1.plot(x, uSol[0, :], color = 'r', linestyle = '--', label = "initial solution")
+    ax1.plot(x, uSol[-1, :], color = 'b', linestyle = '-', label = "final solution")
+    ax1.set_yticks([0.0, 0.5, 1.0, 1.5, 2.0])
+    ax1.set_title("u-component")
+    ax1.grid(True)
+
+    ax2.plot(x, vSol[0, :], color = 'r', linestyle = '--', label = "initial solution")
+    ax2.plot(x, vSol[-1, :], color = 'b', linestyle = '-', label = "final solution")
+    ax2.set_yticks([0.0, 0.5, 1.0, 1.5, 2.0])
+    ax2.set_title("v-component")
+    ax2.grid(True)
 
     # ## plot defaults: increase default font size, increase plot width, enable LaTeX rendering
     # plt.rc("font", size=15)
@@ -136,6 +143,7 @@ with open(datafile, "r") as file:
     # plt.rcParams["figure.constrained_layout.use"] = True
 
     # plt.close()
+    plt.legend()
     plt.show()
 
 
