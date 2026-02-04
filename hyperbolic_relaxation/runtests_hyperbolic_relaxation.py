@@ -319,9 +319,9 @@ SSP423  = "  ./hyperbolic_relaxation  --IMintegrator ARKODE_SSP_ESDIRK_4_2_3    
 SSP923  = "  ./hyperbolic_relaxation  --IMintegrator ARKODE_SSP_ESDIRK_9_2_3       --EXintegrator ARKODE_SSP_ERK_9_2_3        --output 2"   
 
 ## common testing parameters
-adaptive_params = {'r1': 1.0, 'r2': 1e-1, 'r3':1e-2, 'r4':1e-3, 'r5':1e-4, 'r6':1e-5} #relative tolerances
+adaptive_params = {'r1': 1.0, 'r2': 1e-1}#, 'r3':1e-2, 'r4':1e-3, 'r5':1e-4, 'r6':1e-5} #relative tolerances
 fixed_params    = {} #fixed time step sizes
-for i in range(-1, 5, 1):
+for i in range(-1, 1, 1):
     fixed_params[f"h{i}"] = 0.01/(2.0**i)
 
 ## stiffness parameters

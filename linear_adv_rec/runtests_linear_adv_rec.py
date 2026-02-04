@@ -25,7 +25,7 @@ from matplotlib.gridspec import GridSpec
 from math import log10, floor
 
 # utility routine to run a test, storing the run options and solver statistics
-def runtest(solver, modetype, runV, k1Val, showcommand=True):
+def runtest(solver, modetype, runV, k1Val, k1Valname, showcommand=True, sspcommand=True):
     """
     This function runs the population model using both fixed and adaptive time
     stepping with different parameters and stores the stats in an excel file
@@ -84,9 +84,9 @@ def runtest(solver, modetype, runV, k1Val, showcommand=True):
         print("Running: " + runcommand + " SUCCESS")
         for line in stdout_lines:
             txt = line.split()
-            if ("L1-error" in txt):
-                stats['error'] = float(txt[2])
-            elif ("Steps" in txt):
+            # if ("L1-error" in txt):
+            #     stats['error'] = float(txt[2])
+            if ("Steps" in txt):
                 stats['Steps'] = int(txt[2])
             elif (("Step" in txt) and ("attempts" in txt)):
                 stats['StepAttempts'] = int(txt[3])
@@ -111,6 +111,154 @@ def runtest(solver, modetype, runV, k1Val, showcommand=True):
         elif (solver['name']== 'SSP923'):
             stats['Implicit_solves'] = 4 * stats['StepAttempts']
         # end
+
+
+        datafile = "plot_linear_adv_rec.py"
+        # return with an error if the file does not exist
+        if not os.path.isfile(datafile):
+            msg = "Error: file " + datafile + " does not exist"
+            sys.exit(msg)
+
+        # ====== in the plot script, only one stiffness value can be true at a time =========
+        # so that you can use the correct reference solution for each stiffness parameter
+        # ===================================================================================
+        # K = 1e6
+        if (k1Valname == "k1Val1"):
+            with open(datafile, "r") as file:
+                original_lines = file.readlines()
+            modified_lines = []
+            for line in original_lines:
+                if "k1Val1 =" in line:
+                    val = "True" 
+                    modified_lines.append(f"k1Val1 = {val}\n")
+                elif "k1Val1e6 =" in line:
+                    val = "False" 
+                    modified_lines.append(f"k1Val1e6 = {val}\n")
+                elif "k1Val1e8 =" in line:
+                    val = "False" 
+                    modified_lines.append(f"k1Val1e8 = {val}\n")
+                else:
+                    modified_lines.append(line)
+            # write the modified line to the python script
+            with open(datafile, "w") as f:
+                f.writelines(modified_lines)
+
+        # K = 1e7
+        elif (k1Valname == "k1Val1e6"):
+            with open(datafile, "r") as file:
+                original_lines = file.readlines()
+            modified_lines = []
+            for line in original_lines:
+                if "k1Val1 =" in line:
+                    val = "False" 
+                    modified_lines.append(f"k1Val1 = {val}\n")
+                elif "k1Val1e6 =" in line:
+                    val = "True" 
+                    modified_lines.append(f"k1Val1e6 = {val}\n")
+                elif "k1Val1e8 =" in line:
+                    val = "False" 
+                    modified_lines.append(f"k1Val1e8 = {val}\n")
+                else:
+                    modified_lines.append(line)
+            # write the modified line to the python script
+            with open(datafile, "w") as f:
+                f.writelines(modified_lines)
+        
+        # K = 1e8
+        elif (k1Valname == "k1Val1e8"):
+            with open(datafile, "r") as file:
+                original_lines = file.readlines()
+            modified_lines = []
+            for line in original_lines:
+                if "k1Val1 =" in line:
+                    val = "False" 
+                    modified_lines.append(f"k1Val1 = {val}\n")
+                elif "k1Val1e6 =" in line:
+                    val = "False" 
+                    modified_lines.append(f"k1Val1e6 = {val}\n")
+                elif "k1Val1e8 =" in line:
+                    val = "True" 
+                    modified_lines.append(f"k1Val1e8 = {val}\n")
+                else:
+                    modified_lines.append(line)
+            # write the modified line to the python script
+            with open(datafile, "w") as f:
+                f.writelines(modified_lines)
+        # # ==== end using correct reference solution for each stiffness value ====
+
+
+        # # ======================================================================
+        # # select the run type you want to use
+        # # ======================================================================
+        if (modetype=="adaptive"):
+            # adaptiveRun = True and fixedRun = False to compute the Lmax error
+            with open(datafile, "r") as file:
+                original_lines = file.readlines()
+
+            modified_lines = []
+            for line in original_lines:
+                if "AdaptiveRun =" in line:
+                    val = "True" #if modetype == "adaptive" else "False"
+                    modified_lines.append(f"AdaptiveRun = {val}\n")
+                elif "FixedRun =" in line:
+                    val = "False" #if modetype == "adaptive" else "True"
+                    modified_lines.append(f"FixedRun = {val}\n")
+                else:
+                    modified_lines.append(line)
+                # end
+                
+            # write the modified line to the python script
+            with open(datafile, "w") as f:
+                f.writelines(modified_lines)
+                
+            # running python file to plot pressure and density
+            sspcommand = " python ./plot_linear_adv_rec.py"
+            ssp_result = subprocess.run(shlex.split(sspcommand), stdout=subprocess.PIPE) 
+
+            # ssp_stdout_lines = str(ssp_result.stdout).splitlines()
+            ssp_stdout_lines = ssp_result.stdout.decode('utf-8').splitlines()
+            for line in ssp_stdout_lines:
+                txt = line.split()
+                if (("Lmax" in txt) and ("reference" in txt) and ("solution" in txt)):
+                    stats['error'] = float(line.split('=')[-1].strip())
+                    print("error %.14e" % stats['error'])
+                #end
+            # #end
+
+        elif (modetype == "fixed"):
+            # FixedRun = True and AdaptiveRun = False to compute the Lmax error
+            with open(datafile, "r") as file:
+                original_lines = file.readlines()
+
+            modified_lines = []
+            for line in original_lines:
+                if "FixedRun =" in line:
+                    val = "True" #if modetype == "fixed" else "False"
+                    modified_lines.append(f"FixedRun = {val}\n")
+                elif "AdaptiveRun =" in line:
+                    val = "False" #if modetype == "fixed" else "True"
+                    modified_lines.append(f"AdaptiveRun = {val}\n")
+                else:
+                    modified_lines.append(line)
+                
+            # write the modified line to the python script
+            with open(datafile, "w") as f:
+                f.writelines(modified_lines)
+
+            ## running python file to plot pressure and density
+            sspcommand = " python ./plot_linear_adv_rec.py"
+            ssp_result = subprocess.run(shlex.split(sspcommand), stdout=subprocess.PIPE)   
+
+            # ssp_stdout_lines = str(ssp_result.stdout).splitlines()
+            ssp_stdout_lines = ssp_result.stdout.decode('utf-8').splitlines()
+            for line in ssp_stdout_lines:
+                txt = line.split()
+                if (("Lmax" in txt) and ("reference" in txt) and ("solution" in txt)):
+                    stats['error'] = float(line.split('=')[-1].strip())
+                    print("error %.14e" % stats['error'])
+                #end
+            #end
+        # # end : end of run type selection
         
     return stats
 ## end of function
@@ -128,7 +276,7 @@ fixed_params    = [] # fixed time step sizes
 for i in range(10,-4,-1):
     fixed_params.append(0.01/(2.0**i))
 #end
-k1values = [1.0, 1e6, 1e8]
+k1values = {'k1Val1': 1.0, 'k1Val1e6': 1e6, 'k1Val1e8': 1e8}
 
 
 # ----------------------------------------------------------------------------------------------------
@@ -149,16 +297,16 @@ RunStats = []
 
 for runvalue in adaptive_params:
     # for k1_val, k2_val in zip(k1values, k2values):
-    for k1_val in k1values:
+    for k1_valName, k1_val in k1values.items():
         for solver_adapt in solvertype:
-            adaptive_stat= runtest(solver_adapt, "adaptive", runvalue, k1_val, showcommand=True)
+            adaptive_stat= runtest(solver_adapt, "adaptive", runvalue, k1_val, k1_valName, showcommand=True, sspcommand=True)
             RunStats.append(adaptive_stat)
 
 for runvalue in fixed_params:
     # for k1_val, k2_val in zip(k1values, k2values):
-    for k1_val in k1values:
+    for k1_valName, k1_val in k1values.items():
         for solver_fixed in solvertype:
-            fixed_stat = runtest(solver_fixed, "fixed", runvalue, k1_val, showcommand=True)
+            fixed_stat = runtest(solver_fixed, "fixed", runvalue, k1_val, k1_valName, showcommand=True, sspcommand=True)
             RunStats.append(fixed_stat)
 
 RunStatsDf = pd.DataFrame.from_records(RunStats)
@@ -183,7 +331,7 @@ modetype = ['fixed', 'adaptive']
 # --------------------------- accepted steps vs error ----------------------------------
 #create a figure of subplots (columns are stiffness parameters and rows are methods)
 fig, axes = plt.subplots(2, len(k1values), figsize=(15, 12))
-for col_ind, k1Val in enumerate(k1values):
+for col_ind, (k1ValName, k1Val) in enumerate(k1values.items()):
     k2Val = 2.0 * k1Val
     data_fixed    = df[(df["k1"] == k1Val) & (df["k2"] == k2Val) & (df["Runtype"] == "fixed")]
     data_adaptive = df[(df["k1"] == k1Val) & (df["k2"] == k2Val) & (df["Runtype"] == "adaptive")]
@@ -218,12 +366,12 @@ for col_ind, k1Val in enumerate(k1values):
     #end
         axes[row_ind,col_ind].set_xscale('log')
         axes[row_ind,col_ind].set_yscale('log')
-        axes[row_ind,col_ind].set_ylim([1e-18, 1e2])
+        # axes[row_ind,col_ind].set_ylim([1e-18, 1e2])
         axes[row_ind,col_ind].legend(loc="best")
 #end
-fig.supxlabel('step attempts', fontsize=18)
-fig.supylabel('$L_{1}$ error', fontsize=18)
-fig.suptitle("step attempts vs error", fontsize=20)
+fig.supxlabel(' step attempts ', fontsize=18)
+fig.supylabel(' error ', fontsize=18)
+fig.suptitle(" step attempts vs error ", fontsize=20)
 fig.tight_layout()
 plt.savefig("step_attempts_error_linear_adv_rec.png")
 
@@ -231,7 +379,7 @@ plt.savefig("step_attempts_error_linear_adv_rec.png")
 # --------------------------- implicit solves vs error ----------------------------------
 #create a figure of subplots (columns are stiffness parameters and rows are methods)
 fig, axes = plt.subplots(2, len(k1values), figsize=(15, 12))
-for col_ind, k1Val in enumerate(k1values):
+for col_ind, (k1ValName, k1Val) in enumerate(k1values.items()):
     k2Val = 2.0 * k1Val
     data_fixed    = df[(df["k1"] == k1Val) & (df["k2"] == k2Val) & (df["Runtype"] == "fixed")]
     data_adaptive = df[(df["k1"] == k1Val) & (df["k2"] == k2Val) & (df["Runtype"] == "adaptive")]
@@ -265,11 +413,11 @@ for col_ind, k1Val in enumerate(k1values):
     #end
         axes[row_ind,col_ind].set_xscale('log')
         axes[row_ind,col_ind].set_yscale('log')
-        axes[row_ind,col_ind].set_ylim([1e-18, 1e2])
+        # axes[row_ind,col_ind].set_ylim([1e-18, 1e2])
         axes[row_ind,col_ind].legend(loc="best")
 #end
-fig.supxlabel('implicit solves', fontsize=18)
-fig.supylabel('$L_{1}$ error', fontsize=18)
+fig.supxlabel(' implicit solves ', fontsize=18)
+fig.supylabel(' error ', fontsize=18)
 fig.suptitle("implicit solves vs error", fontsize=20)
 fig.tight_layout()
 plt.savefig("implicit_solves_error_linear_adv_rec.png")
@@ -278,7 +426,7 @@ plt.savefig("implicit_solves_error_linear_adv_rec.png")
 # --------------------------- runtime vs error ----------------------------------
 #create a figure of subplots (columns are stiffness parameters and rows are methods)
 fig, axes = plt.subplots(2, len(k1values), figsize=(15, 12))
-for col_ind, k1Val in enumerate(k1values):
+for col_ind, (k1ValName, k1Val) in enumerate(k1values.items()):
     k2Val = 2.0 * k1Val
     data_fixed    = df[(df["k1"] == k1Val) & (df["k2"] == k2Val) & (df["Runtype"] == "fixed")]
     data_adaptive = df[(df["k1"] == k1Val) & (df["k2"] == k2Val) & (df["Runtype"] == "adaptive")]
@@ -312,11 +460,11 @@ for col_ind, k1Val in enumerate(k1values):
     #end
         axes[row_ind,col_ind].set_xscale('log')
         axes[row_ind,col_ind].set_yscale('log')
-        axes[row_ind,col_ind].set_ylim([1e-18, 1e2])
+        # axes[row_ind,col_ind].set_ylim([1e-18, 1e2])
         axes[row_ind,col_ind].legend(loc="best")
 #end
-fig.supxlabel('runtime', fontsize=18)
-fig.supylabel('$L_{1}$ error', fontsize=18)
+fig.supxlabel(' runtime ', fontsize=18)
+fig.supylabel(' error ', fontsize=18)
 fig.suptitle("runtime vs error", fontsize=20)
 fig.tight_layout()
 plt.savefig("runtime_error_linear_adv_rec.png")
@@ -325,7 +473,7 @@ plt.savefig("runtime_error_linear_adv_rec.png")
 # --------------------------- rtol vs error ----------------------------------
 #create a figure of subplots (columns are stiffness parameters and rows are methods)
 fig, axes = plt.subplots(1, len(k1values), figsize=(15, 12))
-for col_ind, k1Val in enumerate(k1values):
+for col_ind, (k1ValName, k1Val) in enumerate(k1values.items()):
     k2Val = 2.0 * k1Val
     data_adaptive    = df[(df["k1"] == k1Val) & (df["k2"] == k2Val) & (df["Runtype"] == "adaptive")]
 
@@ -340,16 +488,18 @@ for col_ind, k1Val in enumerate(k1values):
         axes[col_ind].set_ylabel("fixed", fontsize=15)
     #end
 
-    axes[0].set_title(f"k1 = {k1values[0]}", fontsize=18)
-    axes[1].set_title(f"k1 = {k1values[1]}", fontsize=18)
+    # axes[0].set_title(f"k1 = {k1values[0]}", fontsize=18)
+    # axes[1].set_title(f"k1 = {k1values[1]}", fontsize=18)
+    # axes[2].set_title(f"k1 = {k1values[1]}", fontsize=18)
+    axes[col_ind].set_title(f"k1 = {k1Val}", fontsize=18)
     
     axes[col_ind].set_xscale('log')
     axes[col_ind].set_yscale('log')
     axes[col_ind].set_ylim([1e-18, 1e2])
     axes[col_ind].legend(loc="best")
 #end
-fig.supxlabel('rtol', fontsize=18)
-fig.supylabel('$L_{1}$ error', fontsize=18)
+fig.supxlabel(' rtol ', fontsize=18)
+fig.supylabel(' error ', fontsize=18)
 fig.suptitle("rtol vs error", fontsize=20)
 fig.tight_layout()
 plt.savefig("rtol_error_linear_adv_rec.png")
@@ -358,13 +508,13 @@ plt.savefig("rtol_error_linear_adv_rec.png")
 # --------------------------- fixedh vs error ----------------------------------
 #create a figure of subplots (columns are stiffness parameters and rows are methods)
 fig, axes = plt.subplots(1, len(k1values), figsize=(15, 12))
-for col_ind, k1Val in enumerate(k1values):
+for col_ind, (k1ValName, k1Val) in enumerate(k1values.items()):
     k2Val = 2.0 * k1Val
     data_fixed    = df[(df["k1"] == k1Val) & (df["k2"] == k2Val) & (df["Runtype"] == "fixed")]
 
     for i, SSPmethodFix in enumerate(data_fixed['IMEX_method'].unique()):
         SSPmethodFix_data = data_fixed[data_fixed['IMEX_method'] == SSPmethodFix]
-        x = SSPmethodFix_data['runtime'].where(SSPmethodFix_data['ReturnCode'] != 1)
+        x = SSPmethodFix_data['runVal'].where(SSPmethodFix_data['ReturnCode'] != 1)
         y = SSPmethodFix_data['error'].where(SSPmethodFix_data['ReturnCode'] != 1)
         axes[col_ind].plot(x, y, color = colors[i], marker = markers[i], markersize=10, linestyle='-', label=SSPmethodFix)
 
@@ -373,16 +523,19 @@ for col_ind, k1Val in enumerate(k1values):
         axes[col_ind].set_ylabel("fixed", fontsize=15)
     #end
 
-    axes[0].set_title(f"k1 = {k1values[0]}", fontsize=18)
-    axes[1].set_title(f"k1 = {k1values[1]}", fontsize=18)
+    # axes[0].set_title(f"k1 = {k1values[0]}", fontsize=18)
+    # axes[1].set_title(f"k1 = {k1values[1]}", fontsize=18)
+    # axes[2].set_title(f"k1 = {k1values[1]}", fontsize=18)
+    axes[col_ind].set_title(f"k1 = {k1Val}", fontsize=18)
+
     
     axes[col_ind].set_xscale('log')
     axes[col_ind].set_yscale('log')
-    axes[col_ind].set_ylim([1e-18, 1e2])
+    # axes[col_ind].set_ylim([1e-18, 1e2])
     axes[col_ind].legend(loc="best")
 #end
 fig.supxlabel('h', fontsize=18)
-fig.supylabel('$L_{1}$ error', fontsize=18)
+fig.supylabel(' error ', fontsize=18)
 fig.suptitle("h vs error", fontsize=20)
 fig.tight_layout()
 plt.savefig("fixedh_error_linear_adv_rec.png")
