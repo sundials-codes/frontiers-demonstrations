@@ -42,7 +42,7 @@ def runtest(solver, modetype, runV, k1Val, showcommand=True):
 
     stats = {'Runtype': modetype,'ReturnCode': 0, 'IMEX_method': solver['name'], 'runVal': runV, 
              'k1': k1Val, 'k2': k2Val, 'Steps': 0,'StepAttempts': 0, 'ErrTestFails': 0, 'Implicit_solves': 0,
-             'Explicit_RHS': 0, 'Implicit_RHS': 0,'maxIntStep': 0.0, 'L1_norm': 0.0, 'runtime':0.0}
+             'Explicit_RHS': 0, 'Implicit_RHS': 0,'maxIntStep': 0.0, 'error': 0.0, 'runtime':0.0}
 
     if (modetype == "adaptive"):
         runcommand = "%s  --rtol %e  --k1 %e  --k2 %e" % (solver['exe'], runV, k1Val, k2Val)
@@ -69,7 +69,7 @@ def runtest(solver, modetype, runV, k1Val, showcommand=True):
     if sundials_failed == True:
         print("SUNDIALS failed for %s  --rtol %e  --k1 %e  --k2 %e" % (solver['exe'], runV, k1Val, k2Val))
         stats['ReturnCode']      = 1
-        stats['L1_norm']         = 0
+        stats['error']           = 0
         stats['Steps']           = 0
         stats['StepAttempts']    = 0
         stats['ErrTestFails']    = 0
@@ -84,8 +84,8 @@ def runtest(solver, modetype, runV, k1Val, showcommand=True):
         print("Running: " + runcommand + " SUCCESS")
         for line in stdout_lines:
             txt = line.split()
-            if ("L1-norm" in txt):
-                stats['L1_norm'] = float(txt[2])
+            if ("L1-error" in txt):
+                stats['error'] = float(txt[2])
             elif ("Steps" in txt):
                 stats['Steps'] = int(txt[2])
             elif (("Step" in txt) and ("attempts" in txt)):
@@ -128,7 +128,7 @@ fixed_params    = [] # fixed time step sizes
 for i in range(10,-4,-1):
     fixed_params.append(0.01/(2.0**i))
 #end
-k1values = [1.0, 1e6]
+k1values = [1.0, 1e6, 1e8]
 
 
 # ----------------------------------------------------------------------------------------------------
@@ -194,7 +194,7 @@ for col_ind, k1Val in enumerate(k1values):
             for i, SSPmethodFix in enumerate(data_fixed['IMEX_method'].unique()):
                 SSPmethodFix_data = data_fixed[data_fixed['IMEX_method'] == SSPmethodFix]
                 x = SSPmethodFix_data['StepAttempts'].where(SSPmethodFix_data['ReturnCode'] != 1)
-                y = SSPmethodFix_data['L1_norm'].where(SSPmethodFix_data['ReturnCode'] != 1)
+                y = SSPmethodFix_data['error'].where(SSPmethodFix_data['ReturnCode'] != 1)
                 axes[row_ind,col_ind].plot(x, y, color = colors[i], marker = markers[i], markersize=10, linestyle='-', label=SSPmethodFix)
 
         elif row_ind == 1:
@@ -202,7 +202,7 @@ for col_ind, k1Val in enumerate(k1values):
             for i, SSPmethodAdapt in enumerate(data_adaptive['IMEX_method'].unique()):
                 SSPmethodAdapt_data = data_adaptive[data_adaptive['IMEX_method'] == SSPmethodAdapt]
                 x = SSPmethodAdapt_data['StepAttempts'].where(SSPmethodAdapt_data['ReturnCode'] != 1)
-                y = SSPmethodAdapt_data['L1_norm'].where(SSPmethodAdapt_data['ReturnCode'] != 1)
+                y = SSPmethodAdapt_data['error'].where(SSPmethodAdapt_data['ReturnCode'] != 1)
                 axes[row_ind,col_ind].plot(x,y, color = colors[i], marker = markers[i], markersize=10, linestyle='-.', label=SSPmethodAdapt)
 
         # each row should correspond to a runtype
@@ -242,7 +242,7 @@ for col_ind, k1Val in enumerate(k1values):
             for i, SSPmethodFix in enumerate(data_fixed['IMEX_method'].unique()):
                 SSPmethodFix_data = data_fixed[data_fixed['IMEX_method'] == SSPmethodFix]
                 x = SSPmethodFix_data['Implicit_solves'].where(SSPmethodFix_data['ReturnCode'] != 1)
-                y = SSPmethodFix_data['L1_norm'].where(SSPmethodFix_data['ReturnCode'] != 1)
+                y = SSPmethodFix_data['error'].where(SSPmethodFix_data['ReturnCode'] != 1)
                 axes[row_ind,col_ind].plot(x, y, color = colors[i], marker = markers[i], markersize=10, linestyle='-', label=SSPmethodFix)
 
         #adaptive run
@@ -250,7 +250,7 @@ for col_ind, k1Val in enumerate(k1values):
             for i, SSPmethodAdapt in enumerate(data_adaptive['IMEX_method'].unique()):
                 SSPmethodAdapt_data = data_adaptive[data_adaptive['IMEX_method'] == SSPmethodAdapt]
                 x = SSPmethodAdapt_data['Implicit_solves'].where(SSPmethodAdapt_data['ReturnCode'] != 1)
-                y = SSPmethodAdapt_data['L1_norm'].where(SSPmethodAdapt_data['ReturnCode'] != 1)
+                y = SSPmethodAdapt_data['error'].where(SSPmethodAdapt_data['ReturnCode'] != 1)
                 axes[row_ind,col_ind].plot(x, y, color = colors[i], marker = markers[i], markersize=10, linestyle='-.', label=SSPmethodAdapt)
 
         # each row should correspond to a runtype
@@ -289,7 +289,7 @@ for col_ind, k1Val in enumerate(k1values):
             for i, SSPmethodFix in enumerate(data_fixed['IMEX_method'].unique()):
                 SSPmethodFix_data = data_fixed[data_fixed['IMEX_method'] == SSPmethodFix]
                 x = SSPmethodFix_data['runtime'].where(SSPmethodFix_data['ReturnCode'] != 1)
-                y = SSPmethodFix_data['L1_norm'].where(SSPmethodFix_data['ReturnCode'] != 1)
+                y = SSPmethodFix_data['error'].where(SSPmethodFix_data['ReturnCode'] != 1)
                 axes[row_ind,col_ind].plot(x, y, color = colors[i], marker = markers[i], markersize=10, linestyle='-', label=SSPmethodFix)
 
         #adaptive run
@@ -297,7 +297,7 @@ for col_ind, k1Val in enumerate(k1values):
             for i, SSPmethodAdapt in enumerate(data_adaptive['IMEX_method'].unique()):
                 SSPmethodAdapt_data = data_adaptive[data_adaptive['IMEX_method'] == SSPmethodAdapt]
                 x = SSPmethodAdapt_data['runtime'].where(SSPmethodAdapt_data['ReturnCode'] != 1)
-                y = SSPmethodAdapt_data['L1_norm'].where(SSPmethodAdapt_data['ReturnCode'] != 1)
+                y = SSPmethodAdapt_data['error'].where(SSPmethodAdapt_data['ReturnCode'] != 1)
                 axes[row_ind,col_ind].plot(x, y, color = colors[i], marker = markers[i], markersize=10, linestyle='-.', label=SSPmethodAdapt)
 
         # each row should correspond to a runtype
@@ -322,8 +322,6 @@ fig.tight_layout()
 plt.savefig("runtime_error_linear_adv_rec.png")
 
 
-
-
 # --------------------------- rtol vs error ----------------------------------
 #create a figure of subplots (columns are stiffness parameters and rows are methods)
 fig, axes = plt.subplots(1, len(k1values), figsize=(15, 12))
@@ -334,7 +332,7 @@ for col_ind, k1Val in enumerate(k1values):
     for i, SSPmethodAdapt in enumerate(data_adaptive['IMEX_method'].unique()):
         SSPmethodAdapt_data = data_adaptive[data_adaptive['IMEX_method'] == SSPmethodAdapt]
         x = SSPmethodAdapt_data['runVal'].where(SSPmethodAdapt_data['ReturnCode'] != 1)
-        y = SSPmethodAdapt_data['L1_norm'].where(SSPmethodAdapt_data['ReturnCode'] != 1)
+        y = SSPmethodAdapt_data['error'].where(SSPmethodAdapt_data['ReturnCode'] != 1)
         axes[col_ind].plot(x, y, color = colors[i], marker = markers[i], markersize=10, linestyle='-', label=SSPmethodAdapt)
 
     # each row should correspond to a runtype
@@ -367,7 +365,7 @@ for col_ind, k1Val in enumerate(k1values):
     for i, SSPmethodFix in enumerate(data_fixed['IMEX_method'].unique()):
         SSPmethodFix_data = data_fixed[data_fixed['IMEX_method'] == SSPmethodFix]
         x = SSPmethodFix_data['runtime'].where(SSPmethodFix_data['ReturnCode'] != 1)
-        y = SSPmethodFix_data['L1_norm'].where(SSPmethodFix_data['ReturnCode'] != 1)
+        y = SSPmethodFix_data['error'].where(SSPmethodFix_data['ReturnCode'] != 1)
         axes[col_ind].plot(x, y, color = colors[i], marker = markers[i], markersize=10, linestyle='-', label=SSPmethodFix)
 
     # each row should correspond to a runtype

@@ -205,7 +205,7 @@ ax01.plot(x, rho[it, :], "-b")
 ax01.set_title(r"$t =$ " + tval)
 ax01.set_xlabel(r"$x$")
 
-it = 10
+it = 2
 tval = repr(float(t[it])).zfill(3)
 ax02.plot(x, rho[it, :], "-b")
 ax02.set_title(r"$t =$ " + tval)

@@ -90,7 +90,7 @@ using namespace std;
 
   // constructor (with default values)
   UserData()
-  : N(100),
+  : N(401),
     alpha1(1.0),
     alpha2(0.0),
     k1(1e6),
@@ -387,39 +387,17 @@ static int fe(sunrealtype t, N_Vector y, N_Vector ydot, void* user_data)
   sunrealtype* vdot = Ydot + N;
 
   // left boundary
-  u[0]    = 1.0 - pow(sin(12*t),4);
-  udot[0] = -4.0 * pow(sin(12.0*t), 3) * cos(12.0 * t) * 12.0;//not 0.0 since u(0,t)=1 - (sin(12t))^4; 
-  udot[1] = -alpha1*(u[1] - u[0])/(dx);
-  vdot[0] = 0.0; 
+  u[0]    = 1.0 - SUNRpowerI(sin(12.0*t),4);
+  udot[0] = -alpha1 * (-11.0 * u[0] + 18.0 * u[1] - 9.0  * u[2] + 2.0 * u[3]       ) / (6.0  * dx);
+  udot[1] = -alpha1 * (-3.0  * u[0] - 10.0 * u[1] + 18.0 * u[2] - 6.0 * u[3] + u[4]) / (12.0 * dx);
 
   //interior points
   for (int i = 2; i < N-2; i++){
-    udot[i] = -alpha1 * (u[i-2] - 8.0 * u[i-1] + 8.0 * u[i+1] - u[i+2])/(12.0 * dx);//(u[i] - u[i-1])/(dx);
-    vdot[i] = -alpha2 * (v[i-2] - 8.0 * v[i-1] + 8.0 * v[i+1] - v[i+2])/(12.0 * dx); //(v[i] - v[i-1])/(dx);
+    udot[i] = -alpha1 * (u[i-2] - 8.0 * u[i-1] + 8.0 * u[i+1] - u[i+2])/(12.0 * dx);
   }
 
-  //interior points
-  for (int i = N-2; i < N; i++){
-    udot[i] = -alpha1 * (u[i] - u[i-1])/(dx);
-    vdot[i] = -alpha2 * (v[i] - v[i-1])/(dx);
-  }
-
-  // // //left boundary
-  // u[0]    = 1.0 - pow(sin(12*t),4);
-  // udot[0] = -48.0 * SUNRpowerI(sin(12.0 * t), 3) * cos(12.0 * t); //not 0.0 since u(0,t)=1 - (sin(12t))^4; 
-  // udot[1] = -alpha1 * (-11.0 * u[1] + 18.0 * u[2] - 9.0 * u[3] - 2.0 * u[4]) / (6.0 * dx);
-  // vdot[0] = 0.0; 
-
-  // //interior points
-  // for (int i = 2; i < N-2; i++){
-  //   udot[i] = -alpha1 * (u[i-2] - 8.0 * u[i-1] + 8.0 * u[i+1] - u[i+2])/(12.0 * dx);
-  //   // vdot[i] = -alpha2 * (v[i-2] - 8.0 * v[i-1] + 8.0 * v[i+1] - v[i+2])/(12.0 * dx);
-  // }
-
-  // for (int i = N-2; i < N; i++){
-  //   udot[i] = -alpha1 * (-2.0 * u[i-3] + 9.0 * u[i-2] - 18.0 * u[i-1] + 11.0 * u[i]) / (6.0 * dx);
-  //   // vdot[i] = -alpha2 * (-2.0 * v[i-3] + 9.0 * v[i-2] - 18.0 * v[i-1] + 11.0 * v[i]) / (6.0 * dx);
-  // }
+  udot[N-2] = -alpha1 * (-u[N-5] + 6.0 * u[N-4] - 18.0 * u[N-3] + 10.0 * u[N-2] + 3.0  * u[N-1]) / (12.0 * dx);
+  udot[N-1] = -alpha1 * (         -2.0 * u[N-4] + 9.0  * u[N-3] - 18.0 * u[N-2] + 11.0 * u[N-1]) / (6.0  * dx);
 
   return 0; /* Return with success */
 }
@@ -449,10 +427,10 @@ static int f(sunrealtype t, N_Vector y, N_Vector ydot, void* user_data)
   sunrealtype* vdot = Ydot + N;
 
   //boundary conditions
-  udot[0] = 0.0;
+  u[0] = 1.0 - SUNRpowerI(sin(12.0*t),4);
 
   //interior points
-  for (int i = 1; i < N; i++){
+  for (int i = 0; i < N; i++){
     udot[i] = -k1*u[i] + k2*v[i] + s1;
   }
 
@@ -598,7 +576,7 @@ static int ReadInputs(std::vector<std::string>& args, UserData& udata,
 //  find_arg(args,  "--Nt", uopts.Nt);
 
  // Recompute mesh spacing and [re]allocate flux array
- udata.dx = (udata.xend - udata.xstart) / (udata.N);
+ udata.dx = (udata.xend - udata.xstart) / (udata.N - 1);
 
 return 0;
 }
