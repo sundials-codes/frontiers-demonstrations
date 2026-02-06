@@ -42,14 +42,15 @@ with open(datafile, "r") as file:
     N      = int(lines.pop(0).split()[2])     # spatial dimension
     xl     = float(lines.pop(0).split()[2])   # left endpoint on spatial grid
     xr     = float(lines.pop(0).split()[2])   # right endpoint on spatial grid
-    x      = np.linspace(xl, xr, N)
+    dx     = (xr - xl)/(N)                      # spatial step size
+    x      = np.linspace(xl + dx, xr, N)
 
     lastline  = (lines[-1])
     num_steps = lastline.split(':')
     nsteps    = int(num_steps[1].strip()) # total number of steps taken
 
     dt = (Tf-T0)/nsteps                   # temporal step size
-    dx = (xr - xl)/(N-1)                      # spatial step size
+   
     
     # allocate solution data as 2D Python arrays
     t    = np.zeros((nsteps), dtype=float)
@@ -183,7 +184,6 @@ def read_ref_solution(filename):
 
     # store only solution at the final step
     last_data = last_line.split()
-    last_data.pop(0) #ignore the time step at each solution
 
     uSolRefFinal = np.zeros((N_ref), dtype=float)
     vSolRefFinal = np.zeros((N_ref), dtype=float)
@@ -191,8 +191,7 @@ def read_ref_solution(filename):
     uSolRefFinal = np.array(last_data[0::2], dtype=float)
     vSolRefFinal = np.array(last_data[1::2], dtype=float)
     
-    return vSolRefFinal
-
+    return uSolRefFinal, vSolRefFinal
 
 ## -------------------- Compute L-infinty norm using the reference solution -----------------------
 k1Val1 = False #only one type of stiffness parameter option cna be true at a time (keep as only "1" space before and after =)
@@ -202,54 +201,39 @@ k1Val1e8 = False
 AdaptiveRun = True #only one type of run can be true at a time (keep as only "1" space before and after =)
 FixedRun = False
 
-elmax = 0.0 #l-infinity error
+# l-infinity error
+elmax = 0.0 
 if (FixedRun):
     if(k1Val1):
-        #load file
-        fixed_k1Val1_vSol_ref  = read_ref_solution("refSoln_linear_adv_rec_k1Val1.txt")
-        for i in range(N):
-            elmax = np.max(np.abs(fixed_k1Val1_vSol_ref[1::2] - vSol_lastStep[i]))
-            # end
-        # end
+        fixed_k1Val1_uSol_ref, fixed_k1Val1_vSol_ref  = read_ref_solution("refSoln_linear_adv_rec_k1Val1.txt")
+        elmax = np.max(np.abs(fixed_k1Val1_vSol_ref - vSol_lastStep))
+
     elif(k1Val1e6):
-        #load file
-        fixed_k1Val1e6_vSol_ref = read_ref_solution("refSoln_linear_adv_rec_k1Val1e6.txt")
-        for i in range(N):
-            elmax = np.max(np.abs(fixed_k1Val1e6_vSol_ref[1::2] - vSol_lastStep[i]))
-            # end
-        # end
+        fixed_k1Val1e6_uSol_ref, fixed_k1Val1e6_vSol_ref  = read_ref_solution("refSoln_linear_adv_rec_k1Val1e6.txt")
+        elmax = np.max(np.abs(fixed_k1Val1e6_vSol_ref - vSol_lastStep))
+
     elif(k1Val1e8):
-        #load file
-        fixed_k1Val1e8_vSol_ref = read_ref_solution("refSoln_linear_adv_rec_k1Val1e8.txt")
-        for i in range(N):
-            elmax = np.max(np.abs(fixed_k1Val1e8_vSol_ref[1::2] - vSol_lastStep[i]))
-            # end
-        # end
+        fixed_k1Val1e8_uSol_ref, fixed_k1Val1e8_vSol_ref = read_ref_solution("refSoln_linear_adv_rec_k1Val1e8.txt")
+        elmax = np.max(np.abs(fixed_k1Val1e8_vSol_ref - vSol_lastStep))
+
 elif (AdaptiveRun):
     if (k1Val1): 
-        #load file
-        adaptive_k1Val1_vSol_ref = read_ref_solution("refSoln_linear_adv_rec_k1Val1.txt")
-        for i in range(N):
-            elmax = np.max(np.abs(adaptive_k1Val1_vSol_ref[1::2] - vSol_lastStep[i]))
-            # end
-        # end
+        adaptive_k1Val1_uSol_ref, adaptive_k1Val1_vSol_ref = read_ref_solution("refSoln_linear_adv_rec_k1Val1.txt")
+        elmax = np.max(np.abs(adaptive_k1Val1_vSol_ref - vSol_lastStep))
+
     elif (k1Val1e6): 
-        #load file
-        adaptive_k1Val1e6_vSol_ref = read_ref_solution("refSoln_linear_adv_rec_k1Val1e6.txt")
-        for i in range(N):
-            elmax = np.max(np.abs(adaptive_k1Val1e6_vSol_ref[1::2] - vSol_lastStep[i]))
-            # end
-        # end
+        adaptive_k1Val1e6_uSol_ref, adaptive_k1Val1e6_vSol_ref = read_ref_solution("refSoln_linear_adv_rec_k1Val1e6.txt")
+        # print("level %d", len(adaptive_k1Val1e6_vSol_ref))
+        # plt.plot(x, adaptive_k1Val1e6_vSol_ref)
+        # plt.plot(x, adaptive_k1Val1e6_uSol_ref)
+        # plt.show()
+        elmax = np.max(np.abs(adaptive_k1Val1e6_vSol_ref - vSol_lastStep))
+
     elif (k1Val1e8): 
-        #load file
-        adaptive_k1Val1e8_vSol_ref = read_ref_solution("refSoln_linear_adv_rec_k1Val1e8.txt")
-        for i in range(N):
-            elmax = np.max(np.abs(adaptive_k1Val1e8_vSol_ref[1::2] - vSol_lastStep[i]))
-            # end
-        # end
+        adaptive_k1Val1e8_uSol_ref, adaptive_k1Val1e8_vSol_ref = read_ref_solution("refSoln_linear_adv_rec_k1Val1e8.txt")
+        elmax = np.max(np.abs(adaptive_k1Val1e8_vSol_ref - vSol_lastStep))
 # end
 
 print("Lmax error using reference solution = %.4e" %elmax)
-# end if statement
 
 ##### end of script #####

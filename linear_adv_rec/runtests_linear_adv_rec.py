@@ -221,7 +221,9 @@ def runtest(solver, modetype, runV, k1Val, k1Valname, showcommand=True, sspcomma
                 txt = line.split()
                 if (("Lmax" in txt) and ("reference" in txt) and ("solution" in txt)):
                     stats['error'] = float(line.split('=')[-1].strip())
-                    print("error %.14e" % stats['error'])
+                    # print("error %.14e" % stats['error'])
+                if stats['error'] > 10.0:
+                    stats['ReturnCode'] = 1
                 #end
             # #end
 
@@ -255,7 +257,9 @@ def runtest(solver, modetype, runV, k1Val, k1Valname, showcommand=True, sspcomma
                 txt = line.split()
                 if (("Lmax" in txt) and ("reference" in txt) and ("solution" in txt)):
                     stats['error'] = float(line.split('=')[-1].strip())
-                    print("error %.14e" % stats['error'])
+                    # print("error %.14e" % stats['error'])
+                if stats['error'] > 10.0:
+                    stats['ReturnCode'] = 1
                 #end
             #end
         # # end : end of run type selection
@@ -271,9 +275,9 @@ SSPL312 = "./linear_adv_rec --IMintegrator ARKODE_SSP_LSPUM_SDIRK_3_1_2 --EXinte
 SSP423  = "./linear_adv_rec --IMintegrator ARKODE_SSP_ESDIRK_4_2_3      --EXintegrator ARKODE_SSP_ERK_4_2_3"  
 SSP923  = "./linear_adv_rec --IMintegrator ARKODE_SSP_ESDIRK_9_2_3      --EXintegrator ARKODE_SSP_ERK_9_2_3"    
 
-adaptive_params = [1e-7, 1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1]          # relative tolerances
+adaptive_params = [1e-3]#, 1e-3, 1e-2, 1e-1]          # relative tolerances
 fixed_params    = [] # fixed time step sizes
-for i in range(10,-4,-1):
+for i in range(-2,-4,-1):
     fixed_params.append(0.01/(2.0**i))
 #end
 k1values = {'k1Val1': 1.0, 'k1Val1e6': 1e6, 'k1Val1e8': 1e8}
@@ -495,7 +499,7 @@ for col_ind, (k1ValName, k1Val) in enumerate(k1values.items()):
     
     axes[col_ind].set_xscale('log')
     axes[col_ind].set_yscale('log')
-    axes[col_ind].set_ylim([1e-18, 1e2])
+    # axes[col_ind].set_ylim([1e-18, 1e2])
     axes[col_ind].legend(loc="best")
 #end
 fig.supxlabel(' rtol ', fontsize=18)

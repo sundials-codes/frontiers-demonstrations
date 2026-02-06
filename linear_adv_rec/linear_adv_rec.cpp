@@ -4,7 +4,7 @@
  * SUNDIALS Copyright Start
  * Copyright (c) 2002-2025, Lawrence Livermore National Security,
  * and Southern Methodist University.
- * Copyright (c) 2025- , University of Maryland Baltimore County.
+ * Copyright (c) 2025, University of Maryland Baltimore County.
  * All rights reserved.
  *
  * See the top-level LICENSE and NOTICE files for details.
@@ -90,7 +90,7 @@ using namespace std;
 
   // constructor (with default values)
   UserData()
-  : N(401),
+  : N(400),
     alpha1(1.0),
     alpha2(0.0),
     k1(1e6),
@@ -198,11 +198,9 @@ int main(int argc, char* argv[])
   // if (check_flag(&flag, "trueSol", 1)) { return 1;}
   
   /* Set initial conditions for u and v */
-  sunrealtype* y_data = N_VGetArrayPointer(y);  
-  y_data[0]           = 1.0; //boundary on the left for u given that boundary condtion is u(0,t)=1 - (sin(12t))^4
-  y_data[udata.N]     = (udata.k1/udata.k2)*1.0 + (1.0/udata.k2)*udata.s2; 
-  for (int i = 1; i < udata.N; i++){
-    sunrealtype xi = udata.xstart + i * udata.dx;
+  sunrealtype* y_data = N_VGetArrayPointer(y); 
+  for (int i = 0; i < udata.N; i++){
+    sunrealtype xi = udata.xstart + (i+1) * udata.dx;
     sunrealtype u0 = 1.0 + (udata.s2) * xi;
     sunrealtype v0 = (udata.k1/udata.k2)*u0 + (1.0/udata.k2)*udata.s2;
 
@@ -273,8 +271,6 @@ int main(int argc, char* argv[])
 
   /* Initialize GMRES solver -- no preconditioning, with up to 2*N iterations  */
   SUNLinearSolver LS = SUNLinSol_SPGMR(y, SUN_PREC_NONE, 2*udata.N, ctx);
-  // SUNLinearSolver LS = SUNLinSol_SPBCGS(y, SUN_PREC_NONE, 2*udata.N, ctx);
-  // SUNLinearSolver LS = SUNLinSol_SPGMR(y, maxl, 2*udata.N, ctx);
   if (check_flag((void*)LS, "SUNLinSol_SPGMR", 0)) { return 1; }
 
   /* Linear solver interface */
@@ -283,7 +279,7 @@ int main(int argc, char* argv[])
 
   /* output mesh to disk */
   FILE* FID = fopen("linear_adv_rec_mesh.txt", "w");
-  for (int i = 0; i < udata.N; i++) { fprintf(FID, "  %.16" ESYM "\n", udata.dx * i); }
+  for (int i = 0; i < udata.N; i++) { fprintf(FID, "  %.16" ESYM "\n", udata.dx * (i+1)); }
   fclose(FID);
 
   /* Open output stream for results, access data array */
@@ -295,7 +291,6 @@ int main(int argc, char* argv[])
   fprintf(UFID, "Left endpoint %f \n", udata.xstart);
   fprintf(UFID, "Right endpoint %f \n", udata.xend);
   sunrealtype* data = N_VGetArrayPointer(y);
-  // sunrealtype* final_data = N_VGetArrayPointer(y); // solution at final time step
   // sunrealtype* true_data = N_VGetArrayPointer(tSol); // true solution 
 
   /* output initial condition (u and v) to disk */
@@ -322,7 +317,7 @@ int main(int argc, char* argv[])
     sumIntStep = sumIntStep + hcur;
 
     /* output results to disk */
-    fprintf(UFID, "Time step: %.2" FSYM "\n", t); 
+    fprintf(UFID, "Time step: %.10" FSYM "\n", t); 
     for (int i = 0; i < udata.N; i++) { fprintf(UFID, " %.16" ESYM " %.16" ESYM, data[i], data[udata.N + i]); }
     fprintf(UFID, "\n \n");
   }
@@ -432,9 +427,6 @@ static int f(sunrealtype t, N_Vector y, N_Vector ydot, void* user_data)
   //interior points
   for (int i = 0; i < N; i++){
     udot[i] = -k1*u[i] + k2*v[i] + s1;
-  }
-
-  for (int i = 0; i < N; i++){
     vdot[i] =  k1*u[i] - k2*v[i] + s2; 
   }
 
@@ -576,7 +568,7 @@ static int ReadInputs(std::vector<std::string>& args, UserData& udata,
 //  find_arg(args,  "--Nt", uopts.Nt);
 
  // Recompute mesh spacing and [re]allocate flux array
- udata.dx = (udata.xend - udata.xstart) / (udata.N - 1);
+ udata.dx = (udata.xend - udata.xstart) / udata.N;
 
 return 0;
 }
