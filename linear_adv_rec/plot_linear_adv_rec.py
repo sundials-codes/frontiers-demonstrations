@@ -89,7 +89,6 @@ with open(datafile, "r") as file:
    
 
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 5))
-    # fig.suptitle('Horizontally stacked subplots')
     ax1.plot(x, uSol[0, :], color = 'r', linestyle = '--', label = "initial solution")
     ax1.plot(x, uSol[-1, :], color = 'b', linestyle = '-', label = "final solution")
     ax1.set_yticks([0.0, 0.5, 1.0, 1.5, 2.0])
@@ -196,7 +195,7 @@ def read_ref_solution(filename):
 ## -------------------- Compute L-infinty norm using the reference solution -----------------------
 k1Val1 = False #only one type of stiffness parameter option cna be true at a time (keep as only "1" space before and after =)
 k1Val1e6 = True
-k1Val1e8 = False
+# k1Val1e8 = False
 
 AdaptiveRun = True #only one type of run can be true at a time (keep as only "1" space before and after =)
 FixedRun = False
@@ -212,9 +211,9 @@ if (FixedRun):
         fixed_k1Val1e6_uSol_ref, fixed_k1Val1e6_vSol_ref  = read_ref_solution("refSoln_linear_adv_rec_k1Val1e6.txt")
         elmax = np.max(np.abs(fixed_k1Val1e6_vSol_ref - vSol_lastStep))
 
-    elif(k1Val1e8):
-        fixed_k1Val1e8_uSol_ref, fixed_k1Val1e8_vSol_ref = read_ref_solution("refSoln_linear_adv_rec_k1Val1e8.txt")
-        elmax = np.max(np.abs(fixed_k1Val1e8_vSol_ref - vSol_lastStep))
+    # elif(k1Val1e8):
+    #     fixed_k1Val1e8_uSol_ref, fixed_k1Val1e8_vSol_ref = read_ref_solution("refSoln_linear_adv_rec_k1Val1e8.txt")
+    #     elmax = np.max(np.abs(fixed_k1Val1e8_vSol_ref - vSol_lastStep))
 
 elif (AdaptiveRun):
     if (k1Val1): 
@@ -229,9 +228,9 @@ elif (AdaptiveRun):
         # plt.show()
         elmax = np.max(np.abs(adaptive_k1Val1e6_vSol_ref - vSol_lastStep))
 
-    elif (k1Val1e8): 
-        adaptive_k1Val1e8_uSol_ref, adaptive_k1Val1e8_vSol_ref = read_ref_solution("refSoln_linear_adv_rec_k1Val1e8.txt")
-        elmax = np.max(np.abs(adaptive_k1Val1e8_vSol_ref - vSol_lastStep))
+    # elif (k1Val1e8): 
+    #     adaptive_k1Val1e8_uSol_ref, adaptive_k1Val1e8_vSol_ref = read_ref_solution("refSoln_linear_adv_rec_k1Val1e8.txt")
+    #     elmax = np.max(np.abs(adaptive_k1Val1e8_vSol_ref - vSol_lastStep))
 # end
 
 print("Lmax error using reference solution = %.4e" %elmax)
