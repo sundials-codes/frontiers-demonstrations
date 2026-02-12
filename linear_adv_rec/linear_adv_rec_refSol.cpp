@@ -282,12 +282,12 @@ int main(int argc, char* argv[])
   if (check_flag(&flag, "ARKodeSetLinearSolver", 1)) { return 1; }
 
   /* output mesh to disk */
-  FILE* FID = fopen("linear_adv_rec_mesh.txt", "w");
+  FILE* FID = fopen("linear_adv_rec_refSol_mesh.txt", "w");
   for (int i = 0; i < udata.N; i++) { fprintf(FID, "  %.16" ESYM "\n", udata.dx * (i+1)); }
   fclose(FID);
 
   /* Open output stream for results, access data array */
-  FILE* UFID = fopen("linear_adv_rec.txt", "w");
+  FILE* UFID = fopen("linear_adv_rec_refSol.txt", "w");
   fprintf(UFID, "Title: Linear Advection Reaction Problem \n");
   fprintf(UFID, "Initial Time %f \n", uopts.T0);
   fprintf(UFID, "Final Time %f \n", uopts.Tf);
@@ -392,7 +392,7 @@ static int f(sunrealtype t, N_Vector y, N_Vector ydot, void* user_data)
 
   // left boundary
   sunrealtype expo = 5.0 * (t - 0.5) * (t - 0.5);
-  u[0]    = 1.0 - SUNRpowerI(sin(12.0 * exp(expo)), 4);
+  u[0] = 1.0 + sin(12.0 * exp(expo));
   udot[0] = (-alpha1 * (-11.0 * u[0] + 18.0 * u[1] - 9.0  * u[2] + 2.0 * u[3]       ) / (6.0  * dx))
             -k1*u[0] + k2*v[0] + s1;
   udot[1] = (-alpha1 * (-3.0  * u[0] - 10.0 * u[1] + 18.0 * u[2] - 6.0 * u[3] + u[4]) / (12.0 * dx))

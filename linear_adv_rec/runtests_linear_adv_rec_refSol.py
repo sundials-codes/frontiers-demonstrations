@@ -55,18 +55,18 @@ def refSoln(solver, runV, k1Val, k1Valname, showcommand=True):
             new_fileName = f"refSoln_linear_adv_rec_{k1Valname}.txt"
 
             ## rename plot file
-            if os.path.exists("linear_adv_rec.txt"):
-                os.rename("linear_adv_rec.txt", new_fileName)
+            if os.path.exists("linear_adv_rec_refSol.txt"):
+                os.rename("linear_adv_rec_refSol.txt", new_fileName)
                 print(f"reference solution saved as: {new_fileName}")
             else:
-                print("Warning: linear_adv_rec.txt not found.")
+                print("Warning: linear_adv_rec_refSol.txt not found.")
 
     return new_fileName 
 ## end of function
 
 
 # method to generate reference solution
-SSP423 = "./linear_adv_rec   --IMintegrator ARKODE_ARK548L2SA_DIRK_8_4_5      --EXintegrator ARKODE_ARK548L2SA_ERK_8_4_5"     
+SSP423 = "./linear_adv_rec_refSol   --IMintegrator ARKODE_ARK548L2SA_DIRK_8_4_5      --EXintegrator ARKODE_ARK548L2SA_ERK_8_4_5"     
 
 adaptive_params = [1e-14] #relative tolerance for reference solution
 k1values = {'k1Val1': 1.0, 'k1Val1e6': 1e6}#, 'k1Val1e8': 1e8}

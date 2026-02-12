@@ -149,7 +149,7 @@ with open(datafile, "r") as file:
     # plt.rcParams["figure.constrained_layout.use"] = True
 
     plt.legend()
-    # plt.show()
+    # plt.savefig('linear_adv_rec_frames.png')
     plt.close()
 
 

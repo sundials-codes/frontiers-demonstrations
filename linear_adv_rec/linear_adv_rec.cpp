@@ -388,7 +388,7 @@ static int fe(sunrealtype t, N_Vector y, N_Vector ydot, void* user_data)
 
   // left boundary
   sunrealtype expo = 5.0 * (t - 0.5) * (t - 0.5);
-  u[0]    = 1.0 - SUNRpowerI(sin(12.0 * exp(expo)), 4);
+  u[0] = 1.0 + sin(12.0 * exp(expo));
   udot[0] = -alpha1 * (-11.0 * u[0] + 18.0 * u[1] - 9.0  * u[2] + 2.0 * u[3]       ) / (6.0  * dx);
   udot[1] = -alpha1 * (-3.0  * u[0] - 10.0 * u[1] + 18.0 * u[2] - 6.0 * u[3] + u[4]) / (12.0 * dx);
 
@@ -429,8 +429,7 @@ static int f(sunrealtype t, N_Vector y, N_Vector ydot, void* user_data)
 
   //boundary conditions
   sunrealtype expo = 5.0 * (t - 0.5) * (t - 0.5);
-  u[0] = 1.0 - SUNRpowerI(sin(12.0 * exp(expo)), 4);
-
+  u[0] = 1.0 + sin(12.0 * exp(expo));
   //interior points
   for (int i = 0; i < N; i++){
     udot[i] = -k1*u[i] + k2*v[i] + s1;
