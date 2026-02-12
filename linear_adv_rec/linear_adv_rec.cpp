@@ -429,7 +429,7 @@ static int f(sunrealtype t, N_Vector y, N_Vector ydot, void* user_data)
 
   //boundary conditions
   sunrealtype expo = 5.0 * (t - 0.5) * (t - 0.5);
-  u[0]    = 1.0 - SUNRpowerI(sin(12.0 * exp(expo)), 4);
+  u[0] = 1.0 - SUNRpowerI(sin(12.0 * exp(expo)), 4);
 
   //interior points
   for (int i = 0; i < N; i++){
