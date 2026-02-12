@@ -51,11 +51,11 @@ with open(datafile, "r") as file:
 
     dt = (Tf-T0)/nsteps                   # temporal step size
    
-    
     # allocate solution data as 2D Python arrays
     t    = np.zeros((nsteps), dtype=float)
     uSol = np.zeros((nsteps, N), dtype=float)
     vSol = np.zeros((nsteps, N), dtype=float)
+    fullSol = np.zeros((nsteps, 2*N), dtype=float)
 
     # store remaining data into numpy arrays
     it = 0
@@ -75,6 +75,7 @@ with open(datafile, "r") as file:
             
             uSol[it, :] = u_only
             vSol[it, :] = v_only
+            fullSol[it, :] = full_sol
             it = it + 1
 
     ## Extract solution u at the last time step
@@ -86,6 +87,11 @@ with open(datafile, "r") as file:
     vSol_lastStep = np.zeros((N), dtype=float)
     for i in range(len(vSol[nsteps-1, :])):
         vSol_lastStep[i] = vSol[nsteps-1, i]
+
+    ## Extract entire solution at the last time step
+    fullSol_lastStep = np.zeros((2*N), dtype=float)
+    for i in range(len(fullSol[nsteps-1, :])):
+        fullSol_lastStep[i] = fullSol[nsteps-1, i]
    
 
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 5))
@@ -186,14 +192,16 @@ def read_ref_solution(filename):
 
     uSolRefFinal = np.zeros((N_ref), dtype=float)
     vSolRefFinal = np.zeros((N_ref), dtype=float)
+    uvSolRefFinal = np.zeros((2*N_ref), dtype=float)
         
     uSolRefFinal = np.array(last_data[0::2], dtype=float)
     vSolRefFinal = np.array(last_data[1::2], dtype=float)
+    uvSolRefFinal = np.array(last_data[:], dtype=float)
     
-    return uSolRefFinal, vSolRefFinal
+    return uSolRefFinal, vSolRefFinal, uvSolRefFinal
 
 ## -------------------- Compute L-infinty norm using the reference solution -----------------------
-k1Val1 = False #only one type of stiffness parameter option cna be true at a time (keep as only "1" space before and after =)
+k1Val1 = False #only one type of stiffness parameter option can be true at a time (keep as only "1" space before and after =)
 k1Val1e6 = True
 # k1Val1e8 = False
 
@@ -201,15 +209,21 @@ AdaptiveRun = True #only one type of run can be true at a time (keep as only "1"
 FixedRun = False
 
 # l-infinity error
-elmax = 0.0 
+elmaxu = 0.0 
+elmaxv = 0.0 
+elmaxuv = 0.0 
 if (FixedRun):
     if(k1Val1):
-        fixed_k1Val1_uSol_ref, fixed_k1Val1_vSol_ref  = read_ref_solution("refSoln_linear_adv_rec_k1Val1.txt")
-        elmax = np.max(np.abs(fixed_k1Val1_vSol_ref - vSol_lastStep))
+        fixed_k1Val1_uSol_ref, fixed_k1Val1_vSol_ref, fixed_k1Val1_uvSol_ref = read_ref_solution("refSoln_linear_adv_rec_k1Val1.txt")
+        elmaxu = np.max(np.abs(fixed_k1Val1_uSol_ref - uSol_lastStep))
+        elmaxv = np.max(np.abs(fixed_k1Val1_vSol_ref - vSol_lastStep))
+        elmaxuv = np.max(np.abs(fixed_k1Val1_uvSol_ref - fullSol_lastStep))
 
     elif(k1Val1e6):
-        fixed_k1Val1e6_uSol_ref, fixed_k1Val1e6_vSol_ref  = read_ref_solution("refSoln_linear_adv_rec_k1Val1e6.txt")
-        elmax = np.max(np.abs(fixed_k1Val1e6_vSol_ref - vSol_lastStep))
+        fixed_k1Val1e6_uSol_ref, fixed_k1Val1e6_vSol_ref, fixed_k1Val1e6_uvSol_ref = read_ref_solution("refSoln_linear_adv_rec_k1Val1e6.txt")
+        elmaxu = np.max(np.abs(fixed_k1Val1e6_uSol_ref - uSol_lastStep))
+        elmaxv = np.max(np.abs(fixed_k1Val1e6_vSol_ref - vSol_lastStep))
+        elmaxuv = np.max(np.abs(fixed_k1Val1e6_uvSol_ref - fullSol_lastStep))
 
     # elif(k1Val1e8):
     #     fixed_k1Val1e8_uSol_ref, fixed_k1Val1e8_vSol_ref = read_ref_solution("refSoln_linear_adv_rec_k1Val1e8.txt")
@@ -217,22 +231,28 @@ if (FixedRun):
 
 elif (AdaptiveRun):
     if (k1Val1): 
-        adaptive_k1Val1_uSol_ref, adaptive_k1Val1_vSol_ref = read_ref_solution("refSoln_linear_adv_rec_k1Val1.txt")
-        elmax = np.max(np.abs(adaptive_k1Val1_vSol_ref - vSol_lastStep))
+        adaptive_k1Val1_uSol_ref, adaptive_k1Val1_vSol_ref, adaptive_k1Val1_uvSol_ref = read_ref_solution("refSoln_linear_adv_rec_k1Val1.txt")
+        elmaxu = np.max(np.abs(adaptive_k1Val1_uSol_ref - uSol_lastStep))
+        elmaxv = np.max(np.abs(adaptive_k1Val1_vSol_ref - vSol_lastStep))
+        elmaxuv = np.max(np.abs(adaptive_k1Val1_uvSol_ref - fullSol_lastStep))
 
     elif (k1Val1e6): 
-        adaptive_k1Val1e6_uSol_ref, adaptive_k1Val1e6_vSol_ref = read_ref_solution("refSoln_linear_adv_rec_k1Val1e6.txt")
+        adaptive_k1Val1e6_uSol_ref, adaptive_k1Val1e6_vSol_ref, adaptive_k1Val1e6_uvSol_ref = read_ref_solution("refSoln_linear_adv_rec_k1Val1e6.txt")
         # print("level %d", len(adaptive_k1Val1e6_vSol_ref))
         # plt.plot(x, adaptive_k1Val1e6_vSol_ref)
         # plt.plot(x, adaptive_k1Val1e6_uSol_ref)
         # plt.show()
-        elmax = np.max(np.abs(adaptive_k1Val1e6_vSol_ref - vSol_lastStep))
+        elmaxu = np.max(np.abs(adaptive_k1Val1e6_uSol_ref - uSol_lastStep))
+        elmaxv = np.max(np.abs(adaptive_k1Val1e6_vSol_ref - vSol_lastStep))
+        elmaxuv = np.max(np.abs(adaptive_k1Val1e6_uvSol_ref - fullSol_lastStep))
 
     # elif (k1Val1e8): 
     #     adaptive_k1Val1e8_uSol_ref, adaptive_k1Val1e8_vSol_ref = read_ref_solution("refSoln_linear_adv_rec_k1Val1e8.txt")
     #     elmax = np.max(np.abs(adaptive_k1Val1e8_vSol_ref - vSol_lastStep))
 # end
 
-print("Lmax error using reference solution = %.4e" %elmax)
+print("Lmax error using reference solution for u = %.4e" %elmaxu)
+print("Lmax error using reference solution for v = %.4e" %elmaxv)
+print("Lmax error using reference solution for uv = %.4e" %elmaxuv)
 
 ##### end of script #####

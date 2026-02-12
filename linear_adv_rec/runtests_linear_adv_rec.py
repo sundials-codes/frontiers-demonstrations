@@ -41,8 +41,9 @@ def runtest(solver, modetype, runV, k1Val, k1Valname, showcommand=True, sspcomma
     k2Val = 2.0 * k1Val
 
     stats = {'Runtype': modetype,'ReturnCode': 0, 'IMEX_method': solver['name'], 'runVal': runV, 
-             'k1': k1Val, 'k2': k2Val, 'Steps': 0,'StepAttempts': 0, 'ErrTestFails': 0, 'Implicit_solves': 0,
-             'Explicit_RHS': 0, 'Implicit_RHS': 0,'maxIntStep': 0.0, 'error': 0.0, 'runtime':0.0}
+             'k1': k1Val, 'k2': k2Val, 'Steps': 0,'StepAttempts': 0, 'ErrTestFails': 0, 
+             'Implicit_solves': 0, 'Explicit_RHS': 0, 'Implicit_RHS': 0,'maxIntStep': 0.0, 'erroru': 0.0,
+             'errorv': 0.0, 'erroruv': 0.0, 'runtime':0.0}
 
     if (modetype == "adaptive"):
         runcommand = "%s  --rtol %e  --k1 %e  --k2 %e" % (solver['exe'], runV, k1Val, k2Val)
@@ -69,7 +70,9 @@ def runtest(solver, modetype, runV, k1Val, k1Valname, showcommand=True, sspcomma
     if sundials_failed == True:
         print("SUNDIALS failed for %s  --rtol %e  --k1 %e  --k2 %e" % (solver['exe'], runV, k1Val, k2Val))
         stats['ReturnCode']      = 1
-        stats['error']           = 0
+        stats['erroru']          = 0
+        stats['errorv']          = 0
+        stats['erroruv']         = 0
         stats['Steps']           = 0
         stats['StepAttempts']    = 0
         stats['ErrTestFails']    = 0
@@ -84,8 +87,6 @@ def runtest(solver, modetype, runV, k1Val, k1Valname, showcommand=True, sspcomma
         print("Running: " + runcommand + " SUCCESS")
         for line in stdout_lines:
             txt = line.split()
-            # if ("L1-error" in txt):
-            #     stats['error'] = float(txt[2])
             if ("Steps" in txt):
                 stats['Steps'] = int(txt[2])
             elif (("Step" in txt) and ("attempts" in txt)):
@@ -219,10 +220,19 @@ def runtest(solver, modetype, runV, k1Val, k1Valname, showcommand=True, sspcomma
             ssp_stdout_lines = ssp_result.stdout.decode('utf-8').splitlines()
             for line in ssp_stdout_lines:
                 txt = line.split()
-                if (("Lmax" in txt) and ("reference" in txt) and ("solution" in txt)):
-                    stats['error'] = float(line.split('=')[-1].strip())
-                    # print("error %.14e" % stats['error'])
-                if stats['error'] > 10.0:
+                if (("Lmax" in txt) and ("reference" in txt) and ("solution" in txt) and ("for" in txt) and ("u" in txt)):
+                    stats['erroru'] = float(line.split('=')[-1].strip())
+                elif (("Lmax" in txt) and ("reference" in txt) and ("solution" in txt) and ("for" in txt) and ("v" in txt)):
+                    stats['errorv'] = float(line.split('=')[-1].strip())
+                elif (("Lmax" in txt) and ("reference" in txt) and ("solution" in txt) and ("for" in txt) and ("uv" in txt)):
+                    stats['erroruv'] = float(line.split('=')[-1].strip())
+
+                # ignore errors greater than 10    
+                if stats['erroru'] > 10.0:
+                    stats['ReturnCode'] = 1
+                elif stats['errorv'] > 10.0:
+                    stats['ReturnCode'] = 1
+                elif stats['erroruv'] > 10.0:
                     stats['ReturnCode'] = 1
                 #end
             # #end
@@ -255,10 +265,19 @@ def runtest(solver, modetype, runV, k1Val, k1Valname, showcommand=True, sspcomma
             ssp_stdout_lines = ssp_result.stdout.decode('utf-8').splitlines()
             for line in ssp_stdout_lines:
                 txt = line.split()
-                if (("Lmax" in txt) and ("reference" in txt) and ("solution" in txt)):
-                    stats['error'] = float(line.split('=')[-1].strip())
-                    # print("error %.14e" % stats['error'])
-                if stats['error'] > 10.0:
+                if (("Lmax" in txt) and ("reference" in txt) and ("solution" in txt) and ("for" in txt) and ("u" in txt)):
+                    stats['erroru'] = float(line.split('=')[-1].strip())
+                elif (("Lmax" in txt) and ("reference" in txt) and ("solution" in txt) and ("for" in txt) and ("v" in txt)):
+                    stats['errorv'] = float(line.split('=')[-1].strip())
+                elif (("Lmax" in txt) and ("reference" in txt) and ("solution" in txt) and ("for" in txt) and ("uv" in txt)):
+                    stats['erroruv'] = float(line.split('=')[-1].strip())
+
+                # ignore errors greater than 10   
+                if stats['erroru'] > 10.0:
+                    stats['ReturnCode'] = 1
+                elif stats['errorv'] > 10.0:
+                    stats['ReturnCode'] = 1
+                elif stats['erroruv'] > 10.0:
                     stats['ReturnCode'] = 1
                 #end
             #end
@@ -275,10 +294,10 @@ SSPL312 = "./linear_adv_rec --IMintegrator ARKODE_SSP_LSPUM_SDIRK_3_1_2 --EXinte
 SSP423  = "./linear_adv_rec --IMintegrator ARKODE_SSP_ESDIRK_4_2_3      --EXintegrator ARKODE_SSP_ERK_4_2_3"  
 SSP923  = "./linear_adv_rec --IMintegrator ARKODE_SSP_ESDIRK_9_2_3      --EXintegrator ARKODE_SSP_ERK_9_2_3"    
 
-adaptive_params = [1e-7, 1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1]          # relative tolerances
+adaptive_params = [1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1]          # relative tolerances
 fixed_params    = [] # fixed time step sizes
-for i in range(10,-4,-1):
-    fixed_params.append(0.01/(2.0**i))
+for i in range(10,-1,-1):
+    fixed_params.append(0.1/(2.0**i))
 #end
 k1values = {'k1Val1': 1.0, 'k1Val1e6': 1e6}#, 'k1Val1e8': 1e8}
 
@@ -329,6 +348,365 @@ methods = df['IMEX_method'].unique()
 colors   = ['red', 'black', 'blue', 'green', 'orange'] 
 markers  = ['o', '*', 's', '^', '+']
 modetype = ['fixed', 'adaptive']
+
+
+# --------------------------- accepted steps vs erroru ----------------------------------
+#create a figure of subplots (columns are stiffness parameters and rows are methods)
+fig, axes = plt.subplots(1, len(k1values), figsize=(15, 12))
+for col_ind, (k1ValName, k1Val) in enumerate(k1values.items()):
+    k2Val = 2.0 * k1Val
+    data_fixed    = df[(df["k1"] == k1Val) & (df["k2"] == k2Val) & (df["Runtype"] == "fixed")]
+    data_adaptive = df[(df["k1"] == k1Val) & (df["k2"] == k2Val) & (df["Runtype"] == "adaptive")]
+
+    for row_ind, runtype in enumerate(modetype):
+        if row_ind == 0:
+        # fixed run
+            for i, SSPmethodFix in enumerate(data_fixed['IMEX_method'].unique()):
+                SSPmethodFix_data = data_fixed[data_fixed['IMEX_method'] == SSPmethodFix]
+                x = SSPmethodFix_data['StepAttempts'].where(SSPmethodFix_data['ReturnCode'] != 1)
+                y = SSPmethodFix_data['erroru'].where(SSPmethodFix_data['ReturnCode'] != 1)
+                axes[col_ind].plot(x, y, color = colors[i], marker = 'o', markersize=5, linestyle='-', label=f"{SSPmethodFix}-h")
+
+        # adaptive run
+            for i, SSPmethodAdapt in enumerate(data_adaptive['IMEX_method'].unique()):
+                SSPmethodAdapt_data = data_adaptive[data_adaptive['IMEX_method'] == SSPmethodAdapt]
+                xx = SSPmethodAdapt_data['StepAttempts'].where(SSPmethodAdapt_data['ReturnCode'] != 1)
+                yy = SSPmethodAdapt_data['erroru'].where(SSPmethodAdapt_data['ReturnCode'] != 1)
+                axes[col_ind].plot(xx, yy, color = colors[i], marker = '*', markersize=5, linestyle='-.', label=f"{SSPmethodAdapt}-rtol")
+
+        # each column should correspond to a stiffness parameter
+        axes[col_ind].set_title(f"k1 = {k1Val: .1e}, k2 = {k2Val: .1e}", fontsize=18)
+        #end
+        
+    #end
+        axes[col_ind].set_xscale('log')
+        axes[col_ind].set_yscale('log')
+        axes[col_ind].legend(loc="best", ncol=2)
+#end
+fig.supxlabel(' step attempts ', fontsize=18)
+fig.supylabel(' erroru ', fontsize=18)
+fig.suptitle(" step attempts vs erroru ", fontsize=20)
+fig.tight_layout()
+plt.savefig("step_attempts_erroru_linear_adv_rec.png")
+
+
+
+# --------------------------- accepted steps vs errorv ----------------------------------
+#create a figure of subplots (columns are stiffness parameters and rows are methods)
+fig, axes = plt.subplots(1, len(k1values), figsize=(15, 12))
+for col_ind, (k1ValName, k1Val) in enumerate(k1values.items()):
+    k2Val = 2.0 * k1Val
+    data_fixed    = df[(df["k1"] == k1Val) & (df["k2"] == k2Val) & (df["Runtype"] == "fixed")]
+    data_adaptive = df[(df["k1"] == k1Val) & (df["k2"] == k2Val) & (df["Runtype"] == "adaptive")]
+
+    for row_ind, runtype in enumerate(modetype):
+        if row_ind == 0:
+        # fixed run
+            for i, SSPmethodFix in enumerate(data_fixed['IMEX_method'].unique()):
+                SSPmethodFix_data = data_fixed[data_fixed['IMEX_method'] == SSPmethodFix]
+                x = SSPmethodFix_data['StepAttempts'].where(SSPmethodFix_data['ReturnCode'] != 1)
+                y = SSPmethodFix_data['errorv'].where(SSPmethodFix_data['ReturnCode'] != 1)
+                axes[col_ind].plot(x, y, color = colors[i], marker = 'o', markersize=5, linestyle='-', label=f"{SSPmethodFix}-h")
+
+        # adaptive run
+            for i, SSPmethodAdapt in enumerate(data_adaptive['IMEX_method'].unique()):
+                SSPmethodAdapt_data = data_adaptive[data_adaptive['IMEX_method'] == SSPmethodAdapt]
+                xx = SSPmethodAdapt_data['StepAttempts'].where(SSPmethodAdapt_data['ReturnCode'] != 1)
+                yy = SSPmethodAdapt_data['errorv'].where(SSPmethodAdapt_data['ReturnCode'] != 1)
+                axes[col_ind].plot(xx, yy, color = colors[i], marker = '*', markersize=5, linestyle='-.', label=f"{SSPmethodAdapt}-rtol")
+
+        # each column should correspond to a stiffness parameter
+        axes[col_ind].set_title(f"k1 = {k1Val: .1e}, k2 = {k2Val: .1e}", fontsize=18)
+        #end
+        
+    #end
+        axes[col_ind].set_xscale('log')
+        axes[col_ind].set_yscale('log')
+        axes[col_ind].legend(loc="best", ncol=2)
+#end
+fig.supxlabel(' step attempts ', fontsize=18)
+fig.supylabel(' errorv ', fontsize=18)
+fig.suptitle(" step attempts vs errorv ", fontsize=20)
+fig.tight_layout()
+plt.savefig("step_attempts_errorv_linear_adv_rec.png")
+
+
+# --------------------------- accepted steps vs erroruv ----------------------------------
+#create a figure of subplots (columns are stiffness parameters and rows are methods)
+fig, axes = plt.subplots(1, len(k1values), figsize=(15, 12))
+for col_ind, (k1ValName, k1Val) in enumerate(k1values.items()):
+    k2Val = 2.0 * k1Val
+    data_fixed    = df[(df["k1"] == k1Val) & (df["k2"] == k2Val) & (df["Runtype"] == "fixed")]
+    data_adaptive = df[(df["k1"] == k1Val) & (df["k2"] == k2Val) & (df["Runtype"] == "adaptive")]
+
+    for row_ind, runtype in enumerate(modetype):
+        if row_ind == 0:
+        # fixed run
+            for i, SSPmethodFix in enumerate(data_fixed['IMEX_method'].unique()):
+                SSPmethodFix_data = data_fixed[data_fixed['IMEX_method'] == SSPmethodFix]
+                x = SSPmethodFix_data['StepAttempts'].where(SSPmethodFix_data['ReturnCode'] != 1)
+                y = SSPmethodFix_data['erroruv'].where(SSPmethodFix_data['ReturnCode'] != 1)
+                axes[col_ind].plot(x, y, color = colors[i], marker = 'o', markersize=5, linestyle='-', label=f"{SSPmethodFix}-h")
+
+        # adaptive run
+            for i, SSPmethodAdapt in enumerate(data_adaptive['IMEX_method'].unique()):
+                SSPmethodAdapt_data = data_adaptive[data_adaptive['IMEX_method'] == SSPmethodAdapt]
+                xx = SSPmethodAdapt_data['StepAttempts'].where(SSPmethodAdapt_data['ReturnCode'] != 1)
+                yy = SSPmethodAdapt_data['erroruv'].where(SSPmethodAdapt_data['ReturnCode'] != 1)
+                axes[col_ind].plot(xx, yy, color = colors[i], marker = '*', markersize=5, linestyle='-.', label=f"{SSPmethodAdapt}-rtol")
+
+        # each column should correspond to a stiffness parameter
+        axes[col_ind].set_title(f"k1 = {k1Val: .1e}, k2 = {k2Val: .1e}", fontsize=18)
+        #end
+        
+    #end
+        axes[col_ind].set_xscale('log')
+        axes[col_ind].set_yscale('log')
+        axes[col_ind].legend(loc="best", ncol=2)
+#end
+fig.supxlabel(' step attempts ', fontsize=18)
+fig.supylabel(' erroruv ', fontsize=18)
+fig.suptitle(" step attempts vs erroruv ", fontsize=20)
+fig.tight_layout()
+plt.savefig("step_attempts_erroruv_linear_adv_rec.png")
+
+
+
+# --------------------------- implicit solves vs erroru ----------------------------------
+#create a figure of subplots (columns are stiffness parameters and rows are methods)
+fig, axes = plt.subplots(1, len(k1values), figsize=(15, 12))
+for col_ind, (k1ValName, k1Val) in enumerate(k1values.items()):
+    k2Val = 2.0 * k1Val
+    data_fixed    = df[(df["k1"] == k1Val) & (df["k2"] == k2Val) & (df["Runtype"] == "fixed")]
+    data_adaptive = df[(df["k1"] == k1Val) & (df["k2"] == k2Val) & (df["Runtype"] == "adaptive")]
+
+    for row_ind, runtype in enumerate(modetype):
+        # fixed run
+        if row_ind == 0:
+            for i, SSPmethodFix in enumerate(data_fixed['IMEX_method'].unique()):
+                SSPmethodFix_data = data_fixed[data_fixed['IMEX_method'] == SSPmethodFix]
+                x = SSPmethodFix_data['Implicit_solves'].where(SSPmethodFix_data['ReturnCode'] != 1)
+                y = SSPmethodFix_data['erroru'].where(SSPmethodFix_data['ReturnCode'] != 1)
+                axes[col_ind].plot(x, y, color = colors[i], marker = 'o', markersize=5, linestyle='-', label=f"{SSPmethodFix}-h")
+
+        #adaptive run
+            for i, SSPmethodAdapt in enumerate(data_adaptive['IMEX_method'].unique()):
+                SSPmethodAdapt_data = data_adaptive[data_adaptive['IMEX_method'] == SSPmethodAdapt]
+                xx = SSPmethodAdapt_data['Implicit_solves'].where(SSPmethodAdapt_data['ReturnCode'] != 1)
+                yy = SSPmethodAdapt_data['erroru'].where(SSPmethodAdapt_data['ReturnCode'] != 1)
+                axes[col_ind].plot(xx, yy, color = colors[i], marker = '*', markersize=5, linestyle='-.', label=f"{SSPmethodAdapt}-rtol")
+
+        # each column should correspond to a stiffness parameter
+        axes[col_ind].set_title(f"k1 = {k1Val: .1e}, k2 = {k2Val: .1e}", fontsize=18)
+        #end
+    #end
+        axes[col_ind].set_xscale('log')
+        axes[col_ind].set_yscale('log')
+        axes[col_ind].legend(loc="best", ncol=2)
+#end
+fig.supxlabel(' implicit solves ', fontsize=18)
+fig.supylabel(' erroru ', fontsize=18)
+fig.suptitle("implicit solves vs erroru", fontsize=20)
+fig.tight_layout()
+plt.savefig("implicit_solves_erroru_linear_adv_rec.png")
+
+
+# --------------------------- implicit solves vs errorv ----------------------------------
+#create a figure of subplots (columns are stiffness parameters and rows are methods)
+fig, axes = plt.subplots(1, len(k1values), figsize=(15, 12))
+for col_ind, (k1ValName, k1Val) in enumerate(k1values.items()):
+    k2Val = 2.0 * k1Val
+    data_fixed    = df[(df["k1"] == k1Val) & (df["k2"] == k2Val) & (df["Runtype"] == "fixed")]
+    data_adaptive = df[(df["k1"] == k1Val) & (df["k2"] == k2Val) & (df["Runtype"] == "adaptive")]
+
+    for row_ind, runtype in enumerate(modetype):
+        # fixed run
+        if row_ind == 0:
+            for i, SSPmethodFix in enumerate(data_fixed['IMEX_method'].unique()):
+                SSPmethodFix_data = data_fixed[data_fixed['IMEX_method'] == SSPmethodFix]
+                x = SSPmethodFix_data['Implicit_solves'].where(SSPmethodFix_data['ReturnCode'] != 1)
+                y = SSPmethodFix_data['errorv'].where(SSPmethodFix_data['ReturnCode'] != 1)
+                axes[col_ind].plot(x, y, color = colors[i], marker = 'o', markersize=5, linestyle='-', label=f"{SSPmethodFix}-h")
+
+        #adaptive run
+            for i, SSPmethodAdapt in enumerate(data_adaptive['IMEX_method'].unique()):
+                SSPmethodAdapt_data = data_adaptive[data_adaptive['IMEX_method'] == SSPmethodAdapt]
+                xx = SSPmethodAdapt_data['Implicit_solves'].where(SSPmethodAdapt_data['ReturnCode'] != 1)
+                yy = SSPmethodAdapt_data['errorv'].where(SSPmethodAdapt_data['ReturnCode'] != 1)
+                axes[col_ind].plot(xx, yy, color = colors[i], marker = '*', markersize=5, linestyle='-.', label=f"{SSPmethodAdapt}-rtol")
+
+        # each column should correspond to a stiffness parameter
+        axes[col_ind].set_title(f"k1 = {k1Val: .1e}, k2 = {k2Val: .1e}", fontsize=18)
+        #end
+    #end
+        axes[col_ind].set_xscale('log')
+        axes[col_ind].set_yscale('log')
+        axes[col_ind].legend(loc="best", ncol=2)
+#end
+fig.supxlabel(' implicit solves ', fontsize=18)
+fig.supylabel(' errorv ', fontsize=18)
+fig.suptitle("implicit solves vs errorv", fontsize=20)
+fig.tight_layout()
+plt.savefig("implicit_solves_errorv_linear_adv_rec.png")
+
+
+# --------------------------- implicit solves vs erroruv ----------------------------------
+#create a figure of subplots (columns are stiffness parameters and rows are methods)
+fig, axes = plt.subplots(1, len(k1values), figsize=(15, 12))
+for col_ind, (k1ValName, k1Val) in enumerate(k1values.items()):
+    k2Val = 2.0 * k1Val
+    data_fixed    = df[(df["k1"] == k1Val) & (df["k2"] == k2Val) & (df["Runtype"] == "fixed")]
+    data_adaptive = df[(df["k1"] == k1Val) & (df["k2"] == k2Val) & (df["Runtype"] == "adaptive")]
+
+    for row_ind, runtype in enumerate(modetype):
+        # fixed run
+        if row_ind == 0:
+            for i, SSPmethodFix in enumerate(data_fixed['IMEX_method'].unique()):
+                SSPmethodFix_data = data_fixed[data_fixed['IMEX_method'] == SSPmethodFix]
+                x = SSPmethodFix_data['Implicit_solves'].where(SSPmethodFix_data['ReturnCode'] != 1)
+                y = SSPmethodFix_data['erroruv'].where(SSPmethodFix_data['ReturnCode'] != 1)
+                axes[col_ind].plot(x, y, color = colors[i], marker = 'o', markersize=5, linestyle='-', label=f"{SSPmethodFix}-h")
+
+        #adaptive run
+            for i, SSPmethodAdapt in enumerate(data_adaptive['IMEX_method'].unique()):
+                SSPmethodAdapt_data = data_adaptive[data_adaptive['IMEX_method'] == SSPmethodAdapt]
+                xx = SSPmethodAdapt_data['Implicit_solves'].where(SSPmethodAdapt_data['ReturnCode'] != 1)
+                yy = SSPmethodAdapt_data['erroruv'].where(SSPmethodAdapt_data['ReturnCode'] != 1)
+                axes[col_ind].plot(xx, yy, color = colors[i], marker = '*', markersize=5, linestyle='-.', label=f"{SSPmethodAdapt}-rtol")
+
+        # each column should correspond to a stiffness parameter
+        axes[col_ind].set_title(f"k1 = {k1Val: .1e}, k2 = {k2Val: .1e}", fontsize=18)
+        #end
+    #end
+        axes[col_ind].set_xscale('log')
+        axes[col_ind].set_yscale('log')
+        axes[col_ind].legend(loc="best", ncol=2)
+#end
+fig.supxlabel(' implicit solves ', fontsize=18)
+fig.supylabel(' erroruv ', fontsize=18)
+fig.suptitle("implicit solves vs erroruv", fontsize=20)
+fig.tight_layout()
+plt.savefig("implicit_solves_erroruv_linear_adv_rec.png")
+
+
+
+# --------------------------- runtime vs erroru ----------------------------------
+#create a figure of subplots (columns are stiffness parameters and rows are methods)
+fig, axes = plt.subplots(1, len(k1values), figsize=(15, 12))
+for col_ind, (k1ValName, k1Val) in enumerate(k1values.items()):
+    k2Val = 2.0 * k1Val
+    data_fixed    = df[(df["k1"] == k1Val) & (df["k2"] == k2Val) & (df["Runtype"] == "fixed")]
+    data_adaptive = df[(df["k1"] == k1Val) & (df["k2"] == k2Val) & (df["Runtype"] == "adaptive")]
+
+    for row_ind, runtype in enumerate(modetype):
+        # fixed run
+        if row_ind == 0:
+            for i, SSPmethodFix in enumerate(data_fixed['IMEX_method'].unique()):
+                SSPmethodFix_data = data_fixed[data_fixed['IMEX_method'] == SSPmethodFix]
+                x = SSPmethodFix_data['runtime'].where(SSPmethodFix_data['ReturnCode'] != 1)
+                y = SSPmethodFix_data['erroru'].where(SSPmethodFix_data['ReturnCode'] != 1)
+                axes[col_ind].plot(x, y, color = colors[i], marker = 'o', markersize=5, linestyle='-', label=f"{SSPmethodFix}-h")
+
+        #adaptive run
+            for i, SSPmethodAdapt in enumerate(data_adaptive['IMEX_method'].unique()):
+                SSPmethodAdapt_data = data_adaptive[data_adaptive['IMEX_method'] == SSPmethodAdapt]
+                xy = SSPmethodAdapt_data['runtime'].where(SSPmethodAdapt_data['ReturnCode'] != 1)
+                yy = SSPmethodAdapt_data['erroru'].where(SSPmethodAdapt_data['ReturnCode'] != 1)
+                axes[col_ind].plot(xx, yy, color = colors[i], marker = '*', markersize=5, linestyle='-.', label=f"{SSPmethodAdapt}-rtol")
+
+        # each column should correspond to a stiffness parameter
+        axes[col_ind].set_title(f"k1 = {k1Val: .1e}, k2 = {k2Val: .1e}", fontsize=18)
+        #end
+    #end
+        axes[col_ind].set_xscale('log')
+        axes[col_ind].set_yscale('log')
+        axes[col_ind].legend(loc="best", ncol=2)
+#end
+fig.supxlabel(' runtime ', fontsize=18)
+fig.supylabel(' erroru ', fontsize=18)
+fig.suptitle("runtime vs erroru", fontsize=20)
+fig.tight_layout()
+plt.savefig("runtime_erroru_linear_adv_rec.png")
+
+
+# --------------------------- runtime vs errorv ----------------------------------
+#create a figure of subplots (columns are stiffness parameters and rows are methods)
+fig, axes = plt.subplots(1, len(k1values), figsize=(15, 12))
+for col_ind, (k1ValName, k1Val) in enumerate(k1values.items()):
+    k2Val = 2.0 * k1Val
+    data_fixed    = df[(df["k1"] == k1Val) & (df["k2"] == k2Val) & (df["Runtype"] == "fixed")]
+    data_adaptive = df[(df["k1"] == k1Val) & (df["k2"] == k2Val) & (df["Runtype"] == "adaptive")]
+
+    for row_ind, runtype in enumerate(modetype):
+        # fixed run
+        if row_ind == 0:
+            for i, SSPmethodFix in enumerate(data_fixed['IMEX_method'].unique()):
+                SSPmethodFix_data = data_fixed[data_fixed['IMEX_method'] == SSPmethodFix]
+                x = SSPmethodFix_data['runtime'].where(SSPmethodFix_data['ReturnCode'] != 1)
+                y = SSPmethodFix_data['errorv'].where(SSPmethodFix_data['ReturnCode'] != 1)
+                axes[col_ind].plot(x, y, color = colors[i], marker = 'o', markersize=5, linestyle='-', label=f"{SSPmethodFix}-h")
+
+        #adaptive run
+            for i, SSPmethodAdapt in enumerate(data_adaptive['IMEX_method'].unique()):
+                SSPmethodAdapt_data = data_adaptive[data_adaptive['IMEX_method'] == SSPmethodAdapt]
+                xy = SSPmethodAdapt_data['runtime'].where(SSPmethodAdapt_data['ReturnCode'] != 1)
+                yy = SSPmethodAdapt_data['errorv'].where(SSPmethodAdapt_data['ReturnCode'] != 1)
+                axes[col_ind].plot(xx, yy, color = colors[i], marker = '*', markersize=5, linestyle='-.', label=f"{SSPmethodAdapt}-rtol")
+
+        # each column should correspond to a stiffness parameter
+        axes[col_ind].set_title(f"k1 = {k1Val: .1e}, k2 = {k2Val: .1e}", fontsize=18)
+        #end
+    #end
+        axes[col_ind].set_xscale('log')
+        axes[col_ind].set_yscale('log')
+        axes[col_ind].legend(loc="best", ncol=2)
+#end
+fig.supxlabel(' runtime ', fontsize=18)
+fig.supylabel(' errorv ', fontsize=18)
+fig.suptitle("runtime vs errorv", fontsize=20)
+fig.tight_layout()
+plt.savefig("runtime_errorv_linear_adv_rec.png")
+
+
+# --------------------------- runtime vs erroruv ----------------------------------
+#create a figure of subplots (columns are stiffness parameters and rows are methods)
+fig, axes = plt.subplots(1, len(k1values), figsize=(15, 12))
+for col_ind, (k1ValName, k1Val) in enumerate(k1values.items()):
+    k2Val = 2.0 * k1Val
+    data_fixed    = df[(df["k1"] == k1Val) & (df["k2"] == k2Val) & (df["Runtype"] == "fixed")]
+    data_adaptive = df[(df["k1"] == k1Val) & (df["k2"] == k2Val) & (df["Runtype"] == "adaptive")]
+
+    for row_ind, runtype in enumerate(modetype):
+        # fixed run
+        if row_ind == 0:
+            for i, SSPmethodFix in enumerate(data_fixed['IMEX_method'].unique()):
+                SSPmethodFix_data = data_fixed[data_fixed['IMEX_method'] == SSPmethodFix]
+                x = SSPmethodFix_data['runtime'].where(SSPmethodFix_data['ReturnCode'] != 1)
+                y = SSPmethodFix_data['erroruv'].where(SSPmethodFix_data['ReturnCode'] != 1)
+                axes[col_ind].plot(x, y, color = colors[i], marker = 'o', markersize=5, linestyle='-', label=f"{SSPmethodFix}-h")
+
+        #adaptive run
+            for i, SSPmethodAdapt in enumerate(data_adaptive['IMEX_method'].unique()):
+                SSPmethodAdapt_data = data_adaptive[data_adaptive['IMEX_method'] == SSPmethodAdapt]
+                xy = SSPmethodAdapt_data['runtime'].where(SSPmethodAdapt_data['ReturnCode'] != 1)
+                yy = SSPmethodAdapt_data['erroruv'].where(SSPmethodAdapt_data['ReturnCode'] != 1)
+                axes[col_ind].plot(xx, yy, color = colors[i], marker = '*', markersize=5, linestyle='-.', label=f"{SSPmethodAdapt}-rtol")
+
+        # each column should correspond to a stiffness parameter
+        axes[col_ind].set_title(f"k1 = {k1Val: .1e}, k2 = {k2Val: .1e}", fontsize=18)
+        #end
+    #end
+        axes[col_ind].set_xscale('log')
+        axes[col_ind].set_yscale('log')
+        axes[col_ind].legend(loc="best", ncol=2)
+#end
+fig.supxlabel(' runtime ', fontsize=18)
+fig.supylabel(' erroruv ', fontsize=18)
+fig.suptitle("runtime vs erroruv", fontsize=20)
+fig.tight_layout()
+plt.savefig("runtime_erroruv_linear_adv_rec.png")
+
+
 
 # # --------------------------- accepted steps vs error ----------------------------------
 # #create a figure of subplots (columns are stiffness parameters and rows are methods)
@@ -471,129 +849,6 @@ modetype = ['fixed', 'adaptive']
 # fig.tight_layout()
 # plt.savefig("runtime_error_linear_adv_rec.png")
 
-
-# --------------------------- accepted steps vs error ----------------------------------
-#create a figure of subplots (columns are stiffness parameters and rows are methods)
-fig, axes = plt.subplots(1, len(k1values), figsize=(15, 12))
-for col_ind, (k1ValName, k1Val) in enumerate(k1values.items()):
-    k2Val = 2.0 * k1Val
-    data_fixed    = df[(df["k1"] == k1Val) & (df["k2"] == k2Val) & (df["Runtype"] == "fixed")]
-    data_adaptive = df[(df["k1"] == k1Val) & (df["k2"] == k2Val) & (df["Runtype"] == "adaptive")]
-
-    for row_ind, runtype in enumerate(modetype):
-        if row_ind == 0:
-        # fixed run
-            for i, SSPmethodFix in enumerate(data_fixed['IMEX_method'].unique()):
-                SSPmethodFix_data = data_fixed[data_fixed['IMEX_method'] == SSPmethodFix]
-                x = SSPmethodFix_data['StepAttempts'].where(SSPmethodFix_data['ReturnCode'] != 1)
-                y = SSPmethodFix_data['error'].where(SSPmethodFix_data['ReturnCode'] != 1)
-                axes[col_ind].plot(x, y, color = colors[i], marker = 'o', markersize=5, linestyle='-', label=f"{SSPmethodFix}-h")
-
-        # adaptive run
-            for i, SSPmethodAdapt in enumerate(data_adaptive['IMEX_method'].unique()):
-                SSPmethodAdapt_data = data_adaptive[data_adaptive['IMEX_method'] == SSPmethodAdapt]
-                xx = SSPmethodAdapt_data['StepAttempts'].where(SSPmethodAdapt_data['ReturnCode'] != 1)
-                yy = SSPmethodAdapt_data['error'].where(SSPmethodAdapt_data['ReturnCode'] != 1)
-                axes[col_ind].plot(xx, yy, color = colors[i], marker = '*', markersize=5, linestyle='-.', label=f"{SSPmethodAdapt}-rtol")
-
-    # each column should correspond to a stiffness parameter
-    # if row_ind == 0:
-        axes[col_ind].set_title(f"k1 = {k1Val: .1e}, k2 = {k2Val: .1e}", fontsize=18)
-    #end
-        
-    #end
-        axes[col_ind].set_xscale('log')
-        axes[col_ind].set_yscale('log')
-        # axes[row_ind,col_ind].set_ylim([1e-18, 1e2])
-        axes[col_ind].legend(loc="best", ncol=2)
-#end
-fig.supxlabel(' step attempts ', fontsize=18)
-fig.supylabel(' error ', fontsize=18)
-fig.suptitle(" step attempts vs error ", fontsize=20)
-fig.tight_layout()
-plt.savefig("step_attempts_error_linear_adv_rec.png")
-
-
-# --------------------------- implicit solves vs error ----------------------------------
-#create a figure of subplots (columns are stiffness parameters and rows are methods)
-fig, axes = plt.subplots(1, len(k1values), figsize=(15, 12))
-for col_ind, (k1ValName, k1Val) in enumerate(k1values.items()):
-    k2Val = 2.0 * k1Val
-    data_fixed    = df[(df["k1"] == k1Val) & (df["k2"] == k2Val) & (df["Runtype"] == "fixed")]
-    data_adaptive = df[(df["k1"] == k1Val) & (df["k2"] == k2Val) & (df["Runtype"] == "adaptive")]
-
-    for row_ind, runtype in enumerate(modetype):
-        # fixed run
-        if row_ind == 0:
-            for i, SSPmethodFix in enumerate(data_fixed['IMEX_method'].unique()):
-                SSPmethodFix_data = data_fixed[data_fixed['IMEX_method'] == SSPmethodFix]
-                x = SSPmethodFix_data['Implicit_solves'].where(SSPmethodFix_data['ReturnCode'] != 1)
-                y = SSPmethodFix_data['error'].where(SSPmethodFix_data['ReturnCode'] != 1)
-                axes[col_ind].plot(x, y, color = colors[i], marker = 'o', markersize=5, linestyle='-', label=f"{SSPmethodFix}-h")
-
-        #adaptive run
-            for i, SSPmethodAdapt in enumerate(data_adaptive['IMEX_method'].unique()):
-                SSPmethodAdapt_data = data_adaptive[data_adaptive['IMEX_method'] == SSPmethodAdapt]
-                xx = SSPmethodAdapt_data['Implicit_solves'].where(SSPmethodAdapt_data['ReturnCode'] != 1)
-                yy = SSPmethodAdapt_data['error'].where(SSPmethodAdapt_data['ReturnCode'] != 1)
-                axes[col_ind].plot(xx, yy, color = colors[i], marker = '*', markersize=5, linestyle='-.', label=f"{SSPmethodAdapt}-rtol")
-
-    # each column should correspond to a stiffness parameter
-    
-        axes[col_ind].set_title(f"k1 = {k1Val: .1e}, k2 = {k2Val: .1e}", fontsize=18)
-    #end
-    #end
-        axes[col_ind].set_xscale('log')
-        axes[col_ind].set_yscale('log')
-        # axes[row_ind,col_ind].set_ylim([1e-18, 1e2])
-        axes[col_ind].legend(loc="best", ncol=2)
-#end
-fig.supxlabel(' implicit solves ', fontsize=18)
-fig.supylabel(' error ', fontsize=18)
-fig.suptitle("implicit solves vs error", fontsize=20)
-fig.tight_layout()
-plt.savefig("implicit_solves_error_linear_adv_rec.png")
-
-
-# --------------------------- runtime vs error ----------------------------------
-#create a figure of subplots (columns are stiffness parameters and rows are methods)
-fig, axes = plt.subplots(1, len(k1values), figsize=(15, 12))
-for col_ind, (k1ValName, k1Val) in enumerate(k1values.items()):
-    k2Val = 2.0 * k1Val
-    data_fixed    = df[(df["k1"] == k1Val) & (df["k2"] == k2Val) & (df["Runtype"] == "fixed")]
-    data_adaptive = df[(df["k1"] == k1Val) & (df["k2"] == k2Val) & (df["Runtype"] == "adaptive")]
-
-    for row_ind, runtype in enumerate(modetype):
-        # fixed run
-        if row_ind == 0:
-            for i, SSPmethodFix in enumerate(data_fixed['IMEX_method'].unique()):
-                SSPmethodFix_data = data_fixed[data_fixed['IMEX_method'] == SSPmethodFix]
-                x = SSPmethodFix_data['runtime'].where(SSPmethodFix_data['ReturnCode'] != 1)
-                y = SSPmethodFix_data['error'].where(SSPmethodFix_data['ReturnCode'] != 1)
-                axes[col_ind].plot(x, y, color = colors[i], marker = 'o', markersize=5, linestyle='-', label=f"{SSPmethodFix}-h")
-
-        #adaptive run
-            for i, SSPmethodAdapt in enumerate(data_adaptive['IMEX_method'].unique()):
-                SSPmethodAdapt_data = data_adaptive[data_adaptive['IMEX_method'] == SSPmethodAdapt]
-                xy = SSPmethodAdapt_data['runtime'].where(SSPmethodAdapt_data['ReturnCode'] != 1)
-                yy = SSPmethodAdapt_data['error'].where(SSPmethodAdapt_data['ReturnCode'] != 1)
-                axes[col_ind].plot(xx, yy, color = colors[i], marker = '*', markersize=5, linestyle='-.', label=f"{SSPmethodAdapt}-rtol")
-
-        # each column should correspond to a stiffness parameter
-        # if row_ind == 0:
-        axes[col_ind].set_title(f"k1 = {k1Val: .1e}, k2 = {k2Val: .1e}", fontsize=18)
-        #end
-    #end
-        axes[col_ind].set_xscale('log')
-        axes[col_ind].set_yscale('log')
-        # axes[row_ind,col_ind].set_ylim([1e-18, 1e2])
-        axes[col_ind].legend(loc="best", ncol=2)
-#end
-fig.supxlabel(' runtime ', fontsize=18)
-fig.supylabel(' error ', fontsize=18)
-fig.suptitle("runtime vs error", fontsize=20)
-fig.tight_layout()
-plt.savefig("runtime_error_linear_adv_rec.png")
 
 
 # # --------------------------- rtol vs error ----------------------------------
