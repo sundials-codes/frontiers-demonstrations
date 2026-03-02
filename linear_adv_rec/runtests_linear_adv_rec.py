@@ -302,41 +302,41 @@ for i in range(10,-1,-1):
 k1values = {'k1Val1': 1.0, 'k1Val1e6': 1e6}#, 'k1Val1e8': 1e8}
 
 
-# # ----------------------------------------------------------------------------------------------------
-# # This section generates the data for each method with different fixed step sizes and rtols
-# # ----------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------------------------------
+# This section generates the data for each method with different fixed step sizes and rtols
+# ----------------------------------------------------------------------------------------------------
 
-# # Integrator types
-# solvertype = [{'name': 'SSP212',  'exe': SSP212},
-#               {'name': 'SSP312',  'exe': SSP312},
-#               {'name': 'SSPL312', 'exe': SSPL312},
-#               {'name': 'SSP423',  'exe': SSP423},
-#               {'name': 'SSP923',  'exe': SSP923}]
+# Integrator types
+solvertype = [{'name': 'SSP212',  'exe': SSP212},
+              {'name': 'SSP312',  'exe': SSP312},
+              {'name': 'SSPL312', 'exe': SSPL312},
+              {'name': 'SSP423',  'exe': SSP423},
+              {'name': 'SSP923',  'exe': SSP923}]
               
 
-# # run tests and collect results as a pandas data frame
-# fname = 'linear_adv_rec_stats' 
-# RunStats = []
+# run tests and collect results as a pandas data frame
+fname = 'linear_adv_rec_stats' 
+RunStats = []
 
-# for runvalue in adaptive_params:
-#     for k1_valName, k1_val in k1values.items():
-#         for solver_adapt in solvertype:
-#             adaptive_stat= runtest(solver_adapt, "adaptive", runvalue, k1_val, k1_valName, showcommand=True, sspcommand=True)
-#             RunStats.append(adaptive_stat)
+for runvalue in adaptive_params:
+    for k1_valName, k1_val in k1values.items():
+        for solver_adapt in solvertype:
+            adaptive_stat= runtest(solver_adapt, "adaptive", runvalue, k1_val, k1_valName, showcommand=True, sspcommand=True)
+            RunStats.append(adaptive_stat)
 
-# for runvalue in fixed_params:
-#     for k1_valName, k1_val in k1values.items():
-#         for solver_fixed in solvertype:
-#             fixed_stat = runtest(solver_fixed, "fixed", runvalue, k1_val, k1_valName, showcommand=True, sspcommand=True)
-#             RunStats.append(fixed_stat)
+for runvalue in fixed_params:
+    for k1_valName, k1_val in k1values.items():
+        for solver_fixed in solvertype:
+            fixed_stat = runtest(solver_fixed, "fixed", runvalue, k1_val, k1_valName, showcommand=True, sspcommand=True)
+            RunStats.append(fixed_stat)
 
-# RunStatsDf = pd.DataFrame.from_records(RunStats)
+RunStatsDf = pd.DataFrame.from_records(RunStats)
 
-# # save dataframe as Excel file
-# print("RunStatsDf object:")
-# print(RunStatsDf)
-# print("Saving as Excel")
-# RunStatsDf.to_excel(fname + '.xlsx', index=False)
+# save dataframe as Excel file
+print("RunStatsDf object:")
+print(RunStatsDf)
+print("Saving as Excel")
+RunStatsDf.to_excel(fname + '.xlsx', index=False)
 
 
 # ===============================================================================================================================
