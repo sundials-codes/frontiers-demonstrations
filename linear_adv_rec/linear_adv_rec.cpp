@@ -389,7 +389,7 @@ static int fe(sunrealtype t, N_Vector y, N_Vector ydot, void* user_data)
   // left boundary
   sunrealtype pi = 3.1415926535;
   sunrealtype expo = -30000.0 * (t - 0.5) * (t - 0.5);
-  u[0]    = 1.0 + 0.2 * sin(10.0 * pi * t) + 1.0 * sin (0.5 * exp(expo)) ;
+  u[0]    = 1.0 + 0.2 * sin(10.0 * pi * t) + 1.5 * sin (10.0 * pi * t) * exp(expo) ;
 
   udot[0] = -alpha1 * (-11.0 * u[0] + 18.0 * u[1] - 9.0  * u[2] + 2.0 * u[3]       ) / (6.0  * dx);
   udot[1] = -alpha1 * (-3.0  * u[0] - 10.0 * u[1] + 18.0 * u[2] - 6.0 * u[3] + u[4]) / (12.0 * dx);
@@ -432,7 +432,7 @@ static int f(sunrealtype t, N_Vector y, N_Vector ydot, void* user_data)
   //boundary conditions
   sunrealtype pi = 3.1415926535;
   sunrealtype expo = -30000.0 * (t - 0.5) * (t - 0.5);
-  u[0]    = 1.0 + 0.2 * sin(10.0 * pi * t) + 1.0 * sin (0.5 * exp(expo)) ;
+  u[0]    = 1.0 + 0.2 * sin(10.0 * pi * t) + 1.5 * sin (10.0 * pi * t) * exp(expo) ;
 
   //interior points
   for (int i = 0; i < N; i++){
