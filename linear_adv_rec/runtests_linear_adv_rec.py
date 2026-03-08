@@ -68,7 +68,7 @@ def runtest(solver, modetype, runV, k1Val, k1Valname, showcommand=True, sspcomma
             sundials_failed = True
     
     if sundials_failed == True:
-        print("SUNDIALS failed for %s  --rtol %e  --k1 %e  --k2 %e" % (solver['exe'], runV, k1Val, k2Val))
+        print("SUNDIALS failed for %s  --val %e  --k1 %e  --k2 %e" % (solver['exe'], runV, k1Val, k2Val))
         stats['ReturnCode']      = 1
         stats['erroru']          = 0
         stats['errorv']          = 0

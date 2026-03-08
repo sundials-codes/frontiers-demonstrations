@@ -82,7 +82,7 @@ with open(datafile, "r") as file:
         pSol_xi = (pSol_x[i+1] - pSol_x[i])/dx
         if pSol_xi > lmax_pSol_xi:
             lmax_pSol_xi = pSol_xi
-    print("lmax of first derivative at final time step: %.6f" %lmax_pSol_xi)
+    print("Lmax of first derivative at final time step = %.6f" %lmax_pSol_xi)
 
     # ## plotting only the solution at the final time step 
     # plt.xlabel(r"$x$")
@@ -136,7 +136,7 @@ with open(datafile, "r") as file:
 
 
 ## ------------------ Extract Reference Solution at Final Time Step -----------------------
-def read_ref_solution(filename, N):
+def read_ref_solution(filename):
     """
     This script extract the solution at the final time step of the reference solution 
     required to compute the error norm at the final time step.
@@ -152,92 +152,92 @@ def read_ref_solution(filename, N):
     
     # read solution file, storing each line as a string in a list
     with open(filename, "r") as file_ref:
-        lines_ref = file_ref.readlines()
 
-        lastline_ref  = (lines_ref[-1])
-        num_steps_ref = lastline_ref.split(':')
-        nsteps_ref    = int(num_steps_ref[1].strip()) # total number of steps taken
+        # extract header information
+        title_ref = file_ref.readline()
+        T0_ref    = float((file_ref.readline().split())[2])
+        Tf_ref    = float((file_ref.readline().split())[2])
+        N_ref     = int((file_ref.readline().split())[2])
+        last_line = ""
+        for line in file_ref:
+            if "Number of Time Steps" in line:
+                nsteps_ref = int(line.split(':')[1].strip()) # extract total number of steps taken
+                break
+            # track the last non-empty solution, every nonempty line overwrites the last line
+            if line.strip():
+                last_line = line
+
+    # store only solution at the final step
+    last_data = last_line.split()
+
+    pSol_ref_lastStep = np.zeros((N_ref), dtype=float)
+    pSol_ref_lastStep = np.array(last_data, dtype=float)
+        # lines_ref = file_ref.readlines()
+
+        # lastline_ref  = (lines_ref[-1])
+        # num_steps_ref = lastline_ref.split(':')
+        # nsteps_ref    = int(num_steps_ref[1].strip()) # total number of steps taken
         
-        ## allocate solution data as 2D Python arrays
-        t_ref    = np.zeros((nsteps_ref), dtype=float)
-        pSol_ref = np.zeros((nsteps_ref, N), dtype=float)
+        # ## allocate solution data as 2D Python arrays
+        # t_ref    = np.zeros((nsteps_ref), dtype=float)
+        # pSol_ref = np.zeros((nsteps_ref, N), dtype=float)
 
-        ## store remaining data into numpy arrays
-        it  = 0
-        for i in range(0, len(lines_ref)):
-            if "Time step" in lines_ref[i]:
-                get_t_ref  = lines_ref[i].split(':')
-                time_t_ref = get_t_ref[1].strip()
-                i = i + 1
-                pSol_ref[it,:] = np.array(list(map(float, lines_ref[i].split()))) #to remove single quotes around the vectors since each vector is a line
-                t_ref[it] = time_t_ref #(it + 1) * dt
-                it = it + 1
+        # ## store remaining data into numpy arrays
+        # it  = 0
+        # for i in range(0, len(lines_ref)):
+        #     if "Time step" in lines_ref[i]:
+        #         get_t_ref  = lines_ref[i].split(':')
+        #         time_t_ref = get_t_ref[1].strip()
+        #         i = i + 1
+        #         pSol_ref[it,:] = np.array(list(map(float, lines_ref[i].split()))) #to remove single quotes around the vectors since each vector is a line
+        #         t_ref[it] = time_t_ref #(it + 1) * dt
+        #         it = it + 1
 
-        pSol_ref_lastStep = np.zeros((N), dtype=float)
-        for i in range(len(pSol_ref[nsteps_ref-1, :])):
-            pSol_ref_lastStep[i] = pSol_ref[nsteps_ref-1, i]
+        # pSol_ref_lastStep = np.zeros((N), dtype=float)
+        # for i in range(len(pSol_ref[nsteps_ref-1, :])):
+        #     pSol_ref_lastStep[i] = pSol_ref[nsteps_ref-1, i]
     return pSol_ref_lastStep
-
-# fixed runs
-fixedk0_refSoln_lastStep = read_ref_solution("fixed_referenceSoln_k0.txt", N)
-fixedk2_refSoln_lastStep = read_ref_solution("fixed_referenceSoln_k2.txt", N)
-fixedk4_refSoln_lastStep = read_ref_solution("fixed_referenceSoln_k4.txt", N)
-# adaptive runs
-adaptk0_refSoln_lastStep = read_ref_solution("adaptive_referenceSoln_k0.txt", N)
-adaptk2_refSoln_lastStep = read_ref_solution("adaptive_referenceSoln_k2.txt", N)
-adaptk4_refSoln_lastStep = read_ref_solution("adaptive_referenceSoln_k4.txt", N)
 
 
 ## -------------------- Compute L-infinty norm using the reference solution -----------------------
-AdaptiveRun = True
-FixedRun    = True
-elmax       = 0.0 #l-infinity error
-if (FixedRun):
-    if (diff_k==0.0):
-        for i in range(N):
-            errV = np.abs(fixedk0_refSoln_lastStep[i] - pSol_lastStep[i])
-            if (errV > elmax):
-                elmax = errV
-            # end
-        # end
-    elif (diff_k==0.02):
-        for i in range(N):
-            errV = np.abs(fixedk2_refSoln_lastStep[i] - pSol_lastStep[i])
-            if (errV > elmax):
-                elmax = errV
-            # end
-        # end
-    elif (diff_k==0.04):
-        for i in range(N):
-            errV = np.abs(fixedk4_refSoln_lastStep[i] - pSol_lastStep[i])
-            if (errV > elmax):
-                elmax = errV
-            # end
-        # end
-if (AdaptiveRun):
-    if (diff_k==0.0):
-        for i in range(N):
-            errV = np.abs(adaptk0_refSoln_lastStep[i] - pSol_lastStep[i])
-            if (errV > elmax):
-                elmax = errV
-            # end
-        # end
-    elif (diff_k==0.02):
-        for i in range(N):
-            errV = np.abs(adaptk2_refSoln_lastStep[i] - pSol_lastStep[i])
-            if (errV > elmax):
-                elmax = errV
-            # end
-        # end
-    elif (diff_k==0.04):
-        for i in range(N):
-            errV = np.abs(adaptk4_refSoln_lastStep[i] - pSol_lastStep[i])
-            if (errV > elmax):
-                elmax = errV
-            # end
-        # end
+# diffk0 = True #only one type of diffusion coefficient option can be true at a time (keep as only "1" space before and after =)
+diffk02 = True
+diffk04 = False
 
-print("Lmax error using reference solution: %.6e" %elmax)
+AdaptiveRun = True #only one type of run can be true at a time (keep as only "1" space before and after =)
+FixedRun = False
+
+# l-infinity error
+elmax = 0.0 
+if (FixedRun):
+    # if (diffk0):
+    #     fixed_diffk0_pSol_ref = read_ref_solution("refSoln_linear_adv_rec_diffk0.txt")
+    #     elmax = np.max(np.abs(fixed_diffk0_pSol_ref - pSol_lastStep))
+        
+    if (diffk02):
+        fixed_diffk02_pSol_ref = read_ref_solution("refSoln_linear_adv_rec_diffk02.txt")
+        elmax = np.max(np.abs(fixed_diffk02_pSol_ref - pSol_lastStep))
+
+    elif (diffk04):
+        fixed_diffk04_pSol_ref = read_ref_solution("refSoln_linear_adv_rec_diffk04.txt")
+        elmax = np.max(np.abs(fixed_diffk04_pSol_ref - pSol_lastStep))
+
+elif (AdaptiveRun):
+    # if (diffk0):
+    #     adaptive_diffk0_pSol_ref = read_ref_solution("refSoln_linear_adv_rec_diffk0.txt")
+    #     elmax = np.max(np.abs(adaptive_diffk0_pSol_ref - pSol_lastStep))
+        
+    if (diffk02):
+        adaptive_diffk02_pSol_ref = read_ref_solution("refSoln_linear_adv_rec_diffk02.txt")
+        elmax = np.max(np.abs(adaptive_diffk02_pSol_ref - pSol_lastStep))
+
+    elif (diffk04):
+        adaptive_diffk04_pSol_ref = read_ref_solution("refSoln_linear_adv_rec_diffk04.txt")
+        elmax = np.max(np.abs(adaptive_diffk04_pSol_ref - pSol_lastStep))
+    # end
+# end
+
+print("Lmax error using reference solution = %.6e" %elmax)
 # end if statement
 
 ##### end of script #####

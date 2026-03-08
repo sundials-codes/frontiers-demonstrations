@@ -5,8 +5,8 @@
 set(source_main 
     linear_adv_rec.cpp)
 
-  set(source_ref 
-      linear_adv_rec_refSol.cpp )
+set(source_ref 
+    linear_adv_rec_refSol.cpp )
 
 #   extra installation files
 set(extras

@@ -296,9 +296,9 @@ int main(int argc, char* argv[])
     if (minVal < 0.0){
       printf("Model has a negative (min) value of %.14f at time step t = %.2f \n", minVal, t);
     }
-    else {
-      printf("Model has no negative value at time step t = %.2f. \n", t);
-    }
+    // else {
+    //   printf("Model has no negative value at time step t = %.2f. \n", t);
+    // }
 
     /* output results to disk */
     fprintf(UFID, "Time step: %.2" FSYM "\n", t); 
