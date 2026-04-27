@@ -149,8 +149,8 @@ with open(datafile, "r") as file:
     # plt.rcParams["figure.constrained_layout.use"] = True
 
     plt.legend()
-    plt.show()
-    # plt.close()
+    # plt.show()
+    plt.close()
 
 
 ## ------------------ Extract Reference Solution at Final Time Step -----------------------

@@ -388,12 +388,15 @@ static int fe(sunrealtype t, N_Vector y, N_Vector ydot, void* user_data)
 
   // left boundary
   sunrealtype pi = 3.1415926535;
-  sunrealtype g1      = exp(-5000.0 * (t - 0.3) * (t - 0.3));
-  sunrealtype g2      = exp(-5000.0 * (t - 0.7) * (t - 0.7));
-  sunrealtype gamma1t = 1.0 + 0.3 * sin(40.0 * pi * t) * (g1 + g2);
+  sunrealtype g1      = exp(-8000.0 * (t - 0.3) * (t - 0.3));
+  sunrealtype g2      = exp(-8000.0 * (t - 0.7) * (t - 0.7));
+  sunrealtype gamma1t = 1.0 + 0.5 * (g1 + g2);
 
-  udot[0] = -alpha1 * (-11.0 * gamma1t + 18.0 * u[0] - 9.0  * u[1] + 2.0 * u[2]       ) / (6.0  * dx);
-  udot[1] = -alpha1 * (-3.0  * gamma1t - 10.0 * u[0] + 18.0 * u[1] - 6.0 * u[2] + u[3]) / (12.0 * dx);
+  // udot[0] = -alpha1 * (-11.0 * gamma1t + 18.0 * u[0] - 9.0  * u[1] + 2.0 * u[2]       ) / (6.0  * dx);
+  // udot[1] = -alpha1 * (-3.0  * gamma1t - 10.0 * u[0] + 18.0 * u[1] - 6.0 * u[2] + u[3]) / (12.0 * dx);
+
+  udot[0] = -alpha1 * (-2.0 * gamma1t - 3.0 * u[0] + 6.0 * u[1] - 1.0 * u[2] ) / (6.0  * dx);
+  udot[1] = -alpha1 * (1.0  * gamma1t - 8.0 * u[0] + 8.0 * u[2] - 1.0 * u[3] ) / (12.0 * dx);
 
   //interior points
   for (int i = 2; i < N-2; i++){
@@ -438,11 +441,12 @@ static int fi(sunrealtype t, N_Vector y, N_Vector ydot, void* user_data)
   //interior points
   for (int i = 0; i < N; i++){
     udot[i] = -k1*u[i] + k2*v[i] + s1;
-  }
-
-  for (int i = 0; i < N; i++){
     vdot[i] =  k1*u[i] - k2*v[i] + s2; 
   }
+
+  // for (int i = 0; i < N; i++){
+  //   vdot[i] =  k1*u[i] - k2*v[i] + s2; 
+  // }
 
   return 0; /* Return with success */
 }

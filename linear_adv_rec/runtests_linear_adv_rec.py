@@ -296,7 +296,7 @@ SSP923  = "./linear_adv_rec --IMintegrator ARKODE_SSP_ESDIRK_9_2_3      --EXinte
 
 adaptive_params = [1e-1, 1e-2, 1e-3, 1e-4, 1e-5, 1e-6]          # relative tolerances
 fixed_params    = [] # fixed time step sizes
-for i in range(-1,7,1): 
+for i in range(6,15,1): 
     fixed_params.append(0.1/(2.0**i))
 #end
 k1values = {'k1Val1': 1.0, 'k1Val1e6': 1e6}#, 'k1Val1e8': 1e8}
