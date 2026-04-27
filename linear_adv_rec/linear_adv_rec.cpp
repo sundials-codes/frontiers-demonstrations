@@ -137,8 +137,8 @@ public:
  
    // constructor (with default values)
    ARKODEParameters()
-    : IMintegrator("ARKODE_SSP_SDIRK_2_1_2"),
-      EXintegrator("ARKODE_SSP_ERK_2_1_2"),
+    : IMintegrator("ARKODE_SSP_DIRK_3_1_2"),
+      EXintegrator("ARKODE_SSP_ERK_3_1_2"),
       rtol(SUN_RCONST(1.e-4)),
       atol(SUN_RCONST(1.e-10)),
       fixed_h(ZERO),
@@ -387,10 +387,15 @@ static int fe(sunrealtype t, N_Vector y, N_Vector ydot, void* user_data)
   sunrealtype* vdot = Ydot + N;
 
   // left boundary
-  sunrealtype pi = 3.1415926535;
-  sunrealtype g1      = exp(-8000.0 * (t - 0.3) * (t - 0.3));
-  sunrealtype g2      = exp(-8000.0 * (t - 0.7) * (t - 0.7));
-  sunrealtype gamma1t = 1.0 + 0.5 * (g1 + g2);
+  // sunrealtype pi = 3.1415926535;
+  // sunrealtype g1      = exp(-8000.0 * (t - 0.3) * (t - 0.3));
+  // sunrealtype g2      = exp(-8000.0 * (t - 0.7) * (t - 0.7));
+  // sunrealtype gamma1t = 1.0 + 0.5 * (g1 + g2);
+
+  // sunrealtype gamma1t = 1.0; 
+  // sunrealtype spike = 100.0 * exp(-5000.0 * (t - 0.5) * (t - 0.5));
+  // udot[0] = -alpha1 * (-2.0 * gamma1t - 3.0 * u[0] + 6.0 * u[1] - 1.0 * u[2]) / (6.0 * dx) + spike;
+  // udot[1] = -alpha1 * (gamma1t - 8.0 * u[0] + 8.0 * u[2] - u[3]) / (12.0 * dx) + spike;
 
   // udot[0] = -alpha1 * (-11.0 * gamma1t + 18.0 * u[0] - 9.0  * u[1] + 2.0 * u[2]       ) / (6.0  * dx);
   // udot[1] = -alpha1 * (-3.0  * gamma1t - 10.0 * u[0] + 18.0 * u[1] - 6.0 * u[2] + u[3]) / (12.0 * dx);
