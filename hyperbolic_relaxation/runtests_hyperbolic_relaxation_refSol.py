@@ -40,7 +40,7 @@ def refSoln(solver, runV, kstiff, ksN, knonstiff, showcommand=True):
     """
 
     # if (modetype == "adaptive"):
-    runcommand = " %s  --rtol %.6e  --eps_stiff %.2e  --eps_nonstiff %.2e" % (solver['exe'], runV, kstiff, knonstiff)
+    runcommand = " %s  --rtol %.6e  --eps_stiff %.6e  --eps_nonstiff %.6e" % (solver['exe'], runV, kstiff, knonstiff)
     # elif (modetype == "fixed"):
     #     runcommand = " %s  --fixed_h %.6e  --eps_stiff %.2e  --eps_nonstiff %.2e" % (solver['exe'], runV, kstiff, knonstiff)
 
@@ -68,12 +68,12 @@ def refSoln(solver, runV, kstiff, ksN, knonstiff, showcommand=True):
 
 
 # method to generate reference solution
-SSP423 = "./hyperbolic_relaxation  --IMintegrator ARKODE_SSP_ESDIRK_4_2_3  --EXintegrator ARKODE_SSP_ERK_4_2_3  --output 2"     
+SSP423 = "./hyperbolic_relaxation  --IMintegrator ARKODE_ARK548L2SA_DIRK_8_4_5      --EXintegrator ARKODE_ARK548L2SA_ERK_8_4_5  --output 2"     
 
 adaptive_params = [1e-14] #relative tolerance for reference solution
 # fixed_params    = [1e-10]  #fixed time step size for reference solution
 nonstiff_params = [1e2]
-stiff_params    = {'ks1e6': 1e6, 'ks1e7': 1e7, 'ks1e8': 1e8}
+stiff_params    = {'ks1e6': 1e6, 'ks1e8': 1e8}
 
 ## Integrator types
 solvertype = [{'name': 'SSP-ARK-4-2-3', 'exe': SSP423}]

@@ -294,9 +294,9 @@ SSPL312 = "./linear_adv_rec --IMintegrator ARKODE_SSP_LSPUM_SDIRK_3_1_2 --EXinte
 SSP423  = "./linear_adv_rec --IMintegrator ARKODE_SSP_ESDIRK_4_2_3      --EXintegrator ARKODE_SSP_ERK_4_2_3"  
 SSP923  = "./linear_adv_rec --IMintegrator ARKODE_SSP_ESDIRK_9_2_3      --EXintegrator ARKODE_SSP_ERK_9_2_3"    
 
-adaptive_params = [1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1]          # relative tolerances
+adaptive_params = [1e-1, 1e-2, 1e-3, 1e-4, 1e-5, 1e-6]          # relative tolerances
 fixed_params    = [] # fixed time step sizes
-for i in range(10,-1,-1): 
+for i in range(-1,7,1): 
     fixed_params.append(0.1/(2.0**i))
 #end
 k1values = {'k1Val1': 1.0, 'k1Val1e6': 1e6}#, 'k1Val1e8': 1e8}
@@ -352,7 +352,7 @@ modetype = ['fixed', 'adaptive']
 
 # --------------------------- accepted steps vs erroru ----------------------------------
 #create a figure of subplots (columns are stiffness parameters and rows are methods)
-fig, axes = plt.subplots(1, len(k1values), figsize=(15, 12))
+fig, axes = plt.subplots(1, len(k1values), figsize=(15, 15))
 for col_ind, (k1ValName, k1Val) in enumerate(k1values.items()):
     k2Val = 2.0 * k1Val
 
@@ -381,18 +381,24 @@ for col_ind, (k1ValName, k1Val) in enumerate(k1values.items()):
     axes[col_ind].set_title(f"k1 = {k1Val: .1e}, k2 = {k2Val: .1e}", fontsize=18)
     axes[col_ind].set_xscale('log')
     axes[col_ind].set_yscale('log')
-    axes[col_ind].legend(loc="best", ncol=2)
+    axes[col_ind].tick_params(axis='both', labelsize=15)
 #end
+handles1, labels1 = axes[0].get_legend_handles_labels()
+handles2, labels2 = axes[1].get_legend_handles_labels()
+
+# remove duplicates
+by_label = dict(zip(labels1 + labels2, handles1 + handles2))
+axes[1].legend(by_label.values(), by_label.keys(), loc='best', ncol=2, fontsize=18)
+
 fig.supxlabel(' StepAttempts ', fontsize=18)
 fig.supylabel(' erroru ', fontsize=18)
-fig.suptitle("StepAttempts vs erroru", fontsize=20)
 fig.tight_layout()
 plt.savefig("StepAttempts_erroru_linear_adv_rec.png")
 
 
 # --------------------------- accepted steps vs errorv ----------------------------------
 #create a figure of subplots (columns are stiffness parameters and rows are methods)
-fig, axes = plt.subplots(1, len(k1values), figsize=(15, 12))
+fig, axes = plt.subplots(1, len(k1values), figsize=(15, 15))
 for col_ind, (k1ValName, k1Val) in enumerate(k1values.items()):
     k2Val = 2.0 * k1Val
 
@@ -421,18 +427,24 @@ for col_ind, (k1ValName, k1Val) in enumerate(k1values.items()):
     axes[col_ind].set_title(f"k1 = {k1Val: .1e}, k2 = {k2Val: .1e}", fontsize=18)
     axes[col_ind].set_xscale('log')
     axes[col_ind].set_yscale('log')
-    axes[col_ind].legend(loc="best", ncol=2)
+    axes[col_ind].tick_params(axis='both', labelsize=15)
 #end
+handles1, labels1 = axes[0].get_legend_handles_labels()
+handles2, labels2 = axes[1].get_legend_handles_labels()
+
+# remove duplicates
+by_label = dict(zip(labels1 + labels2, handles1 + handles2))
+axes[1].legend(by_label.values(), by_label.keys(), loc='best', ncol=2, fontsize=18)
+
 fig.supxlabel(' StepAttempts ', fontsize=18)
 fig.supylabel(' errorv ', fontsize=18)
-fig.suptitle("StepAttempts vs errorv", fontsize=20)
 fig.tight_layout()
 plt.savefig("StepAttempts_errorv_linear_adv_rec.png")
 
 
 # --------------------------- accepted steps vs erroruv ----------------------------------
 #create a figure of subplots (columns are stiffness parameters and rows are methods)
-fig, axes = plt.subplots(1, len(k1values), figsize=(15, 12))
+fig, axes = plt.subplots(1, len(k1values), figsize=(15, 15))
 for col_ind, (k1ValName, k1Val) in enumerate(k1values.items()):
     k2Val = 2.0 * k1Val
 
@@ -461,11 +473,17 @@ for col_ind, (k1ValName, k1Val) in enumerate(k1values.items()):
     axes[col_ind].set_title(f"k1 = {k1Val: .1e}, k2 = {k2Val: .1e}", fontsize=18)
     axes[col_ind].set_xscale('log')
     axes[col_ind].set_yscale('log')
-    axes[col_ind].legend(loc="best", ncol=2)
+    axes[col_ind].tick_params(axis='both', labelsize=15)
 #end
+handles1, labels1 = axes[0].get_legend_handles_labels()
+handles2, labels2 = axes[1].get_legend_handles_labels()
+
+# remove duplicates
+by_label = dict(zip(labels1 + labels2, handles1 + handles2))
+axes[1].legend(by_label.values(), by_label.keys(), loc='best', ncol=2, fontsize=18)
+
 fig.supxlabel(' StepAttempts ', fontsize=18)
 fig.supylabel(' erroruv ', fontsize=18)
-fig.suptitle("StepAttempts vs erroruv", fontsize=20)
 fig.tight_layout()
 plt.savefig("StepAttempts_erroruv_linear_adv_rec.png")
 
@@ -473,7 +491,7 @@ plt.savefig("StepAttempts_erroruv_linear_adv_rec.png")
 
 # --------------------------- implicit solves vs erroru ----------------------------------
 #create a figure of subplots (columns are stiffness parameters and rows are methods)
-fig, axes = plt.subplots(1, len(k1values), figsize=(15, 12))
+fig, axes = plt.subplots(1, len(k1values), figsize=(15, 15))
 for col_ind, (k1ValName, k1Val) in enumerate(k1values.items()):
     k2Val = 2.0 * k1Val
 
@@ -502,18 +520,24 @@ for col_ind, (k1ValName, k1Val) in enumerate(k1values.items()):
     axes[col_ind].set_title(f"k1 = {k1Val: .1e}, k2 = {k2Val: .1e}", fontsize=18)
     axes[col_ind].set_xscale('log')
     axes[col_ind].set_yscale('log')
-    axes[col_ind].legend(loc="best", ncol=2)
+    axes[col_ind].tick_params(axis='both', labelsize=15)
 #end
+handles1, labels1 = axes[0].get_legend_handles_labels()
+handles2, labels2 = axes[1].get_legend_handles_labels()
+
+# remove duplicates
+by_label = dict(zip(labels1 + labels2, handles1 + handles2))
+axes[1].legend(by_label.values(), by_label.keys(), loc='best', ncol=2, fontsize=18)
+
 fig.supxlabel(' Implicit_solves ', fontsize=18)
 fig.supylabel(' erroru ', fontsize=18)
-fig.suptitle("Implicit_solves vs erroru", fontsize=20)
 fig.tight_layout()
 plt.savefig("Implicit_solves_erroru_linear_adv_rec.png")
 
 
 # --------------------------- implicit solves vs errorv ----------------------------------
 #create a figure of subplots (columns are stiffness parameters and rows are methods)
-fig, axes = plt.subplots(1, len(k1values), figsize=(15, 12))
+fig, axes = plt.subplots(1, len(k1values), figsize=(15, 15))
 for col_ind, (k1ValName, k1Val) in enumerate(k1values.items()):
     k2Val = 2.0 * k1Val
 
@@ -542,18 +566,24 @@ for col_ind, (k1ValName, k1Val) in enumerate(k1values.items()):
     axes[col_ind].set_title(f"k1 = {k1Val: .1e}, k2 = {k2Val: .1e}", fontsize=18)
     axes[col_ind].set_xscale('log')
     axes[col_ind].set_yscale('log')
-    axes[col_ind].legend(loc="best", ncol=2)
+    axes[col_ind].tick_params(axis='both', labelsize=15)
 #end
+handles1, labels1 = axes[0].get_legend_handles_labels()
+handles2, labels2 = axes[1].get_legend_handles_labels()
+
+# remove duplicates
+by_label = dict(zip(labels1 + labels2, handles1 + handles2))
+axes[1].legend(by_label.values(), by_label.keys(), loc='best', ncol=2, fontsize=18)
+
 fig.supxlabel(' Implicit_solves ', fontsize=18)
 fig.supylabel(' errorv ', fontsize=18)
-fig.suptitle("Implicit_solves vs errorv", fontsize=20)
 fig.tight_layout()
 plt.savefig("Implicit_solves_errorv_linear_adv_rec.png")
 
 
 # --------------------------- implicit solves vs erroruv ----------------------------------
 #create a figure of subplots (columns are stiffness parameters and rows are methods)
-fig, axes = plt.subplots(1, len(k1values), figsize=(15, 12))
+fig, axes = plt.subplots(1, len(k1values), figsize=(15, 15))
 for col_ind, (k1ValName, k1Val) in enumerate(k1values.items()):
     k2Val = 2.0 * k1Val
 
@@ -582,18 +612,24 @@ for col_ind, (k1ValName, k1Val) in enumerate(k1values.items()):
     axes[col_ind].set_title(f"k1 = {k1Val: .1e}, k2 = {k2Val: .1e}", fontsize=18)
     axes[col_ind].set_xscale('log')
     axes[col_ind].set_yscale('log')
-    axes[col_ind].legend(loc="best", ncol=2)
+    axes[col_ind].tick_params(axis='both', labelsize=15)
 #end
+handles1, labels1 = axes[0].get_legend_handles_labels()
+handles2, labels2 = axes[1].get_legend_handles_labels()
+
+# remove duplicates
+by_label = dict(zip(labels1 + labels2, handles1 + handles2))
+axes[1].legend(by_label.values(), by_label.keys(), loc='best', ncol=2, fontsize=18)
+
 fig.supxlabel(' Implicit_solves ', fontsize=18)
 fig.supylabel(' erroruv ', fontsize=18)
-fig.suptitle("Implicit_solves vs erroruv", fontsize=20)
 fig.tight_layout()
 plt.savefig("Implicit_solves_erroruv_linear_adv_rec.png")
 
 
 # --------------------------- runtime vs erroru ----------------------------------
 #create a figure of subplots (columns are stiffness parameters and rows are methods)
-fig, axes = plt.subplots(1, len(k1values), figsize=(15, 12))
+fig, axes = plt.subplots(1, len(k1values), figsize=(15, 15))
 for col_ind, (k1ValName, k1Val) in enumerate(k1values.items()):
     k2Val = 2.0 * k1Val
 
@@ -622,18 +658,24 @@ for col_ind, (k1ValName, k1Val) in enumerate(k1values.items()):
     axes[col_ind].set_title(f"k1 = {k1Val: .1e}, k2 = {k2Val: .1e}", fontsize=18)
     axes[col_ind].set_xscale('log')
     axes[col_ind].set_yscale('log')
-    axes[col_ind].legend(loc="best", ncol=2)
+    axes[col_ind].tick_params(axis='both', labelsize=15)
 #end
+handles1, labels1 = axes[0].get_legend_handles_labels()
+handles2, labels2 = axes[1].get_legend_handles_labels()
+
+# remove duplicates
+by_label = dict(zip(labels1 + labels2, handles1 + handles2))
+axes[1].legend(by_label.values(), by_label.keys(), loc='best', ncol=2, fontsize=18)
+
 fig.supxlabel(' runtime ', fontsize=18)
 fig.supylabel(' erroru ', fontsize=18)
-fig.suptitle("runtime vs erroru", fontsize=20)
 fig.tight_layout()
 plt.savefig("runtime_erroru_linear_adv_rec.png")
 
 
 # --------------------------- runtime vs errorv ----------------------------------
 #create a figure of subplots (columns are stiffness parameters and rows are methods)
-fig, axes = plt.subplots(1, len(k1values), figsize=(15, 12))
+fig, axes = plt.subplots(1, len(k1values), figsize=(15, 15))
 for col_ind, (k1ValName, k1Val) in enumerate(k1values.items()):
     k2Val = 2.0 * k1Val
 
@@ -662,18 +704,24 @@ for col_ind, (k1ValName, k1Val) in enumerate(k1values.items()):
     axes[col_ind].set_title(f"k1 = {k1Val: .1e}, k2 = {k2Val: .1e}", fontsize=18)
     axes[col_ind].set_xscale('log')
     axes[col_ind].set_yscale('log')
-    axes[col_ind].legend(loc="best", ncol=2)
+    axes[col_ind].tick_params(axis='both', labelsize=15)
 #end
+handles1, labels1 = axes[0].get_legend_handles_labels()
+handles2, labels2 = axes[1].get_legend_handles_labels()
+
+# remove duplicates
+by_label = dict(zip(labels1 + labels2, handles1 + handles2))
+axes[1].legend(by_label.values(), by_label.keys(), loc='best', ncol=2, fontsize=18)
+
 fig.supxlabel(' runtime ', fontsize=18)
 fig.supylabel(' errorv ', fontsize=18)
-fig.suptitle("runtime vs errorv", fontsize=20)
 fig.tight_layout()
 plt.savefig("runtime_errorv_linear_adv_rec.png")
 
 
 # --------------------------- runtime vs erroruv ----------------------------------
 #create a figure of subplots (columns are stiffness parameters and rows are methods)
-fig, axes = plt.subplots(1, len(k1values), figsize=(15, 12))
+fig, axes = plt.subplots(1, len(k1values), figsize=(15, 15))
 for col_ind, (k1ValName, k1Val) in enumerate(k1values.items()):
     k2Val = 2.0 * k1Val
 
@@ -702,11 +750,17 @@ for col_ind, (k1ValName, k1Val) in enumerate(k1values.items()):
     axes[col_ind].set_title(f"k1 = {k1Val: .1e}, k2 = {k2Val: .1e}", fontsize=18)
     axes[col_ind].set_xscale('log')
     axes[col_ind].set_yscale('log')
-    axes[col_ind].legend(loc="best", ncol=2)
+    axes[col_ind].tick_params(axis='both', labelsize=15)
 #end
+handles1, labels1 = axes[0].get_legend_handles_labels()
+handles2, labels2 = axes[1].get_legend_handles_labels()
+
+# remove duplicates
+by_label = dict(zip(labels1 + labels2, handles1 + handles2))
+axes[1].legend(by_label.values(), by_label.keys(), loc='best', ncol=2, fontsize=18)
+
 fig.supxlabel(' runtime ', fontsize=18)
 fig.supylabel(' erroruv ', fontsize=18)
-fig.suptitle("runtime vs erroruv", fontsize=20)
 fig.tight_layout()
 plt.savefig("runtime_erroruv_linear_adv_rec.png")
 

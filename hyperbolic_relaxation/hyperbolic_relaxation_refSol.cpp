@@ -54,7 +54,7 @@
  * and integrator settings. Use the flag --help for more information.
  * ---------------------------------------------------------------------------*/
 
-#include "hyperbolic_relaxation.hpp"
+#include "hyperbolic_relaxation_refSol.hpp"
 using namespace std;
 
 int main(int argc, char* argv[])
@@ -98,10 +98,10 @@ int main(int argc, char* argv[])
   // --------------------
   void* arkode_mem = nullptr;
 
-  arkode_mem = ARKStepCreate(fe_rhs, fi_rhs, udata.t0, y, ctx);
+  arkode_mem = ARKStepCreate(nullptr, fi_rhs, udata.t0, y, ctx);
   if (check_ptr(arkode_mem, "ARKStepCreate")) { return 1; }
 
-  flag = ARKStepSetTableName(arkode_mem, uopts.IMintegrator.c_str(), uopts.EXintegrator.c_str()); 
+  flag = ARKStepSetTableName(arkode_mem, uopts.IMintegrator.c_str(), nullptr); 
   if (check_flag(flag, "ARKStepSetTableName")) { return 1; } 
 
   // Shared setup
@@ -228,7 +228,7 @@ int main(int argc, char* argv[])
 // -----------------------------------------------------------------------------
 
 // ODE Explicit RHS function
-int fe_rhs(sunrealtype t, N_Vector y, N_Vector f, void* user_data)
+int fi_rhs(sunrealtype t, N_Vector y, N_Vector f, void* user_data)
 {
   // Access problem data
   EulerData* udata = (EulerData*)user_data;
@@ -271,6 +271,7 @@ int fe_rhs(sunrealtype t, N_Vector y, N_Vector f, void* user_data)
   const sunrealtype xl           = udata->xl;
   const sunrealtype eps_nonstiff = udata->eps_nonstiff;
   const sunrealtype gamma        = udata->gamma; 
+  const sunrealtype eps_stiff = udata->eps_stiff;
 
   // compute face-centered fluxes over domain interior: pack 1D x-directional array
   // of variable shortcuts, and compute flux at lower x-directional face
@@ -304,6 +305,37 @@ int fe_rhs(sunrealtype t, N_Vector y, N_Vector f, void* user_data)
     etdot[i] -= (flux[(i + 1) * NSPECIES + 4] - flux[i * NSPECIES + 4]) / dx;
   }
 
+
+  const sunrealtype e_eq = SUN_RCONST(1.0); 
+  const sunrealtype K_rate = 1e4 + eps_stiff*exp(-2000.0*(t-0.15)*(t-0.15)); 
+
+  // iterate over subdomain, updating RHS
+  for (long int i = 0; i < nx; i++)
+  {
+    sunrealtype rhoth = ONE / rho[i];
+    sunrealtype e = (et[i] * rhoth) - ((mx[i]*mx[i] + my[i]*my[i] + mz[i]*mz[i]) * HALF * rhoth * rhoth);
+    etdot[i] += -K_rate * rho[i] * (e - e_eq);
+  }
+
+  // const sunrealtype e_eq    = SUN_RCONST(25.0); // Target equilibrium energy
+  // const sunrealtype E_act   = SUN_RCONST(40.0); // Activation energy
+
+  // // iterate over subdomain, updating RHS
+  // for (long int i = 0; i < nx; i++)
+  // {
+  //   /* 1.0 / rho */
+  //   sunrealtype rhoth = ONE / rho[i];
+
+  //   /* e = E/rho - 0.5 * u^2 (internal energy per unit mass) */
+  //   sunrealtype e = (et[i] * rhoth) - ((mx[i]*mx[i] + my[i]*my[i] + mz[i]*mz[i]) * HALF * rhoth * rhoth);
+
+  //   /* Arrhenius exponential factor (with a safeguard against unphysical negative energy) */
+  //   sunrealtype arrhenius = (e > ZERO) ? exp(-E_act / e) : ZERO;
+
+  //   /* Stiff relaxation term using Arrhenius kinetics */
+  //   etdot[i] += eps_stiff * arrhenius * rho[i] * (e_eq - e);
+  // }
+
   // for (long int i = 0; i < nx; i++) 
   // {
   //   eKnot_data[i] = ONE;
@@ -333,7 +365,7 @@ int fe_rhs(sunrealtype t, N_Vector y, N_Vector f, void* user_data)
 
 
 // ODE Implicit RHS function 
-int fi_rhs(sunrealtype t, N_Vector y, N_Vector f, void* user_data)
+int fe_rhs(sunrealtype t, N_Vector y, N_Vector f, void* user_data)
 {
   // Access problem data
   EulerData* udata = (EulerData*)user_data;
@@ -379,26 +411,45 @@ int fi_rhs(sunrealtype t, N_Vector y, N_Vector f, void* user_data)
   const sunrealtype gamma     = udata->gamma; 
   sunrealtype* flux           = udata->flux;
 
-  for (long int i = 0; i < nx; i++)
-  {
-    eKnot_data[i] = 3.0;
-  }     
-
-  // iterate over subdomain, updating RHS
-  const sunrealtype e_eq = SUN_RCONST(1.0); 
-  const sunrealtype K_rate = 1e4 + eps_stiff*exp(-2000.0*(t-0.15)*(t-0.15)); 
-
   // iterate over subdomain, updating RHS
   for (long int i = 0; i < nx; i++)
   {
-    sunrealtype rhoth = ONE / rho[i];
-    sunrealtype e = (et[i] * rhoth) - ((mx[i]*mx[i] + my[i]*my[i] + mz[i]*mz[i]) * HALF * rhoth * rhoth);
-    etdot[i] += eps_stiff * exp(-5000*(t-0.15)*(t-0.15) )* rho[i] *(e - e_eq);
+    rhodot[i] = 0.0;
+    mxdot[i]  = 0.0;
+    mydot[i]  = 0.0;
+    mzdot[i]  = 0.0;
+    etdot[i]  = 0.0;
   }
 
-  /* Using Arrhenius term*/ 
-  // const sunrealtype e_eq    = SUN_RCONST(25.0); // Target equilibrium energy
-  // const sunrealtype E_act   = SUN_RCONST(40.0); // Activation energy
+  // for (long int i = 0; i < nx; i++)
+  // {
+  //   eKnot_data[i] = ONE;
+  // }     
+
+  // // iterate over subdomain, updating RHS
+  // for (long int i = 0; i < nx; i++)
+  // {
+  //   sunrealtype xloc = ((sunrealtype)i) * dx + xl;
+  //   if (xloc >= HALF)
+  //   {
+
+  //     /* -K * rho*/ 
+  //     sunrealtype coef = -eps_stiff*rho[i];
+
+  //     /* 1.0 / rho*/
+  //     sunrealtype rhoth = 1.0/rho[i];
+
+  //     /* E - 0.5 * rho * u^2 */
+  //     sunrealtype rhoe = et[i] - ((mx[i] * mx[i] + my[i] * my[i] + mz[i] * mz[i]) * HALF / rho[i]);
+
+  //     /* relaxation term */
+  //     etdot[i] = etdot[i] + coef*(rhoth*rhoe - eKnot_data[i]);
+  //   }
+  // }
+
+  // const sunrealtype e_ignite = SUN_RCONST(10.0); // Ignition threshold
+  // const sunrealtype e_eq     = SUN_RCONST(25.0); // Target equilibrium energy
+  // const sunrealtype k_smooth = SUN_RCONST(2.0);  // Smoothness of the ignition switch
 
   // // iterate over subdomain, updating RHS
   // for (long int i = 0; i < nx; i++)
@@ -409,11 +460,11 @@ int fi_rhs(sunrealtype t, N_Vector y, N_Vector f, void* user_data)
   //   /* e = E/rho - 0.5 * u^2 (internal energy per unit mass) */
   //   sunrealtype e = (et[i] * rhoth) - ((mx[i]*mx[i] + my[i]*my[i] + mz[i]*mz[i]) * HALF * rhoth * rhoth);
 
-  //   /* Arrhenius exponential factor (with a safeguard against unphysical negative energy) */
-  //   sunrealtype arrhenius = (e > ZERO) ? exp(-E_act / e) : ZERO;
+  //   /* Smooth activation: 0 when dormant (e < e_ignite), 1 when active (e > e_ignite) */
+  //   sunrealtype activation = HALF * (ONE + tanh(k_smooth * (e - e_ignite)));
 
-  //   /* Stiff relaxation term using Arrhenius kinetics */
-  //   etdot[i] += eps_stiff * arrhenius * rho[i] * (e_eq - e);
+  //   /* Stiff relaxation term: drives e towards e_eq only when activated */
+  //   etdot[i] += eps_stiff * activation * rho[i] * (e_eq - e);
   // }
 
   return 0;

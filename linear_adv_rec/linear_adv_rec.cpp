@@ -152,7 +152,7 @@ public:
 
 /* User-supplied Functions Called by the Solver */
 static int fe(sunrealtype t, N_Vector y, N_Vector ydot, void* user_data); //Explicit RHS
-static int f(sunrealtype t, N_Vector y, N_Vector ydot, void* user_data); //Implicit RHS
+static int fi(sunrealtype t, N_Vector y, N_Vector ydot, void* user_data); //Implicit RHS
 static int Jac(N_Vector v, N_Vector Jv, sunrealtype t, N_Vector y, N_Vector fy, void* user_data, N_Vector tmp);
 static int ReadInputs(std::vector<std::string>& args, UserData& udata, ARKODEParameters& uopts, SUNContext ctx);
 static void InputHelp();
@@ -213,7 +213,7 @@ int main(int argc, char* argv[])
   /* Call ARKStepCreate to initialize the ARK timestepper module and
      specify the right-hand side function in y'=f(t,y), the initial time
      T0, and the initial dependent variable vector y. */
-  void* arkode_mem = ARKStepCreate(fe, f, uopts.T0, y, ctx);
+  void* arkode_mem = ARKStepCreate(fe, fi, uopts.T0, y, ctx);
   if (check_flag((void*)arkode_mem, "ARKStepCreate", 0)) { return 1; }
 
   /* Set routines */
@@ -388,11 +388,12 @@ static int fe(sunrealtype t, N_Vector y, N_Vector ydot, void* user_data)
 
   // left boundary
   sunrealtype pi = 3.1415926535;
-  sunrealtype expo = -30000.0 * (t - 0.5) * (t - 0.5);
-  u[0]    = 1.0 + 0.2 * sin(10.0 * pi * t) + 1.5 * sin (10.0 * pi * t) * exp(expo) ;
+  sunrealtype g1      = exp(-5000.0 * (t - 0.3) * (t - 0.3));
+  sunrealtype g2      = exp(-5000.0 * (t - 0.7) * (t - 0.7));
+  sunrealtype gamma1t = 1.0 + 0.3 * sin(40.0 * pi * t) * (g1 + g2);
 
-  udot[0] = -alpha1 * (-11.0 * u[0] + 18.0 * u[1] - 9.0  * u[2] + 2.0 * u[3]       ) / (6.0  * dx);
-  udot[1] = -alpha1 * (-3.0  * u[0] - 10.0 * u[1] + 18.0 * u[2] - 6.0 * u[3] + u[4]) / (12.0 * dx);
+  udot[0] = -alpha1 * (-11.0 * gamma1t + 18.0 * u[0] - 9.0  * u[1] + 2.0 * u[2]       ) / (6.0  * dx);
+  udot[1] = -alpha1 * (-3.0  * gamma1t - 10.0 * u[0] + 18.0 * u[1] - 6.0 * u[2] + u[3]) / (12.0 * dx);
 
   //interior points
   for (int i = 2; i < N-2; i++){
@@ -407,7 +408,7 @@ static int fe(sunrealtype t, N_Vector y, N_Vector ydot, void* user_data)
 
 
 /* f routine to compute the ODE implicit RHS function f(t,y). */
-static int f(sunrealtype t, N_Vector y, N_Vector ydot, void* user_data)
+static int fi(sunrealtype t, N_Vector y, N_Vector ydot, void* user_data)
 {
   UserData* udata = (UserData*)user_data; /* access problem data */
   sunrealtype *Y = NULL, *Ydot = NULL;
@@ -430,9 +431,9 @@ static int f(sunrealtype t, N_Vector y, N_Vector ydot, void* user_data)
   sunrealtype* vdot = Ydot + N;
 
   //boundary conditions
-  sunrealtype pi = 3.1415926535;
-  sunrealtype expo = -30000.0 * (t - 0.5) * (t - 0.5);
-  u[0]    = 1.0 + 0.2 * sin(10.0 * pi * t) + 1.5 * sin (10.0 * pi * t) * exp(expo) ;
+  // sunrealtype pi = 3.1415926535;
+  // sunrealtype expo1 = -100.0 * (t - 0.5) * (t - 0.5);
+  // u[0]    = 1.0 + 0.2 * sin(10.0 * t + 200.0 * t * exp(expo1));
 
   //interior points
   for (int i = 0; i < N; i++){

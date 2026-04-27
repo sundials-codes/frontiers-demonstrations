@@ -91,18 +91,18 @@ for it in range(nsteps):
     largeDev_time.append(float(t[timeV]))
 #end
 
-# determine the shock speed and its corresponding time step
-tstar = None
-for i in range(len(largeDev_xgrid)):
-    if largeDev_xgrid[i] >= 0.5:
-        xgrid_star = largeDev_xgrid[i]
-        tstar     = largeDev_time[i]
-        break
-    # end
-# end
-if tstar is not None:
-    print ("Time step where grid point is not less than the shock value = %f" %tstar)
-# end
+# # determine the shock speed and its corresponding time step
+# tstar = None
+# for i in range(len(largeDev_xgrid)):
+#     if largeDev_xgrid[i] >= 0.5:
+#         xgrid_star = largeDev_xgrid[i]
+#         tstar     = largeDev_time[i]
+#         break
+#     # end
+# # end
+# if tstar is not None:
+#     print ("Time step where grid point is not less than the shock value = %f" %tstar)
+# # end
 
 # solution at the final time step
 przdata = np.zeros((nx), dtype=float) #pressure
@@ -185,12 +185,12 @@ plt.rcParams["figure.constrained_layout.use"] = True
 
 ## subplots with time snapshots of the density, x-velocity, and pressure
 fig = plt.figure(figsize=(10, 5))
-gs = GridSpec(1, 5, figure=fig)
+gs = GridSpec(1, 3, figure=fig)
 ax00 = fig.add_subplot(gs[0, 0])  # 1st column - initial time step
-ax01 = fig.add_subplot(gs[0, 1])  # 2nd column
-ax02 = fig.add_subplot(gs[0, 2])  # 3rd column
-ax03 = fig.add_subplot(gs[0, 3])  # 4th column
-ax04 = fig.add_subplot(gs[0, 4])  # 5th colum - final time step
+# ax01 = fig.add_subplot(gs[0, 1])  # 2nd column
+# ax02 = fig.add_subplot(gs[0, 2])  # 3rd column
+ax03 = fig.add_subplot(gs[0, 1])  # 4th column
+ax04 = fig.add_subplot(gs[0, 2])  # 5th colum - final time step
 
 it = 0
 tval = repr(float(t[it])).zfill(3)
@@ -199,17 +199,17 @@ ax00.set_title(r"$t =$ " + tval)
 ax00.set_ylabel(r"$P(t,x)$")
 ax00.set_xlabel(r"$x$")
 
-it = 1
-tval = repr(float(t[it])).zfill(3)
-ax01.plot(x, rho[it, :], "-b")
-ax01.set_title(r"$t =$ " + tval)
-ax01.set_xlabel(r"$x$")
+# it = 1
+# tval = repr(float(t[it])).zfill(3)
+# ax01.plot(x, rho[it, :], "-b")
+# ax01.set_title(r"$t =$ " + tval)
+# ax01.set_xlabel(r"$x$")
 
-it = 2
-tval = repr(float(t[it])).zfill(3)
-ax02.plot(x, rho[it, :], "-b")
-ax02.set_title(r"$t =$ " + tval)
-ax02.set_xlabel(r"$x$")
+# it = 2
+# tval = repr(float(t[it])).zfill(3)
+# ax02.plot(x, rho[it, :], "-b")
+# ax02.set_title(r"$t =$ " + tval)
+# ax02.set_xlabel(r"$x$")
 
 middleval = int(np.ceil(nsteps/2))
 it = middleval
@@ -229,7 +229,8 @@ plt.rcParams["figure.figsize"] = [7.2, 4.8]
 plt.rcParams["text.usetex"] = True
 plt.rcParams["figure.constrained_layout.use"] = True
 # plt.savefig("hyperbolic_relaxation_frames.png")
-plt.close()
+# plt.close()
+plt.show()
 
 
 
@@ -325,74 +326,36 @@ def read_ref_solution(filename):
     return rhoRefFinal
 
 
-## -------------------- Compute L-infinty norm using the reference solution -----------------------
-stiff1e6 = False #only one type of stiffness parameter option cna be true at a time (keep as only "1" space before and after =)
-stiff1e7 = False
-stiff1e8 = True
+# ## -------------------- Compute L-infinty norm using the reference solution -----------------------
+# stiff1e6 = False #only one type of stiffness parameter option cna be true at a time (keep as only "1" space before and after =)
+# stiff1e8 = True
 
-AdaptiveRun = True #only one type of run can be true at a time (keep as only "1" space before and after =)
-FixedRun = False
+# AdaptiveRun = True #only one type of run can be true at a time (keep as only "1" space before and after =)
+# FixedRun = False
 
-elmax = 0.0 #l-infinity error
-if (FixedRun):
-    if(stiff1e6):
-        #load file
-        fixed_ks1e6_refLastSoln_rho  = read_ref_solution("referenceSoln_ks1e6.out")
-        for i in range(nx):
-            errV = np.abs(fixed_ks1e6_refLastSoln_rho[i] - rhodata[i])
-            if (errV > elmax):
-                elmax = errV
-            # end
-        # end
-    elif(stiff1e7):
-        #load file
-        fixed_ks1e7_refLastSoln_rho = read_ref_solution("referenceSoln_ks1e7.out")
-        for i in range(nx):
-            errV = np.abs(fixed_ks1e7_refLastSoln_rho[i] - rhodata[i])
-            if (errV > elmax):
-                elmax = errV
-            # end
-        # end
-    elif(stiff1e8):
-        #load file
-        fixed_ks1e8_refLastSoln_rho = read_ref_solution("referenceSoln_ks1e8.out")
-        for i in range(nx):
-            errV = np.abs(fixed_ks1e8_refLastSoln_rho[i] - rhodata[i])
-            if (errV > elmax):
-                elmax = errV
-            # end
-        # end
-elif (AdaptiveRun):
-    if (stiff1e6): 
-        #load file
-        adapt_ks1e6_refLastSoln_rho = read_ref_solution("referenceSoln_ks1e6.out")
-        for i in range(nx):
-            errV = np.abs(adapt_ks1e6_refLastSoln_rho[i] - rhodata[i])
-            if (errV > elmax):
-                elmax = errV
-            # end
-        # end
-    elif (stiff1e7): 
-        #load file
-        adapt_ks1e7_refLastSoln_rho = read_ref_solution("referenceSoln_ks1e7.out")
-        for i in range(nx):
-            errV = np.abs(adapt_ks1e7_refLastSoln_rho[i] - rhodata[i])
-            if (errV > elmax):
-                elmax = errV
-            # end
-        # end
-    elif (stiff1e8): 
-        #load file
-        adapt_ks1e8_refLastSoln_rho = read_ref_solution("referenceSoln_ks1e8.out")
-        for i in range(nx):
-            errV = np.abs(adapt_ks1e8_refLastSoln_rho[i] - rhodata[i])
-            if (errV > elmax):
-                elmax = errV
-            # end
-        # end
-# end
+# # l-infinity error
+# elmax = 0.0 
+# if (FixedRun):
+#     if(stiff1e6):
+#         fixed_ks1e6_refLastSoln_rho  = read_ref_solution("referenceSoln_ks1e6.out")
+#         elmax = np.max(np.abs(fixed_ks1e6_refLastSoln_rho - rhodata))
+#     elif(stiff1e8):
+#         fixed_ks1e8_refLastSoln_rho = read_ref_solution("referenceSoln_ks1e8.out")
+#         elmax = np.max(np.abs(fixed_ks1e8_refLastSoln_rho - rhodata))
+#     # elif(stiff1e7):
+#     #     fixed_ks1e7_refLastSoln_rho = read_ref_solution("referenceSoln_ks1e7.out")
+#     #     elmax = np.max(np.abs(fixed_ks1e7_refLastSoln_rho - rhodata))
+# elif (AdaptiveRun):
+#     if (stiff1e6): 
+#         adapt_ks1e6_refLastSoln_rho = read_ref_solution("referenceSoln_ks1e6.out")
+#         elmax = np.max(np.abs(adapt_ks1e6_refLastSoln_rho - rhodata))
+#     elif (stiff1e8): 
+#         adapt_ks1e8_refLastSoln_rho = read_ref_solution("referenceSoln_ks1e8.out")
+#         elmax = np.max(np.abs(adapt_ks1e8_refLastSoln_rho - rhodata))
+#     # elif (stiff1e7): 
+#     #     adapt_ks1e7_refLastSoln_rho = read_ref_solution("referenceSoln_ks1e7.out")
+#     #     elmax = np.max(np.abs(adapt_ks1e7_refLastSoln_rho - rhodata))
+# # end
 
-print("Lmax error using reference solution = %.4e" %elmax)
-# end if statement
-
-##### end of script #####
+# print("Lmax error using reference solution = %.4e" %elmax)
+# ##### end of script #####

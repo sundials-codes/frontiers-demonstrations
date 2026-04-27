@@ -66,7 +66,7 @@ def refSoln(solver, runV, k1Val, k1Valname, showcommand=True):
 
 
 # method to generate reference solution
-SSP423 = "./linear_adv_rec   --IMintegrator ARKODE_ARK548L2SA_DIRK_8_4_5      --EXintegrator ARKODE_ARK548L2SA_ERK_8_4_5"     
+SSP423 = "./linear_adv_rec_refSol   --IMintegrator ARKODE_ARK548L2SA_DIRK_8_4_5      --EXintegrator ARKODE_ARK548L2SA_ERK_8_4_5"     
 
 adaptive_params = [1e-14] #relative tolerance for reference solution
 k1values = {'k1Val1': 1.0, 'k1Val1e6': 1e6}#, 'k1Val1e8': 1e8}

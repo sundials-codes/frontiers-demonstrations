@@ -40,8 +40,8 @@
 #define rhoR   SUN_RCONST(0.2)
 #define uL     SUN_RCONST(0.0)
 #define uR     SUN_RCONST(0.0)
-#define pL     SUN_RCONST(10.0)
-#define pR     SUN_RCONST(1.0)
+#define pL     SUN_RCONST(0.4)
+#define pR     SUN_RCONST(0.4)
 #define HALF   SUN_RCONST(0.5)
 #define ZERO   SUN_RCONST(0.0)
 #define ONE    SUN_RCONST(1.0)
@@ -458,7 +458,7 @@ static int OpenOutput(EulerData& udata, ARKODEParameters& uopts)
   {
     // Open output stream
     std::stringstream fname;
-    fname << "hyperbolic_relaxation.out";
+    fname << "hyperbolic_relaxation_refSol.out";
     uopts.uout.open(fname.str());
 
     uopts.uout << std::scientific;

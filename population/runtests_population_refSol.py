@@ -35,7 +35,7 @@ def refSoln(solver, runV, kval, kname, showcommand=True):
     Output: returns the reference solution as a textfile
     """
 
-    runcommand = " %s --fixed_h %e  --k %.2f" % (solver['exe'], runV, kval)
+    runcommand = " %s --rtol %e  --k %.2f" % (solver['exe'], runV, kval)
 
     result = subprocess.run(shlex.split(runcommand), stdout=subprocess.PIPE)
 
@@ -45,7 +45,7 @@ def refSoln(solver, runV, kval, kname, showcommand=True):
     else:
         if (showcommand):
             print(f"Running reference solution for {kval}: " + runcommand + " SUCCESS")
-            new_fileName = f"referenceSoln_{kname}.txt"
+            new_fileName = f"referenceSoln_population_{kname}.txt"
 
             ## rename plot file
             if os.path.exists("population.txt"):
@@ -59,13 +59,13 @@ def refSoln(solver, runV, kval, kname, showcommand=True):
 
 
 # method to generate reference solution
-SSP423 = "./population  --IMintegrator ARKODE_ARK548L2SA_DIRK_8_4_5      --EXintegrator ARKODE_ARK548L2SA_ERK_8_4_5"     
+SSP423 = "./population_refSoln  --IMintegrator ARKODE_ARK436L2SA_DIRK_6_3_4      --EXintegrator ARKODE_ARK436L2SA_ERK_6_3_4"     
 
-adaptive_params = [1e-8] ## relative tolerance for reference solution
+adaptive_params = [1e-16] ## relative tolerance for reference solution
 
 ## Diffusion coefficients
-# diff_coef = {'diffk0':0.0, 'diffk02':0.02, 'diffk04':0.04}
-diff_coef = {'diffk02':0.02, 'diffk04':0.04}
+diff_coef = {'diffk0':0.0, 'diffk02':0.02, 'diffk04':0.04}
+# diff_coef = {'diffk02':0.02, 'diffk04':0.04}
 
 ## Integrator types
 solvertype = [{'name': 'SSP-ARK-4-2-3', 'exe': SSP423}]

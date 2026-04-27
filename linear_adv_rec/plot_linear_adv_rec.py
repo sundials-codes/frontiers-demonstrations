@@ -95,13 +95,13 @@ with open(datafile, "r") as file:
    
 
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 5))
-    ax1.plot(x, uSol[0, :], color = 'r', linestyle = '--', label = "initial solution")
+    # ax1.plot(x, uSol[0, :], color = 'r', linestyle = '--', label = "initial solution")
     ax1.plot(x, uSol[-1, :], color = 'b', linestyle = '-', label = "final solution")
     ax1.set_yticks([0.0, 0.5, 1.0, 1.5, 2.0])
     ax1.set_title("u-component")
     ax1.grid(True)
 
-    ax2.plot(x, vSol[0, :], color = 'r', linestyle = '--', label = "initial solution")
+    # ax2.plot(x, vSol[0, :], color = 'r', linestyle = '--', label = "initial solution")
     ax2.plot(x, vSol[-1, :], color = 'b', linestyle = '-', label = "final solution")
     ax2.set_yticks([0.0, 0.5, 1.0, 1.5, 2.0])
     ax2.set_title("v-component")
@@ -149,8 +149,8 @@ with open(datafile, "r") as file:
     # plt.rcParams["figure.constrained_layout.use"] = True
 
     plt.legend()
-    # plt.show()
-    plt.close()
+    plt.show()
+    # plt.close()
 
 
 ## ------------------ Extract Reference Solution at Final Time Step -----------------------

@@ -62,6 +62,7 @@
 #include "sundials/sundials_core.hpp"
 #include <sundials/sundials_types.h> /* defs. of sunrealtype, sunindextype, etc */
 #include <sunlinsol/sunlinsol_pcg.h> /* access to PCG SUNLinearSolver        */
+#include <sunlinsol/sunlinsol_spgmr.h> /* access to GMRES SUNLinearSolver        */
 #include <sundials/sundials_logger.h>
 
 using namespace std;
@@ -237,8 +238,10 @@ int main(int argc, char* argv[])
   if (check_flag(&flag, "ARKodeSetStopTime", 1)) { return 1; }
   
   /* Initialize PCG solver -- no preconditioning, with up to N iterations  */
-  SUNLinearSolver LS = SUNLinSol_PCG(y, 0, udata.N, ctx);
-  if (check_flag((void*)LS, "SUNLinSol_PCG", 0)) { return 1; }
+  // SUNLinearSolver LS = SUNLinSol_PCG(y, 0, udata.N, ctx);
+  // if (check_flag((void*)LS, "SUNLinSol_PCG", 0)) { return 1; }
+  SUNLinearSolver LS = SUNLinSol_SPGMR(y, SUN_PREC_NONE, udata.N, ctx);
+  if (check_flag((void*)LS, "SUNLinSol_SPGMR", 0)) { return 1; }
 
   /* Linear solver interface */
   flag = ARKodeSetLinearSolver(arkode_mem, LS, NULL);
