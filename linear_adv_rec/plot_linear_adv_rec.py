@@ -93,7 +93,6 @@ with open(datafile, "r") as file:
     for i in range(len(fullSol[nsteps-1, :])):
         fullSol_lastStep[i] = fullSol[nsteps-1, i]
    
-
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 5))
     # ax1.plot(x, uSol[0, :], color = 'r', linestyle = '--', label = "initial solution")
     ax1.plot(x, uSol[-1, :], color = 'b', linestyle = '-', label = "final solution")
@@ -107,7 +106,7 @@ with open(datafile, "r") as file:
     ax2.set_title("v-component")
     ax2.grid(True)
 
-    # ## plot defaults: increase default font size, increase plot width, enable LaTeX rendering
+    ## plot defaults: increase default font size, increase plot width, enable LaTeX rendering
     # plt.rc("font", size=15)
     # plt.rcParams["figure.figsize"] = [7.2, 4.8]
     # plt.rcParams["text.usetex"] = True
@@ -121,36 +120,36 @@ with open(datafile, "r") as file:
     # ax02 = fig.add_subplot(gs[0, 2])  # right column
     # it = 0
     # tval = repr(float(t[it])).zfill(3)
-    # ax00.plot(x, vSol[it, :], "-b",)
+    # ax00.plot(x, uSol[it, :], "-b",)
     # ax00.set_title(r"$t =$ " + tval)
-    # ax00.set_ylabel(r"$v(t,x)$")
+    # ax00.set_ylabel(r"$u(t,x)$")
     # ax00.set_xlabel(r"$x$")
     # # ax00.set_xticks([0.0, 0.2, 0.4, 0.6, 0.8, 1.0])
 
     # middleval = int(np.ceil(nsteps/2))
     # it = middleval
     # tval = repr(float(t[it])).zfill(3)
-    # ax01.plot(x, vSol[it, :], "-b")
+    # ax01.plot(x, uSol[it, :], "-b")
     # ax01.set_title(r"$t =$ " + tval)
     # ax01.set_xlabel(r"$x$")
     # # ax01.set_xticks([0.0, 0.2, 0.4, 0.6, 0.8, 1.0])
     
     # it = -1
     # tval = repr(float(t[it])).zfill(3)
-    # ax02.plot(x, vSol[it, :], "-b")
+    # ax02.plot(x, uSol[it, :], "-b")
     # ax02.set_title(r"$t =$ " + tval)
     # ax02.set_xlabel(r"$x$")
     # # ax02.set_xticks([0.0, 0.2, 0.4, 0.6, 0.8, 1.0])
-    # plt.savefig("linear_adv_rec_frames.png")
+    # # plt.savefig("linear_adv_rec_frames.png")
 
-    # plt.rc("font", size=15)
-    # plt.rcParams["figure.figsize"] = [7.2, 4.8]
-    # plt.rcParams["text.usetex"] = True
-    # plt.rcParams["figure.constrained_layout.use"] = True
+    # # plt.rc("font", size=15)
+    # # plt.rcParams["figure.figsize"] = [7.2, 4.8]
+    # # plt.rcParams["text.usetex"] = True
+    # # # plt.rcParams["figure.constrained_layout.use"] = True
 
     plt.legend()
-    plt.show()
-    # plt.close()
+    # plt.show()
+    plt.close()
 
 
 ## ------------------ Extract Reference Solution at Final Time Step -----------------------
