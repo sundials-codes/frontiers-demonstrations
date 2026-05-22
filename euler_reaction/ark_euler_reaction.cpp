@@ -24,7 +24,8 @@
  * Jacobian structure of the reaction operator.
  *
  * Several additional command line options are available to change the
- * and integrator settings. Use the flag --help for more information.
+ * initial conditions and integrator settings. Use the flag --help for more
+ * information.
  * ---------------------------------------------------------------------------*/
 
 #include "ark_euler_reaction.hpp"
@@ -86,11 +87,16 @@ int main(int argc, char* argv[])
   flag = ARKodeSetUserData(arkode_mem, &udata);
   if (check_flag(flag, "ARKodeSetUserData")) { return 1; }
 
-  // Set fixed step size or adaptivity method
+  // Set fixed step size, or initial step size if adaptive
   if (uopts.fixed_h > ZERO)
   {
     flag = ARKodeSetFixedStep(arkode_mem, uopts.fixed_h);
     if (check_flag(flag, "ARKodeSetFixedStep")) { return 1; }
+  }
+  else if (uopts.h0 > ZERO)
+  {
+    flag = ARKodeSetInitStep(arkode_mem, uopts.h0);
+    if (check_flag(flag, "ARKodeSetInitStep")) { return 1; }
   }
 
   // Set max steps between outputs
@@ -638,28 +644,66 @@ int SetIC(N_Vector y, EulerData& udata)
   sunrealtype* w = N_VGetSubvectorArrayPointer_ManyVector(y, 7);
   if (check_ptr(w, "N_VGetSubvectorArrayPointer_ManyVector")) { return -1; }
 
-  for (long int i = 0; i < udata.nx; i++)
+  if (udata.initial_condition == "Sod_Brusselator")
   {
-    sunrealtype xloc = ((sunrealtype)i + HALF) * udata.dx + udata.xl;
-    if (xloc < HALF)
+    for (long int i = 0; i < udata.nx; i++)
     {
-      rho[i] = rhoL;
-      et[i]  = udata.eos_inv(rhoL, uL, ZERO, ZERO, pL);
-      mx[i]  = rhoL * uL;
+      sunrealtype xloc = ((sunrealtype)i + HALF) * udata.dx + udata.xl;
+      if (xloc < HALF)
+      {
+        rho[i] = rhoL;
+        et[i]  = udata.eos_inv(rhoL, uL, ZERO, ZERO, pL);
+        mx[i]  = rhoL * uL;
+      }
+      else
+      {
+        rho[i] = rhoR;
+        et[i]  = udata.eos_inv(rhoR, uR, ZERO, ZERO, pR);
+        mx[i]  = rhoR * uR;
+      }
+      my[i] = ZERO;
+      mz[i] = ZERO;
+      u[i]  = SUN_RCONST(1.2) * rho[i];
+      v[i]  = SUN_RCONST(3.1) * rho[i];
+      w[i]  = SUN_RCONST(3.0) * rho[i];
     }
-    else
-    {
-      rho[i] = rhoR;
-      et[i]  = udata.eos_inv(rhoR, uR, ZERO, ZERO, pR);
-      mx[i]  = rhoR * uR;
-    }
-    my[i] = ZERO;
-    mz[i] = ZERO;
-    u[i]  = ZERO * rho[i];  // initial reactant mass fractions are zero
-    v[i]  = ZERO * rho[i];
-    w[i]  = ZERO * rho[i];
   }
-
+  else if (udata.initial_condition == "Brusselator")
+  {
+    for (long int i = 0; i < udata.nx; i++)
+    {
+      rho[i] = ONE;
+      mx[i] = ZERO;
+      my[i] = ZERO;
+      mz[i] = ZERO;
+      et[i]  = udata.eos_inv(ONE, ZERO, ZERO, ZERO, ONE);
+      u[i]  = SUN_RCONST(1.2) * rho[i];
+      v[i]  = SUN_RCONST(3.1) * rho[i];
+      w[i]  = SUN_RCONST(3.0) * rho[i];
+    }
+  }
+  else if (udata.initial_condition == "bubble_Brusselator")
+  {
+    for (long int i = 0; i < udata.nx; i++)
+    {
+      sunrealtype xloc = ((sunrealtype)i + HALF) * udata.dx + udata.xl;
+      rho[i] = ONE + 0.5 * exp(-100.0 * (xloc - HALF) * (xloc - HALF));
+      const sunrealtype ux = ONE;
+      et[i]  = udata.eos_inv(rho[i], ux, ZERO, ZERO, ONE);
+      mx[i]  = ux * rho[i];
+      my[i]  = ZERO;
+      mz[i]  = ZERO;
+      u[i]   = SUN_RCONST(1.2) * rho[i];
+      v[i]   = SUN_RCONST(3.1) * rho[i];
+      w[i]   = SUN_RCONST(3.0) * rho[i];
+    }
+  }
+  else
+  {
+    fprintf(stderr, "Error: unrecognized initial condition '%s'\n",
+            udata.initial_condition.c_str());
+    return -1;
+  }
   return 0;
 }
 

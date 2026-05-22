@@ -79,6 +79,9 @@ public:
   // Step size selection (ZERO = adaptive steps)
   sunrealtype fixed_h;
 
+  // Initial step size selection (ZERO = ARKODE default)
+  sunrealtype h0;
+
   // Maximum number of time steps between outputs
   int maxsteps;
 
@@ -94,6 +97,7 @@ public:
       rtol(SUN_RCONST(1.e-6)),
       atol(SUN_RCONST(1.e-11)),
       fixed_h(ZERO),
+      h0(1e-4),
       maxsteps(10000),
       output(1),
       nout(10){};
@@ -117,6 +121,10 @@ public:
   sunrealtype dx; // spatial mesh spacing
 
   ///// problem-defining data /////
+  std::string initial_condition;   // initial condition type:
+                                   // "Brusselator" = spatially homogeneous initial condition, non-equilibrium chemistry
+                                   // "Sod_Brusselator" = shock tube initial condition, non-equilibrium chemistry
+                                   // "bubble_Brusselator" = reacting bubble initial condition, non-equilibrium chemistry
   sunrealtype gamma; // ratio of specific heat capacities, cp/cv
   sunrealtype a;     // reaction parameter
   sunrealtype b;     // reaction parameter
@@ -138,10 +146,11 @@ public:
   EulerData(SUNContext ctx)
     : nx(512),
       t0(ZERO),
-      tf(SUN_RCONST(0.1)),
+      tf(SUN_RCONST(0.25)),
       xl(ZERO),
       xr(ONE),
       dx(ZERO),
+      initial_condition("bubble_Brusselator"),
       gamma(SUN_RCONST(1.4)),
       a(SUN_RCONST(0.6)),
       b(SUN_RCONST(2.0)),
@@ -353,20 +362,25 @@ static void InputHelp()
 {
   std::cout << std::endl;
   std::cout << "Command line options:" << std::endl;
-  std::cout << "  --erk_table <str>  : ERK method (use NULL for fully implicit)\n";
-  std::cout << "  --dirk_table <str> : DIRK method (use NULL for fully explicit)\n";
-  std::cout << "  --tf <real>        : final time\n";
-  std::cout << "  --xl <real>        : domain lower boundary\n";
-  std::cout << "  --xr <real>        : domain upper boundary\n";
-  std::cout << "  --gamma <real>     : ideal gas constant\n";
-  std::cout << "  --nx <int>         : number of mesh points\n";
-  std::cout << "  --rtol <real>      : relative tolerance\n";
-  std::cout << "  --atol <real>      : absolute tolerance\n";
-  std::cout << "  --fixed_h <real>   : fixed step size\n";
-  std::cout << "  --maxsteps <int>   : max steps between outputs\n";
-  std::cout << "  --output <int>     : output level\n";
-  std::cout << "  --nout <int>       : number of outputs\n";
-  std::cout << "  --help             : print options and exit\n";
+  std::cout << "  --erk_table <str>         : ERK method (use NULL for fully implicit)\n";
+  std::cout << "  --dirk_table <str>        : DIRK method (use NULL for fully explicit)\n";
+  std::cout << "  --tf <real>               : final time\n";
+  std::cout << "  --xl <real>               : domain lower boundary\n";
+  std::cout << "  --xr <real>               : domain upper boundary\n";
+  std::cout << "  --initial_condition <str> : initial condition type\n";
+  std::cout << "                              \"Brusselator\" = spatially homogeneous initial condition, non-equilibrium chemistry\n";
+  std::cout << "                              \"Sod_Brusselator\" = shock tube initial condition, non-equilibrium chemistry\n";
+  std::cout << "                              \"bubble_Brusselator\" = reacting bubble initial condition, non-equilibrium chemistry\n";
+  std::cout << "  --gamma <real>            : ideal gas constant\n";
+  std::cout << "  --nx <int>                : number of mesh points\n";
+  std::cout << "  --rtol <real>             : relative tolerance\n";
+  std::cout << "  --atol <real>             : absolute tolerance\n";
+  std::cout << "  --fixed_h <real>          : fixed step size\n";
+  std::cout << "  --h0 <real>               : initial step size\n";
+  std::cout << "  --maxsteps <int>          : max steps between outputs\n";
+  std::cout << "  --output <int>            : output level\n";
+  std::cout << "  --nout <int>              : number of outputs\n";
+  std::cout << "  --help                    : print options and exit\n";
 }
 
 inline void find_arg(std::vector<std::string>& args, const std::string key,
@@ -440,6 +454,7 @@ static int ReadInputs(std::vector<std::string>& args, EulerData& udata,
   }
 
   // Problem parameters
+  find_arg(args, "--initial_condition", udata.initial_condition);
   find_arg(args, "--gamma", udata.gamma);
   find_arg(args, "--tf", udata.tf);
   find_arg(args, "--xl", udata.xl);
@@ -452,6 +467,7 @@ static int ReadInputs(std::vector<std::string>& args, EulerData& udata,
   find_arg(args, "--rtol", uopts.rtol);
   find_arg(args, "--atol", uopts.atol);
   find_arg(args, "--fixed_h", uopts.fixed_h);
+  find_arg(args, "--h0", uopts.h0);
   find_arg(args, "--maxsteps", uopts.maxsteps);
   find_arg(args, "--output", uopts.output);
   find_arg(args, "--nout", uopts.nout);
@@ -470,6 +486,8 @@ static int PrintSetup(EulerData& udata, ARKODEParameters& uopts)
   std::cout << std::endl;
   std::cout << "Problem parameters and options:" << std::endl;
   std::cout << " --------------------------------- " << std::endl;
+  std::cout << "  " << udata.initial_condition << " test setup" << std::endl;
+  std::cout << " --------------------------------- " << std::endl;
   std::cout << "  gamma      = " << udata.gamma << std::endl;
   std::cout << " --------------------------------- " << std::endl;
   std::cout << "  tf         = " << udata.tf << std::endl;
@@ -482,11 +500,21 @@ static int PrintSetup(EulerData& udata, ARKODEParameters& uopts)
   std::cout << "  dirk_table = " << uopts.dirk_table << std::endl;
   std::cout << "  rtol       = " << uopts.rtol << std::endl;
   std::cout << "  atol       = " << uopts.atol << std::endl;
-  std::cout << "  fixed h    = " << uopts.fixed_h << std::endl;
+  if (uopts.fixed_h > ZERO)
+    std::cout << "  fixed_h    = " << uopts.fixed_h << std::endl;
+  if (uopts.h0 > ZERO)
+    std::cout << "  h0         = " << uopts.h0 << std::endl;
   std::cout << " --------------------------------- " << std::endl;
   std::cout << "  output     = " << uopts.output << std::endl;
   std::cout << " --------------------------------- " << std::endl;
   std::cout << std::endl;
+
+  if (udata.initial_condition == "Brusselator" && udata.tf < 10.0)
+    std::cout << "WARNING: Brusselator test case is best run with tf >= 10.0" << std::endl;
+  if (udata.initial_condition == "Sod_Brusselator" && udata.tf > 0.25)
+    std::cout << "WARNING: Sod_Brusselator test case should be run with tf <= 0.25" << std::endl;
+  if (udata.initial_condition == "bubble_Brusselator" && udata.tf > 0.5)
+    std::cout << "WARNING: bubble_Brusselator test case should be run with tf <= 0.5" << std::endl;
 
   return 0;
 }
@@ -503,14 +531,12 @@ static int OpenOutput(EulerData& udata, ARKODEParameters& uopts)
               << "   nst   "
               << " ||rho||     "
               << " ||mx||      "
-              << " ||my||      "
-              << " ||mz||      "
               << " ||et||      "
               << " ||u||       "
               << " ||v||       "
               << " ||w||" << std::endl;
     std::cout
-      << " -----------------------------------------------------------------"
+      << " ---------------------------------------"
          "-------------------------------------------------------"
       << std::endl;
   }
@@ -554,17 +580,14 @@ static int WriteOutput(sunrealtype t, N_Vector y, long int nst_cur,
     N_Vector w         = N_VGetSubvector_ManyVector(y, 7);
     sunrealtype rhorms = sqrt(N_VDotProd(rho, rho) / (sunrealtype)eudata.nx);
     sunrealtype mxrms  = sqrt(N_VDotProd(mx, mx) / (sunrealtype)eudata.nx);
-    sunrealtype myrms  = sqrt(N_VDotProd(my, my) / (sunrealtype)eudata.nx);
-    sunrealtype mzrms  = sqrt(N_VDotProd(mz, mz) / (sunrealtype)eudata.nx);
     sunrealtype etrms  = sqrt(N_VDotProd(et, et) / (sunrealtype)eudata.nx);
     sunrealtype urms   = sqrt(N_VDotProd(u, u) / (sunrealtype)eudata.nx);
     sunrealtype vrms   = sqrt(N_VDotProd(v, v) / (sunrealtype)eudata.nx);
     sunrealtype wrms   = sqrt(N_VDotProd(w, w) / (sunrealtype)eudata.nx);
     std::cout << std::setprecision(2) << "  " << t << "  "
               << std::setw(4) << nst_cur << std::setprecision(5)
-              << "  " << rhorms << "  " << mxrms << "  " << myrms
-              << "  " << mzrms << "  " << etrms << "  " << urms
-              << "  " << vrms << "  " << wrms << std::endl;
+              << "  " << rhorms << "  " << mxrms << "  " << etrms
+              << "  " << urms << "  " << vrms << "  " << wrms << std::endl;
 
     // Write solution to disk
     if (uopts.output >= 2)
@@ -612,7 +635,7 @@ static int CloseOutput(ARKODEParameters& uopts)
   if (uopts.output)
   {
     std::cout
-      << " -----------------------------------------------------------------"
+      << " ---------------------------------------"
          "-------------------------------------------------------"
       << std::endl;
     std::cout << std::endl;
