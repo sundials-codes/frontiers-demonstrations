@@ -113,8 +113,8 @@ public:
   //                    explicit methods (ARKODE_SSP_ERK_2_1_2, ARKODE_SSP_ERK_3_1_2,
   //                                      ARKODE_SSP_LSPUM_ERK_3_1_2, ARKODE_SSP_ERK_4_2_3)
 
-   std::string IMintegrator;
-   std::string EXintegrator;
+   std::string dirk_table;
+   std::string erk_table;
  
    // Relative and absolute tolerances
    sunrealtype rtol;
@@ -137,10 +137,10 @@ public:
  
    // constructor (with default values)
    ARKODEParameters()
-    : IMintegrator("ARKODE_SSP_SDIRK_2_1_2"),
-      EXintegrator("ARKODE_SSP_ERK_2_1_2"),
+    : erk_table("ARKODE_SSP_ERK_3_1_2"), 
+      dirk_table("ARKODE_SSP_DIRK_3_1_2"),
       rtol(SUN_RCONST(1.e-4)),
-      atol(SUN_RCONST(1.e-10)),
+      atol(SUN_RCONST(1.e-14)),
       fixed_h(ZERO),
       maxsteps(10000),
       output(1),
@@ -213,7 +213,7 @@ int main(int argc, char* argv[])
   /* Call ARKStepCreate to initialize the ARK timestepper module and
      specify the right-hand side function in y'=f(t,y), the initial time
      T0, and the initial dependent variable vector y. */
-  void* arkode_mem = ARKStepCreate(fe, fi, uopts.T0, y, ctx);
+  void* arkode_mem = ARKStepCreate(nullptr, fi, uopts.T0, y, ctx);
   if (check_flag((void*)arkode_mem, "ARKStepCreate", 0)) { return 1; }
 
   /* Set routines */
@@ -229,12 +229,12 @@ int main(int argc, char* argv[])
 
   /*Keep original butcher tableau or swap b-vectors of method and its embedding*/
   if (udata.swap_type == "nonswap"){
-    flag = ARKStepSetTableName(arkode_mem, uopts.IMintegrator.c_str(), uopts.EXintegrator.c_str()); 
+    flag = ARKStepSetTableName(arkode_mem, uopts.dirk_table.c_str(), "ARKODE_ERK_NONE"); 
     if (check_flag(&flag, "ARKStepSetTableName", 1)) { return 1; } 
   }
   else if (udata.swap_type == "swap") {
-    ARKodeButcherTable Be = ARKodeButcherTable_LoadERKByName(uopts.EXintegrator.c_str());
-    ARKodeButcherTable Bi = ARKodeButcherTable_LoadDIRKByName(uopts.IMintegrator.c_str());
+    ARKodeButcherTable Be = ARKodeButcherTable_LoadERKByName(uopts.erk_table.c_str());
+    ARKodeButcherTable Bi = ARKodeButcherTable_LoadDIRKByName(uopts.dirk_table.c_str());
 
     int s = Bi->stages;
     sunrealtype* A_new = (sunrealtype*) malloc(s * s * sizeof(sunrealtype));
@@ -341,7 +341,7 @@ int main(int argc, char* argv[])
   fprintf(UFID, "Number of Time Steps Taken: %ld \n", nsteps);
 
   /* Print the maximum internal step size */
-  printf(" Largest avg internal time step size = %.2" GSYM "\n", (sumIntStep/nsteps));
+  // printf(" Largest avg internal time step size = %.2" GSYM "\n", (sumIntStep/nsteps));
 
   printf(" ---------------------------------\n \n");
   fclose(UFID);
@@ -391,18 +391,13 @@ static int fi(sunrealtype t, N_Vector y, N_Vector ydot, void* user_data)
   sunrealtype* vdot = Ydot + N;
 
   // left boundary
-  sunrealtype pi = 3.1415926535;
-  // sunrealtype g1      = exp(-8000.0 * (t - 0.3) * (t - 0.3));
-  // sunrealtype g2      = exp(-8000.0 * (t - 0.7) * (t - 0.7));
-  // sunrealtype gamma1t = 1.0 + 0.5 * sin(60.0 * pi * t) * (g1 + g2);
-  sunrealtype g1      = exp(-25000.0 * (t - 0.2) * (t - 0.2));
-  sunrealtype g2      = exp(-25000.0 * (t - 0.5) * (t - 0.5));
-  sunrealtype g3      = exp(-25000.0 * (t - 0.8) * (t - 0.8));
-  sunrealtype gamma1t = 1.0 + 0.5 * sin(100.0 * pi * t) * (g1 + g2 + g3);
+  sunrealtype pi = 3.1415926535897932;
+  sunrealtype expo1 = exp(-1.0 * (t - 0.8) * (t - 0.8) / (2.0 * 0.02 * 0.02) );
+  sunrealtype gamma1t = 1.0 + expo1;
 
-  udot[0] = (-alpha1 * (-2.0 * gamma1t - 3.0 * u[0] + 6.0 * u[1] - 1.0 * u[2] ) / (6.0  * dx))
+  udot[0] = (-alpha1 * (-2.0 * gamma1t - 3.0 * u[0] + 6.0 * u[1] - 1.0 * u[2]) / (6.0 * dx))
             -k1*u[0] + k2*v[0] + s1;
-  udot[1] = (-alpha1 * (1.0  * gamma1t - 8.0 * u[0] + 8.0 * u[2] - 1.0 * u[3] ) / (12.0 * dx))
+  udot[1] = (-alpha1 * ( 1.0 * gamma1t - 8.0 * u[0] + 8.0 * u[2] - 1.0 *u[3]) / (12.0 * dx))
             -k1*u[1] + k2*v[1] + s1;
 
   //interior points
@@ -585,8 +580,8 @@ static int ReadInputs(std::vector<std::string>& args, UserData& udata,
 
 
 // Integrator options
- find_arg(args, "--IMintegrator", uopts.IMintegrator);
- find_arg(args, "--EXintegrator", uopts.EXintegrator);
+ find_arg(args, "--dirk_table", uopts.dirk_table);
+ find_arg(args, "--erk_table", uopts.erk_table);
  find_arg(args, "--rtol", uopts.rtol);
  find_arg(args, "--atol", uopts.atol);
  find_arg(args,  "--fixed_h", uopts.fixed_h);
@@ -607,10 +602,10 @@ static void InputHelp()
  {
    std::cout << std::endl;
    std::cout << "Command line options:" << std::endl;
-   std::cout << "  --IMintegrator <str> : method (ARKODE_SSP_SDIRK_2_1_2, "
+   std::cout << "  --dirk_table <str> : method (ARKODE_SSP_SDIRK_2_1_2, "
                 "ARKODE_SSP_DIRK_3_1_2, " 
                 "ARKODE_SSP_LSPUM_SDIRK_3_1_2, or ARKODE_SSP_ESDIRK_4_2_3)\n";
-   std::cout << "  --EXintegrator <str> : method (ARKODE_SSP_ERK_2_1_2, "
+   std::cout << "  --erk_table <str> : method (ARKODE_SSP_ERK_2_1_2, "
                 "ARKODE_SSP_ERK_3_1_2, " 
                 "ARKODE_SSP_LSPUM_ERK_3_1_2, or ARKODE_SSP_ERK_4_2_3)\n";
    std::cout << "  --swap_type <str> : swap, nonswap  \n";
@@ -645,8 +640,8 @@ static int PrintSetup(UserData& udata, ARKODEParameters& uopts)
   std::cout << "  k1           = " << udata.k1 << std::endl;
   std::cout << "  k2           = " << udata.k2 << std::endl;
   std::cout << " --------------------------------- " << std::endl;
-  std::cout << "  IMintegrator = " << uopts.IMintegrator << std::endl;
-  std::cout << "  EXintegrator = " << uopts.EXintegrator << std::endl;
+  std::cout << "  dirk_table   = " << uopts.dirk_table << std::endl;
+  std::cout << "  erk_table    = " << uopts.erk_table << std::endl;
   std::cout << "  rtol         = " << uopts.rtol << std::endl;
   std::cout << "  atol         = " << uopts.atol << std::endl;
   std::cout << "  fixed h      = " << uopts.fixed_h << std::endl;

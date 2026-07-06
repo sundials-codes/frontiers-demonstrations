@@ -25,7 +25,7 @@ from math import log10, floor
 # utility routine to run a test, storing the run options and solver statistics
 # def refSoln(solver, modetype, runV, kstiff, ksN, knonstiff, showcommand=True):
 # def refSoln(solver, runV, kstiff, ksN, knonstiff, showcommand=True):
-def refSoln(solver, runV, k1Val, k1Valname, showcommand=True):
+def refSoln(solver, runV, k1Val, showcommand=True):
     """
     This function generates the reference solution needed to compute the
     error for the population density model.
@@ -52,7 +52,7 @@ def refSoln(solver, runV, k1Val, k1Valname, showcommand=True):
     else:
         if (showcommand):
             print(f"Running reference solution : " + runcommand + " SUCCESS")
-            new_fileName = f"refSoln_linear_adv_rec_{k1Valname}.txt"
+            new_fileName = f"refSoln_linear_adv_rec.txt"
 
             ## rename plot file
             if os.path.exists("linear_adv_rec.txt"):
@@ -66,17 +66,16 @@ def refSoln(solver, runV, k1Val, k1Valname, showcommand=True):
 
 
 # method to generate reference solution
-SSP423 = "./linear_adv_rec_refSol   --IMintegrator ARKODE_ARK548L2SA_DIRK_8_4_5      --EXintegrator ARKODE_ARK548L2SA_ERK_8_4_5"     
+ARK845 = "./linear_adv_rec_refSol   --dirk_table ARKODE_ARK548L2SA_DIRK_8_4_5   --erk_table ARKODE_ARK548L2SA_ERK_8_4_5"     
 
 adaptive_params = [1e-14] #relative tolerance for reference solution
-k1values = {'k1Val1': 1.0, 'k1Val1e6': 1e6}#, 'k1Val1e8': 1e8}
+k1values = {1e6}
 
 ## Integrator types
-solvertype = [{'name': 'SSP-ARK-4-2-3', 'exe': SSP423}]
+solvertype = [{'name': 'ARK-8-4-5', 'exe': ARK845}]
 
 # run function to generate reference solution
 for runvalue in adaptive_params:
-    # for k1_val, k2_val in zip(k1values, k2values):
-    for k1_valName, k1_val in k1values.items():
+    for k1_val in k1values:
         for solver_adapt in solvertype:
-            adaptive_stat= refSoln(solver_adapt, runvalue, k1_val, k1_valName, showcommand=True)
+            adaptive_stat= refSoln(solver_adapt, runvalue, k1_val, showcommand=True)

@@ -39,8 +39,8 @@ def runtest(solver, modetype, runV, kVal, kName, showcommand=True, sspcommand=Tr
     """
     stats = {'Runtype': modetype,'ReturnCode': 0, 'IMEX_method': solver['name'], 'diff_coef': kVal, 
              'runVal': runV, 'Steps': 0, 'StepAttempts': 0, 'ErrTestFails': 0, 'Explicit_RHS': 0, 
-             'Implicit_RHS': 0, 'Implicit_solves':0, 'maxIntStep': 0.0,  'Negative_model': 0, 
-             'lmax_1dev': 0.0, 'error': 0.0, 'runtime':0.0, 'avg_dt':0.0,'sspCondition': " "}
+             'Implicit_RHS': 0, 'Implicit_solves':0,  'Negative_model': 0, 
+             'lmax_1dev': 0.0, 'error': 0.0, 'runtime':0.0, 'avg_dt':0.0, 'sspCondition': " "}
 
     if (modetype == "adaptive"):
         runcommand = " %s  --rtol %e --k %.2f" % (solver['exe'], runV, kVal)
@@ -78,7 +78,7 @@ def runtest(solver, modetype, runV, kVal, kName, showcommand=True, sspcommand=Tr
         stats['Implicit_RHS']     = 0   
         stats['runtime']          = 0     # runtime should be 0 is test failed
         stats['Implicit_solves']  = 0 
-        stats['maxIntStep']       = 0
+        # stats['maxIntStep']       = 0
         stats['avg_dt']           = 0
         # stats['Negative_model']   = 0 
 
@@ -98,8 +98,8 @@ def runtest(solver, modetype, runV, kVal, kName, showcommand=True, sspcommand=Tr
                 stats['Explicit_RHS'] = int(txt[5])       #right hand side evaluations for explicit method
             elif (("Implicit" in txt) and ("RHS" in txt)):
                 stats['Implicit_RHS'] = int(txt[5])       #right hand side evaluations for implicit method
-            elif (("Largest" in txt) and ("average" in txt) and ("step" in txt) and ("size" in txt)):
-                stats['maxIntStep'] = float(txt[7])         #last internal step size used in adaptive run
+            # elif (("Largest" in txt) and ("average" in txt) and ("step" in txt) and ("size" in txt)):
+                # stats['maxIntStep'] = float(txt[7])         #last internal step size used in adaptive run
         sum_negLines = 0
         for line in stdout_lines:
             txt = line.split()

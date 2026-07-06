@@ -93,62 +93,52 @@ with open(datafile, "r") as file:
     for i in range(len(fullSol[nsteps-1, :])):
         fullSol_lastStep[i] = fullSol[nsteps-1, i]
    
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 5))
-    # ax1.plot(x, uSol[0, :], color = 'r', linestyle = '--', label = "initial solution")
-    ax1.plot(x, uSol[-1, :], color = 'b', linestyle = '-', label = "final solution")
-    ax1.set_yticks([0.0, 0.5, 1.0, 1.5, 2.0])
-    ax1.set_title("u-component")
-    ax1.grid(True)
+    # fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 5))
+    # # ax1.plot(x, uSol[0, :], color = 'r', linestyle = '--', label = "initial solution")
+    # ax1.plot(x, uSol[-1, :], color = 'b', linestyle = '-', label = "final solution")
+    # ax1.set_yticks([0.0, 0.5, 1.0, 1.5, 2.0])
+    # ax1.set_title("u-component")
+    # ax1.grid(True)
 
-    # ax2.plot(x, vSol[0, :], color = 'r', linestyle = '--', label = "initial solution")
-    ax2.plot(x, vSol[-1, :], color = 'b', linestyle = '-', label = "final solution")
-    ax2.set_yticks([0.0, 0.5, 1.0, 1.5, 2.0])
-    ax2.set_title("v-component")
-    ax2.grid(True)
+    # # ax2.plot(x, vSol[0, :], color = 'r', linestyle = '--', label = "initial solution")
+    # ax2.plot(x, vSol[-1, :], color = 'b', linestyle = '-', label = "final solution")
+    # ax2.set_yticks([0.0, 0.5, 1.0, 1.5, 2.0])
+    # ax2.set_title("v-component")
+    # ax2.grid(True)
 
-    ## plot defaults: increase default font size, increase plot width, enable LaTeX rendering
-    # plt.rc("font", size=15)
-    # plt.rcParams["figure.figsize"] = [7.2, 4.8]
-    # plt.rcParams["text.usetex"] = True
-    # plt.rcParams["figure.constrained_layout.use"] = True
+    # plot defaults: increase default font size, increase plot width, enable LaTeX rendering
+    plt.rc("font", size=15)
+    plt.rcParams["figure.figsize"] = [7.2, 4.8]
+    plt.rcParams["text.usetex"] = True
+    plt.rcParams["figure.constrained_layout.use"] = True
 
-    # ## subplots with time snapshots of the density, x-velocity, and pressure
-    # fig = plt.figure(figsize=(10, 5))
-    # gs = GridSpec(1, 3, figure=fig)
-    # ax00 = fig.add_subplot(gs[0, 0])  # left column
-    # ax01 = fig.add_subplot(gs[0, 1])  # middle column
-    # ax02 = fig.add_subplot(gs[0, 2])  # right column
-    # it = 0
-    # tval = repr(float(t[it])).zfill(3)
-    # ax00.plot(x, uSol[it, :], "-b",)
-    # ax00.set_title(r"$t =$ " + tval)
-    # ax00.set_ylabel(r"$u(t,x)$")
-    # ax00.set_xlabel(r"$x$")
-    # # ax00.set_xticks([0.0, 0.2, 0.4, 0.6, 0.8, 1.0])
+    ## subplots with time snapshots of the density, x-velocity, and pressure
+    fig = plt.figure(figsize=(10, 5))
+    gs = GridSpec(1, 3, figure=fig)
+    ax00 = fig.add_subplot(gs[0, 0])  # left column
+    ax01 = fig.add_subplot(gs[0, 1])  # middle column
+    ax02 = fig.add_subplot(gs[0, 2])  # right column
+    it = 0
+    tval = repr(float(t[it])).zfill(3)
+    ax00.plot(x, uSol[it, :], "-b",)
+    ax00.set_title(r"$t =$ " + tval)
+    ax00.set_ylabel(r"$u(t,x)$")
+    ax00.set_xlabel(r"$x$")
 
-    # middleval = int(np.ceil(nsteps/2))
-    # it = middleval
-    # tval = repr(float(t[it])).zfill(3)
-    # ax01.plot(x, uSol[it, :], "-b")
-    # ax01.set_title(r"$t =$ " + tval)
-    # ax01.set_xlabel(r"$x$")
-    # # ax01.set_xticks([0.0, 0.2, 0.4, 0.6, 0.8, 1.0])
+    middleval = int(np.ceil(nsteps/2))
+    it = middleval
+    tval = repr(float(t[it])).zfill(3)
+    ax01.plot(x, uSol[it, :], "-b")
+    ax01.set_title(r"$t =$ " + tval)
+    ax01.set_xlabel(r"$x$")
     
-    # it = -1
-    # tval = repr(float(t[it])).zfill(3)
-    # ax02.plot(x, uSol[it, :], "-b")
-    # ax02.set_title(r"$t =$ " + tval)
-    # ax02.set_xlabel(r"$x$")
-    # # ax02.set_xticks([0.0, 0.2, 0.4, 0.6, 0.8, 1.0])
-    # # plt.savefig("linear_adv_rec_frames.png")
-
-    # # plt.rc("font", size=15)
-    # # plt.rcParams["figure.figsize"] = [7.2, 4.8]
-    # # plt.rcParams["text.usetex"] = True
-    # # # plt.rcParams["figure.constrained_layout.use"] = True
-
-    plt.legend()
-    # plt.show()
+    it = -1
+    tval = repr(float(t[it])).zfill(3)
+    ax02.plot(x, uSol[it, :], "-b")
+    ax02.set_title(r"$t =$ " + tval)
+    ax02.set_xlabel(r"$x$")
+    ax02.set_xticks([0.0, 0.2, 0.4, 0.6, 0.8, 1.0])
+    plt.savefig("linear_adv_rec_frames.png")
     plt.close()
 
 
@@ -200,55 +190,15 @@ def read_ref_solution(filename):
     return uSolRefFinal, vSolRefFinal, uvSolRefFinal
 
 ## -------------------- Compute L-infinty norm using the reference solution -----------------------
-k1Val1 = False #only one type of stiffness parameter option can be true at a time (keep as only "1" space before and after =)
-k1Val1e6 = True
-# k1Val1e8 = False
-
-AdaptiveRun = True #only one type of run can be true at a time (keep as only "1" space before and after =)
-FixedRun = False
-
-# l-infinity error
 elmaxu = 0.0 
 elmaxv = 0.0 
 elmaxuv = 0.0 
-if (FixedRun):
-    if(k1Val1):
-        fixed_k1Val1_uSol_ref, fixed_k1Val1_vSol_ref, fixed_k1Val1_uvSol_ref = read_ref_solution("refSoln_linear_adv_rec_k1Val1.txt")
-        elmaxu = np.max(np.abs(fixed_k1Val1_uSol_ref - uSol_lastStep))
-        elmaxv = np.max(np.abs(fixed_k1Val1_vSol_ref - vSol_lastStep))
-        elmaxuv = np.max(np.abs(fixed_k1Val1_uvSol_ref - fullSol_lastStep))
+  
+uSol_ref, vSol_ref, uvSol_ref = read_ref_solution("refSoln_linear_adv_rec.txt")
+elmaxu = np.max(np.abs(uSol_ref - uSol_lastStep))
+elmaxv = np.max(np.abs(vSol_ref - vSol_lastStep))
+elmaxuv = np.max(np.abs(uvSol_ref - fullSol_lastStep))
 
-    elif(k1Val1e6):
-        fixed_k1Val1e6_uSol_ref, fixed_k1Val1e6_vSol_ref, fixed_k1Val1e6_uvSol_ref = read_ref_solution("refSoln_linear_adv_rec_k1Val1e6.txt")
-        elmaxu = np.max(np.abs(fixed_k1Val1e6_uSol_ref - uSol_lastStep))
-        elmaxv = np.max(np.abs(fixed_k1Val1e6_vSol_ref - vSol_lastStep))
-        elmaxuv = np.max(np.abs(fixed_k1Val1e6_uvSol_ref - fullSol_lastStep))
-
-    # elif(k1Val1e8):
-    #     fixed_k1Val1e8_uSol_ref, fixed_k1Val1e8_vSol_ref = read_ref_solution("refSoln_linear_adv_rec_k1Val1e8.txt")
-    #     elmax = np.max(np.abs(fixed_k1Val1e8_vSol_ref - vSol_lastStep))
-
-elif (AdaptiveRun):
-    if (k1Val1): 
-        adaptive_k1Val1_uSol_ref, adaptive_k1Val1_vSol_ref, adaptive_k1Val1_uvSol_ref = read_ref_solution("refSoln_linear_adv_rec_k1Val1.txt")
-        elmaxu = np.max(np.abs(adaptive_k1Val1_uSol_ref - uSol_lastStep))
-        elmaxv = np.max(np.abs(adaptive_k1Val1_vSol_ref - vSol_lastStep))
-        elmaxuv = np.max(np.abs(adaptive_k1Val1_uvSol_ref - fullSol_lastStep))
-
-    elif (k1Val1e6): 
-        adaptive_k1Val1e6_uSol_ref, adaptive_k1Val1e6_vSol_ref, adaptive_k1Val1e6_uvSol_ref = read_ref_solution("refSoln_linear_adv_rec_k1Val1e6.txt")
-        # print("level %d", len(adaptive_k1Val1e6_vSol_ref))
-        # plt.plot(x, adaptive_k1Val1e6_vSol_ref)
-        # plt.plot(x, adaptive_k1Val1e6_uSol_ref)
-        # plt.show()
-        elmaxu = np.max(np.abs(adaptive_k1Val1e6_uSol_ref - uSol_lastStep))
-        elmaxv = np.max(np.abs(adaptive_k1Val1e6_vSol_ref - vSol_lastStep))
-        elmaxuv = np.max(np.abs(adaptive_k1Val1e6_uvSol_ref - fullSol_lastStep))
-
-    # elif (k1Val1e8): 
-    #     adaptive_k1Val1e8_uSol_ref, adaptive_k1Val1e8_vSol_ref = read_ref_solution("refSoln_linear_adv_rec_k1Val1e8.txt")
-    #     elmax = np.max(np.abs(adaptive_k1Val1e8_vSol_ref - vSol_lastStep))
-# end
 
 print("Lmax error using reference solution for u = %.4e" %elmaxu)
 print("Lmax error using reference solution for v = %.4e" %elmaxv)

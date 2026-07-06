@@ -12,8 +12,7 @@ set(source_ref
 set(extras
     runtests_population.py
     plot_population.py
-    runtests_population_refSol.py
-    plot_population_finalStepSoln.py)
+    runtests_population_refSol.py)
 
 #   set the target name
 set(target_main 

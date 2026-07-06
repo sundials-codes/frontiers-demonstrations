@@ -106,15 +106,13 @@ using namespace std;
 class ARKODEParameters
 {
 public:
-   // Integration method
-     // Integration methods: 
-  //                    implicit methods (ARKODE_SSP_SDIRK_2_1_2, ARKODE_SSP_DIRK_3_1_2,  
-  //                                      ARKODE_SSP_LSPUM_SDIRK_3_1_2, ARKODE_SSP_ESDIRK_4_2_3)
-  //                    explicit methods (ARKODE_SSP_ERK_2_1_2, ARKODE_SSP_ERK_3_1_2,
-  //                                      ARKODE_SSP_LSPUM_ERK_3_1_2, ARKODE_SSP_ERK_4_2_3)
+  // Integration methods: implicit methods (ARKODE_SSP_SDIRK_2_1_2, ARKODE_SSP_DIRK_3_1_2,  
+  //                                       ARKODE_SSP_LSPUM_SDIRK_3_1_2, ARKODE_SSP_ESDIRK_4_2_3)
+  //                       explicit methods (ARKODE_SSP_ERK_2_1_2, ARKODE_SSP_ERK_3_1_2,
+  //                                        ARKODE_SSP_LSPUM_ERK_3_1_2, ARKODE_SSP_ERK_4_2_3)
 
-   std::string IMintegrator;
-   std::string EXintegrator;
+   std::string dirk_table;
+   std::string erk_table;
  
    // Relative and absolute tolerances
    sunrealtype rtol;
@@ -137,10 +135,10 @@ public:
  
    // constructor (with default values)
    ARKODEParameters()
-    : IMintegrator("ARKODE_SSP_SDIRK_2_1_2"),
-      EXintegrator("ARKODE_SSP_ERK_2_1_2"),
+    : erk_table("ARKODE_SSP_ERK_3_1_2"),
+      dirk_table("ARKODE_SSP_DIRK_3_1_2"),
       rtol(SUN_RCONST(1.e-4)),
-      atol(SUN_RCONST(1.e-10)),
+      atol(SUN_RCONST(1.e-14)),
       fixed_h(ZERO),
       maxsteps(10000),
       output(1),
@@ -192,15 +190,8 @@ int main(int argc, char* argv[])
   N_Vector y = N_VNew_Serial(2*udata.N, ctx); /* Create serial vector for solution */
   if (check_flag((void*)y, "N_VNew_Serial", 0)) { return 1; }
 
-  // /* compute the true solution */
-  // tSol = N_VClone(y);
-  // flag = trueSol(0.0, tSol, &udata);
-  // if (check_flag(&flag, "trueSol", 1)) { return 1;}
-  
   /* Set initial conditions for u and v */
   sunrealtype* y_data = N_VGetArrayPointer(y);  
-  // y_data[0]           = 1.0 + udata.dx; //boundary on the left for u given that boundary condtion is u(0,t)=1 - (sin(12t))^4
-  // y_data[udata.N]     = (udata.k1/udata.k2)*y_data[0] + (1.0/udata.k2)*udata.s2; 
   for (int i = 0; i < udata.N; i++){
     sunrealtype xi = udata.xstart + (i+1) * udata.dx;
     sunrealtype u0 = 1.0 + (udata.s2) * xi;
@@ -229,12 +220,12 @@ int main(int argc, char* argv[])
 
   /*Keep original butcher tableau or swap b-vectors of method and its embedding*/
   if (udata.swap_type == "nonswap"){
-    flag = ARKStepSetTableName(arkode_mem, uopts.IMintegrator.c_str(), uopts.EXintegrator.c_str()); 
+    flag = ARKStepSetTableName(arkode_mem, uopts.dirk_table.c_str(), uopts.erk_table.c_str()); 
     if (check_flag(&flag, "ARKStepSetTableName", 1)) { return 1; } 
   }
   else if (udata.swap_type == "swap") {
-    ARKodeButcherTable Be = ARKodeButcherTable_LoadERKByName(uopts.EXintegrator.c_str());
-    ARKodeButcherTable Bi = ARKodeButcherTable_LoadDIRKByName(uopts.IMintegrator.c_str());
+    ARKodeButcherTable Be = ARKodeButcherTable_LoadERKByName(uopts.erk_table.c_str());
+    ARKodeButcherTable Bi = ARKodeButcherTable_LoadDIRKByName(uopts.dirk_table.c_str());
 
     int s = Bi->stages;
     sunrealtype* A_new = (sunrealtype*) malloc(s * s * sizeof(sunrealtype));
@@ -327,21 +318,12 @@ int main(int argc, char* argv[])
     fprintf(UFID, "\n \n");
   }
 
-  // /* find the L1 norm */
-  // sunrealtype sum_error = 0.0;
-  // for (int i = udata.N; i < 2*udata.N; i++)
-  // // for (int i = 0; i < 2*udata.N; i++)
-  // {
-  //   sum_error += SUNRabs(true_data[i]-data[i]);
-  // }
-  // printf(" L1-norm = %.16e\n", sum_error / udata.N);
-
   long int nsteps; //use the number of steps taken in the python plot
   ARKodeGetNumSteps(arkode_mem, &nsteps);
   fprintf(UFID, "Number of Time Steps Taken: %ld \n", nsteps);
 
   /* Print the maximum internal step size */
-  printf(" Largest avg internal time step size = %.2" GSYM "\n", (sumIntStep/nsteps));
+  // printf(" Largest avg internal time step size = %.2" GSYM "\n", (sumIntStep/nsteps));
 
   printf(" ---------------------------------\n \n");
   fclose(UFID);
@@ -387,21 +369,12 @@ static int fe(sunrealtype t, N_Vector y, N_Vector ydot, void* user_data)
   sunrealtype* vdot = Ydot + N;
 
   // left boundary
-  // sunrealtype pi = 3.1415926535;
-  // sunrealtype expo1      = exp(-8000.0 * (t - 0.3) * (t - 0.3));
-  // sunrealtype expo2      = exp(-8000.0 * (t - 0.7) * (t - 0.7));
-  // sunrealtype gamma1t = 1.0 + 0.5 * sin(60.0 * pi * t) *(expo1 + expo2);
+  // sunrealtype pi = 3.1415926535897932;
+  sunrealtype expo1 = exp(-1.0 * (t - 0.8) * (t - 0.8) / (2.0 * 0.02 * 0.02) );
+  sunrealtype gamma1t = 1.0 + expo1;
 
-  sunrealtype gamma1t = 1.0; 
-  sunrealtype spike = 100.0 * exp(-8000.0 * (t - 0.5) * (t - 0.5));
-  udot[0] = -alpha1 * (-2.0 * gamma1t - 3.0 * u[0] + 6.0 * u[1] - 1.0 * u[2]) / (6.0 * dx) + spike;
-  udot[1] = -alpha1 * (gamma1t - 8.0 * u[0] + 8.0 * u[2] - u[3]) / (12.0 * dx) + spike;
-
-  // udot[0] = -alpha1 * (-11.0 * gamma1t + 18.0 * u[0] - 9.0  * u[1] + 2.0 * u[2]       ) / (6.0  * dx);
-  // udot[1] = -alpha1 * (-3.0  * gamma1t - 10.0 * u[0] + 18.0 * u[1] - 6.0 * u[2] + u[3]) / (12.0 * dx);
-
-  // udot[0] = -alpha1 * (-2.0 * gamma1t - 3.0 * u[0] + 6.0 * u[1] - 1.0 * u[2] ) / (6.0  * dx);
-  // udot[1] = -alpha1 * (1.0  * gamma1t - 8.0 * u[0] + 8.0 * u[2] - 1.0 * u[3] ) / (12.0 * dx);
+  udot[0] = -alpha1 * (-2.0 * gamma1t - 3.0 * u[0] + 6.0 * u[1] - 1.0 * u[2]) / (6.0 * dx);
+  udot[1] = -alpha1 * ( 1.0 * gamma1t - 8.0 * u[0] + 8.0 * u[2] - 1.0 * u[3]) / (12.0 * dx);
 
   //interior points
   for (int i = 2; i < N-2; i++){
@@ -438,52 +411,14 @@ static int fi(sunrealtype t, N_Vector y, N_Vector ydot, void* user_data)
   sunrealtype* udot = Ydot;
   sunrealtype* vdot = Ydot + N;
 
-  //boundary conditions
-  // sunrealtype pi = 3.1415926535;
-  // sunrealtype expo1 = -100.0 * (t - 0.5) * (t - 0.5);
-  // u[0]    = 1.0 + 0.2 * sin(10.0 * t + 200.0 * t * exp(expo1));
-
   //interior points
   for (int i = 0; i < N; i++){
     udot[i] = -k1*u[i] + k2*v[i] + s1;
     vdot[i] =  k1*u[i] - k2*v[i] + s2; 
   }
 
-  // for (int i = 0; i < N; i++){
-  //   vdot[i] =  k1*u[i] - k2*v[i] + s2; 
-  // }
-
   return 0; /* Return with success */
 }
-
-/* function to return the exact solution*/
-// static int trueSol(sunrealtype t, N_Vector tSol, void* user_data)
-// {
-//   UserData* udata = (UserData*)user_data; /* access problem data */
-//   sunrealtype *TSol = NULL;
-//   TSol = N_VGetArrayPointer(tSol);
-//   if (check_flag((void*)TSol, "N_VGetArrayPointer", 0)) { return 1; }
-//   N_VConst(0.0, tSol); /* Initialize tSol to zero */
-
-//   /* set parameters */
-//   const sunindextype N  = udata->N;
-//   const sunrealtype dx  = udata->dx;
-//   const sunrealtype k1  = udata->k1;
-//   const sunrealtype k2  = udata->k2;
-//   const sunrealtype s1  = udata->s1;
-//   const sunrealtype s2  = udata->s2;
-
-//   sunrealtype* uSol = TSol;
-//   sunrealtype* vSol = TSol + N;
-
-//   for (int i = 0; i < N; i++)
-//   {
-//     uSol[i] = i * dx + 1.0;
-//     vSol[i] = (k1 * (i * dx + 1.0) + 1.0)/k2; //2k1 = k2
-//   }
-
-//   return 0;
-// }
 
 
 inline void find_arg(std::vector<std::string>& args, const std::string key,
@@ -579,8 +514,8 @@ static int ReadInputs(std::vector<std::string>& args, UserData& udata,
 
 
 // Integrator options
- find_arg(args, "--IMintegrator", uopts.IMintegrator);
- find_arg(args, "--EXintegrator", uopts.EXintegrator);
+ find_arg(args, "--dirk_table", uopts.dirk_table);
+ find_arg(args, "--erk_table", uopts.erk_table);
  find_arg(args, "--rtol", uopts.rtol);
  find_arg(args, "--atol", uopts.atol);
  find_arg(args,  "--fixed_h", uopts.fixed_h);
@@ -601,10 +536,10 @@ static void InputHelp()
  {
    std::cout << std::endl;
    std::cout << "Command line options:" << std::endl;
-   std::cout << "  --IMintegrator <str> : method (ARKODE_SSP_SDIRK_2_1_2, "
+   std::cout << "  --dirk_table <str> : method (ARKODE_SSP_SDIRK_2_1_2, "
                 "ARKODE_SSP_DIRK_3_1_2, " 
                 "ARKODE_SSP_LSPUM_SDIRK_3_1_2, or ARKODE_SSP_ESDIRK_4_2_3)\n";
-   std::cout << "  --EXintegrator <str> : method (ARKODE_SSP_ERK_2_1_2, "
+   std::cout << "  --erk_table <str> : method (ARKODE_SSP_ERK_2_1_2, "
                 "ARKODE_SSP_ERK_3_1_2, " 
                 "ARKODE_SSP_LSPUM_ERK_3_1_2, or ARKODE_SSP_ERK_4_2_3)\n";
    std::cout << "  --swap_type <str> : swap, nonswap  \n";
@@ -639,8 +574,8 @@ static int PrintSetup(UserData& udata, ARKODEParameters& uopts)
   std::cout << "  k1           = " << udata.k1 << std::endl;
   std::cout << "  k2           = " << udata.k2 << std::endl;
   std::cout << " --------------------------------- " << std::endl;
-  std::cout << "  IMintegrator = " << uopts.IMintegrator << std::endl;
-  std::cout << "  EXintegrator = " << uopts.EXintegrator << std::endl;
+  std::cout << "  dirk_table   = " << uopts.dirk_table << std::endl;
+  std::cout << "  erk_table    = " << uopts.erk_table << std::endl;
   std::cout << "  rtol         = " << uopts.rtol << std::endl;
   std::cout << "  atol         = " << uopts.atol << std::endl;
   std::cout << "  fixed h      = " << uopts.fixed_h << std::endl;
