@@ -59,16 +59,15 @@ def refSoln(solver, runV, kval, kname, showcommand=True):
 
 
 # method to generate reference solution
-SSP423 = "./population_refSoln  --IMintegrator ARKODE_ARK436L2SA_DIRK_6_3_4      --EXintegrator ARKODE_ARK436L2SA_ERK_6_3_4"     
+ARK634 = "./population_refSoln  --IMintegrator ARKODE_ARK436L2SA_DIRK_6_3_4      --EXintegrator ARKODE_ARK436L2SA_ERK_6_3_4"     
 
-adaptive_params = [1e-16] ## relative tolerance for reference solution
+adaptive_params = [1e-14] ## relative tolerance for reference solution
 
 ## Diffusion coefficients
 diff_coef = {'diffk0':0.0, 'diffk02':0.02, 'diffk04':0.04}
-# diff_coef = {'diffk02':0.02, 'diffk04':0.04}
 
 ## Integrator types
-solvertype = [{'name': 'SSP-ARK-4-2-3', 'exe': SSP423}]
+solvertype = [{'name': 'ARK-6-3-4', 'exe': ARK634}]
 
 # run function to generate reference solution
 for k_name, k_val in diff_coef.items():

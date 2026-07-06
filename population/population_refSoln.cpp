@@ -103,8 +103,8 @@ class ARKODEParameters
 {
 public:
    // Integration method
-   std::string IMintegrator;
-   std::string EXintegrator;
+   std::string dirk_table;
+   std::string erk_table;
  
    // Relative and absolute tolerances
    sunrealtype rtol;
@@ -127,10 +127,10 @@ public:
  
    // constructor (with default values)
    ARKODEParameters()
-    : IMintegrator("ARKODE_SSP_SDIRK_2_1_2"),
-      EXintegrator("ARKODE_SSP_ERK_2_1_2"),
+    : dirk_table("ARKODE_SSP_DIRK_3_1_2"),
+      erk_table("ARKODE_SSP_ERK_3_1_2"),
       rtol(SUN_RCONST(1.e-4)),
-      atol(SUN_RCONST(1.e-10)),
+      atol(SUN_RCONST(1.e-14)),
       fixed_h(ZERO),
       maxsteps(10000),
       output(1),
@@ -197,12 +197,12 @@ int main(int argc, char* argv[])
 
   /*Keep original butcher tableau or swap b-vectors of method and its embedding*/
   if (udata.swap_type == "nonswap"){
-    flag = ARKStepSetTableName(arkode_mem, uopts.IMintegrator.c_str(), uopts.EXintegrator.c_str()); 
+    flag = ARKStepSetTableName(arkode_mem, uopts.dirk_table.c_str(), uopts.erk_table.c_str()); 
     if (check_flag(&flag, "ARKStepSetTableName", 1)) { return 1; } 
   }
   else if (udata.swap_type == "swap") {
-    ARKodeButcherTable Be = ARKodeButcherTable_LoadERKByName(uopts.EXintegrator.c_str());
-    ARKodeButcherTable Bi = ARKodeButcherTable_LoadDIRKByName(uopts.IMintegrator.c_str());
+    ARKodeButcherTable Be = ARKodeButcherTable_LoadERKByName(uopts.erk_table.c_str());
+    ARKodeButcherTable Bi = ARKodeButcherTable_LoadDIRKByName(uopts.dirk_table.c_str());
 
     int s = Bi->stages;
     sunrealtype* A_new = (sunrealtype*) malloc(s * s * sizeof(sunrealtype));
@@ -287,7 +287,7 @@ int main(int argc, char* argv[])
     }
     flag = ARKodeGetCurrentStep(arkode_mem, &hcur);
     if (check_flag(&flag, "ARKodeGetCurrentStep", 1)) {return 1; }
-    sumIntStep = sumIntStep + hcur;
+    // sumIntStep = sumIntStep + hcur;
     // printf(" internal time step size (hmax): %.14" ESYM "\n", hcur);
 
     float minVal = ydata[0];
@@ -314,7 +314,7 @@ int main(int argc, char* argv[])
   fprintf(UFID, "Number of Time Steps Taken: %ld \n", nsteps);
 
   /* Print the maximum internal step size */
-  printf("Largest average internal time step size = %.2" GSYM "\n", (sumIntStep/nsteps));
+  // printf("Largest average internal time step size = %.2" GSYM "\n", (sumIntStep/nsteps));
 
   printf("   -------------------------\n \n");
   fclose(UFID);
@@ -520,8 +520,8 @@ static int ReadInputs(std::vector<std::string>& args, UserData& udata,
 
 
 // Integrator options
- find_arg(args, "--IMintegrator", uopts.IMintegrator);
- find_arg(args, "--EXintegrator", uopts.EXintegrator);
+ find_arg(args, "--dirk_table", uopts.dirk_table);
+ find_arg(args, "--erk_table", uopts.erk_table);
  find_arg(args, "--rtol", uopts.rtol);
  find_arg(args, "--atol", uopts.atol);
  find_arg(args,  "--fixed_h", uopts.fixed_h);
@@ -542,10 +542,10 @@ static void InputHelp()
  {
    std::cout << std::endl;
    std::cout << "Command line options:" << std::endl;
-   std::cout << "  --IMintegrator <str> : method (ARKODE_SSP_SDIRK_2_1_2, "
+   std::cout << "  --dirk_table <str> : method (ARKODE_SSP_SDIRK_2_1_2, "
                 "ARKODE_SSP_DIRK_3_1_2, " 
                 "ARKODE_SSP_LSPUM_SDIRK_3_1_2, or ARKODE_SSP_ESDIRK_4_2_3)\n";
-   std::cout << "  --EXintegrator <str> : method (ARKODE_SSP_ERK_2_1_2, "
+   std::cout << "  --erk_table <str> : method (ARKODE_SSP_ERK_2_1_2, "
                 "ARKODE_SSP_ERK_3_1_2, " 
                 "ARKODE_SSP_LSPUM_ERK_3_1_2, or ARKODE_SSP_ERK_4_2_3)\n";
    std::cout << "  --swap_type <str> : swap, nonswap  \n";
@@ -578,8 +578,8 @@ static int PrintSetup(UserData& udata, ARKODEParameters& uopts)
   std::cout << "  xend         = " << udata.xend << std::endl;
   std::cout << "  swap_type    = " << udata.swap_type << std::endl;
   std::cout << " --------------------------------- " << std::endl;
-  std::cout << "  IMintegrator = " << uopts.IMintegrator << std::endl;
-  std::cout << "  EXintegrator = " << uopts.EXintegrator << std::endl;
+  std::cout << "  dirk_table = " << uopts.dirk_table << std::endl;
+  std::cout << "  erk_table = " << uopts.erk_table << std::endl;
   std::cout << "  rtol         = " << uopts.rtol << std::endl;
   std::cout << "  atol         = " << uopts.atol << std::endl;
   std::cout << "  fixed h      = " << uopts.fixed_h << std::endl;

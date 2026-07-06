@@ -33,13 +33,14 @@ def runtest(solver, modetype, runV, kVal, kName, showcommand=True, sspcommand=Tr
            modetype (string): adaptive or fixed time stepping
            runV:              rtol (adaptive) or fixed_h (fixed)
            kVal:              diffusion coefficient
+           kName:             diffusion coefficient name
 
     Output: returns the statistics
     """
     stats = {'Runtype': modetype,'ReturnCode': 0, 'IMEX_method': solver['name'], 'diff_coef': kVal, 
              'runVal': runV, 'Steps': 0, 'StepAttempts': 0, 'ErrTestFails': 0, 'Explicit_RHS': 0, 
              'Implicit_RHS': 0, 'Implicit_solves':0, 'maxIntStep': 0.0,  'Negative_model': 0, 
-             'lmax_1dev': 0.0, 'error': 0.0, 'runtime':0.0, 'sspCondition': " "}
+             'lmax_1dev': 0.0, 'error': 0.0, 'runtime':0.0, 'avg_dt':0.0,'sspCondition': " "}
 
     if (modetype == "adaptive"):
         runcommand = " %s  --rtol %e --k %.2f" % (solver['exe'], runV, kVal)
@@ -54,8 +55,8 @@ def runtest(solver, modetype, runV, kVal, kName, showcommand=True, sspcommand=Tr
     stats['ReturnCode'] = result.returncode
     stats['runtime']    = length_time
 
-    stdout_lines = str(result.stdout).split('\\n')
-    stderr_lines = str(result.stderr).split('\\n')
+    stdout_lines = result.stdout.decode('utf-8').splitlines()
+    stderr_lines = result.stderr.decode('utf-8').splitlines()
 
      # If SUNDIALS failed  
     sundials_failed = False
@@ -65,9 +66,9 @@ def runtest(solver, modetype, runV, kVal, kName, showcommand=True, sspcommand=Tr
 
     if sundials_failed == True:
         if (modetype == "adaptive"):
-            print("SUNDIALS failed for  %s  --rtol %e --k %.2f" % (solver['exe'], runV, kVal))
+            print("SUNDIALS failed for  %s  --rtol %e --k %.4f" % (solver['exe'], runV, kVal))
         elif (modetype == "fixed"):
-            print("SUNDIALS failed for %s  --fixed_h %.6f --k %.2f" % (solver['exe'], runV, kVal))
+            print("SUNDIALS failed for %s  --fixed_h %.6f --k %.4f" % (solver['exe'], runV, kVal))
         stats['ReturnCode']       = 1
         stats['error']            = 0
         stats['Steps']            = 0
@@ -78,8 +79,10 @@ def runtest(solver, modetype, runV, kVal, kName, showcommand=True, sspcommand=Tr
         stats['runtime']          = 0     # runtime should be 0 is test failed
         stats['Implicit_solves']  = 0 
         stats['maxIntStep']       = 0
+        stats['avg_dt']           = 0
         # stats['Negative_model']   = 0 
 
+    ssp_cond = 1
     # If SUNDIALS did not fail
     if not sundials_failed:
         print("Running: " + runcommand + " SUCCESS")
@@ -102,19 +105,20 @@ def runtest(solver, modetype, runV, kVal, kName, showcommand=True, sspcommand=Tr
             txt = line.split()
             if (("Model" in txt) and ("has" in txt) and ("a" in txt) and ("negative" in txt) and ("time" in txt) and ("step" in txt) and ("t" in txt)):
                 sum_negLines += 1
-        stats['Negative_model'] = sum_negLines            
+        stats['Negative_model'] = sum_negLines 
+        stats['avg_dt'] = (10.0 - 0.0) / stats['StepAttempts']         
 
         # number of implicit solves for each method
-        if (solver['name']== 'SSP212'):
-            stats['Implicit_solves'] = 2 * stats['StepAttempts']
-        elif (solver['name']== 'SSP312'):
+        # if (solver['name']== 'SSP212'):
+            # stats['Implicit_solves'] = 2 * stats['StepAttempts']
+        if (solver['name']== 'SSP312'):
             stats['Implicit_solves'] = 3 * stats['StepAttempts']
         elif (solver['name']== 'SSPL312'):
             stats['Implicit_solves'] = 3 * stats['StepAttempts']
         elif (solver['name']== 'SSP423'):
             stats['Implicit_solves'] = 3 * stats['StepAttempts']
-        elif (solver['name']== 'SSP923'):
-            stats['Implicit_solves'] = 4 * stats['StepAttempts']
+        # elif (solver['name']== 'SSP923'):
+            # stats['Implicit_solves'] = 4 * stats['StepAttempts']
         # end
 
         datafile = "plot_population.py"
@@ -157,12 +161,12 @@ def runtest(solver, modetype, runV, kVal, kName, showcommand=True, sspcommand=Tr
                 if "diffk0 =" in line:
                     val = "False" 
                     modified_lines.append(f"diffk0 = {val}\n")
-                elif "diffk04 =" in line:
+                elif "diffk02 =" in line:
                     val = "True" 
-                    modified_lines.append(f"diffk04 = {val}\n")
-                elif "diffk06 =" in line:
+                    modified_lines.append(f"diffk02 = {val}\n")
+                elif "diffk04 =" in line:
                     val = "False" 
-                    modified_lines.append(f"diffk06 = {val}\n")
+                    modified_lines.append(f"diffk04 = {val}\n")
                 else:
                     modified_lines.append(line)
             # write the modified line to the python script
@@ -191,137 +195,79 @@ def runtest(solver, modetype, runV, kVal, kName, showcommand=True, sspcommand=Tr
                 f.writelines(modified_lines)
         # ==== end using correct reference solution for each diffusion coefficient ====
 
-
         # # ======================================================================
-        # # select the run type you want to use
+        # # check the SSP condition (smooth final profile and not negative values
+        ##  at all time steps for each diffusion coefficient)
         # # ======================================================================
-        if (modetype=="adaptive"):
-            # adaptiveRun = True and fixedRun = False to compute the Lmax error
-            with open(datafile, "r") as file:
-                original_lines = file.readlines()
+        # # running python file to plot pressure and density 
+        sspcommand = " python ./plot_population.py"
+        ssp_result = subprocess.run(shlex.split(sspcommand), stdout=subprocess.PIPE) 
+        ssp_stdout_lines = ssp_result.stdout.decode('utf-8').splitlines()
+        ## rename final solution plot file to include the diffusion coefficient and run type
+        new_name_final_soln = f"finalSoln_population_{kName}_{modetype}_{solver['name']}_{runV}.png"
+        if os.path.exists("populationModel_finalsoln.png"):
+            os.rename("populationModel_finalsoln.png", new_name_final_soln)
+            print(f"final solution plot file saved as: {new_name_final_soln}")
+        else:
+            print("Warning: populationModel_finalsoln.png not found.")
 
-            modified_lines = []
-            for line in original_lines:
-                if "AdaptiveRun =" in line:
-                    val = "True" #if modetype == "adaptive" else "False"
-                    modified_lines.append(f"AdaptiveRun = {val}\n")
-                elif "FixedRun =" in line:
-                    val = "False" #if modetype == "adaptive" else "True"
-                    modified_lines.append(f"FixedRun = {val}\n")
-                else:
-                    modified_lines.append(line)
-                # end
-                
-            # write the modified line to the python script
-            with open(datafile, "w") as f:
-                f.writelines(modified_lines)
-                
-            # running python file to plot pressure and density 
-            sspcommand = " python ./plot_population.py"
-            ssp_result = subprocess.run(shlex.split(sspcommand), stdout=subprocess.PIPE) 
-            ssp_stdout_lines = ssp_result.stdout.decode('utf-8').splitlines()
-            for line in ssp_stdout_lines:
-                txt = line.split()
-                if (("Lmax" in txt) and ("of" in txt) and ("first" in txt) and ("derivative" in txt) and ("final" in txt)):
-                    stats['lmax_1dev'] = float(line.split('=')[-1].strip())
-                elif (("Lmax" in txt) and ("error" in txt) and ("using" in txt) and ("reference" in txt) and ("solution" in txt)):
-                    stats['error'] = float(line.split('=')[-1].strip())
+        new_name_frames= f"population_frames_{kName}_{modetype}_{solver['name']}_{runV}.png"
+        if os.path.exists("populationModel_frames.png"):
+            os.rename("populationModel_frames.png", new_name_frames)
+            print(f"population frames plot file saved as: {new_name_frames}")
+        else:
+            print("Warning: populationModel_frames.png not found.")
 
-               # ignore errors greater than 10  
-                if stats['error'] > 10.0:
-                    stats['ReturnCode'] = 1
+        for line in ssp_stdout_lines:
+            txt = line.split()
+            if (("Lmax" in txt) and ("of" in txt) and ("first" in txt) and ("derivative" in txt) and ("final" in txt)):
+                stats['lmax_1dev'] = float(line.split('=')[-1].strip())
+            elif (("Lmax" in txt) and ("error" in txt) and ("using" in txt) and ("reference" in txt) and ("solution" in txt)):
+                stats['error'] = float(line.split('=')[-1].strip())
 
-                # assessing SSPness based on positivity at all time steps and smooth profile at final time step
-                if (kVal==0.02) and (stats['lmax_1dev'] >= 1.2) and (stats['lmax_1dev'] <= 1.7) and (stats['Negative_model'] == 0):
-                    stats['sspCondition'] = str('ssp')
-                    ssp_cond = 0
-                elif (kVal==0.04) and (stats['lmax_1dev'] >= 0.7) and (stats['lmax_1dev'] <= 1.5) and (stats['Negative_model'] == 0):
-                    stats['sspCondition'] = str('ssp')
-                    ssp_cond = 0
+            # ignore errors greater than 10  
+            if stats['error'] > 10.0:
+                stats['ReturnCode'] = 1
+
+            # assessing SSPness based on positivity at all time steps and smooth profile at final time step
+            if (kVal==0.02) or (kVal==0.04):
+                if (stats['Negative_model'] == 0):
+                    #fill in this portion later for k=0.0 becasue we will be looking at results with the explicit embedding
+                    #this means you ahve to figure how what the lmax_1dev should be for k=0.0 and then fill in the if statement below
+                    # if (kVal==0.00) and (stats['lmax_1dev'] >= 1.2) and (stats['lmax_1dev'] <= 1.7):
+                    #     stats['sspCondition'] = str('ssp')
+                    if (kVal==0.02) and (stats['lmax_1dev'] >= 1.2) and (stats['lmax_1dev'] <= 1.7):
+                        stats['sspCondition'] = str('ssp')
+                        ssp_cond = 0
+                    elif (kVal==0.04) and (stats['lmax_1dev'] >= 0.7) and (stats['lmax_1dev'] <= 1.5):
+                        stats['sspCondition'] = str('ssp')
+                        ssp_cond = 0
+                    else:
+                        stats['sspCondition'] = 'not ssp'
+                        ssp_cond = 1
                 else:
                     stats['sspCondition'] = str('not ssp')  
                     ssp_cond = 1   
-
-                # assessing SSPness based on positivity at all time steps
-                if (stats['Negative_model'] == 0):
-                    stats['sspCondition'] = str('ssp')
-                    ssp_cond = 0
-                else:
-                    stats['sspCondition'] = str('not ssp')  
-                    ssp_cond = 1 
-                #end
-            # #end
-
-        elif (modetype == "fixed"):
-            # FixedRun = True and AdaptiveRun = False to compute the Lmax error
-            with open(datafile, "r") as file:
-                original_lines = file.readlines()
-
-            modified_lines = []
-            for line in original_lines:
-                if "FixedRun =" in line:
-                    val = "True" #if modetype == "fixed" else "False"
-                    modified_lines.append(f"FixedRun = {val}\n")
-                elif "AdaptiveRun =" in line:
-                    val = "False" #if modetype == "fixed" else "True"
-                    modified_lines.append(f"AdaptiveRun = {val}\n")
-                else:
-                    modified_lines.append(line)
                 
-            # write the modified line to the python script
-            with open(datafile, "w") as f:
-                f.writelines(modified_lines)
-
-            ## running python file to plot pressure and density
-            sspcommand = " python ./plot_population.py"
-            ssp_result = subprocess.run(shlex.split(sspcommand), stdout=subprocess.PIPE)  
-            ssp_stdout_lines = ssp_result.stdout.decode('utf-8').splitlines()
-            for line in ssp_stdout_lines:
-                txt = line.split()
-                if (("Lmax" in txt) and ("of" in txt) and ("first" in txt) and ("derivative" in txt) and ("final" in txt)):
-                    stats['lmax_1dev'] = float(line.split('=')[-1].strip())
-                elif (("Lmax" in txt) and ("error" in txt) and ("using" in txt) and ("reference" in txt) and ("solution" in txt)):
-                    stats['error'] = float(line.split('=')[-1].strip())
-
-               # ignore errors greater than 10  
-                if stats['error'] > 10.0:
+                if ssp_cond == 1:
                     stats['ReturnCode'] = 1
                 #end
-
-                # assessing SSPness based on positivity at all time steps and smooth profile at final time step
-                if (kVal==0.02) and (stats['lmax_1dev'] >= 1.2) and (stats['lmax_1dev'] <= 1.7) and (stats['Negative_model'] == 0):
-                    stats['sspCondition'] = str('ssp')
-                    ssp_cond = 0
-                elif (kVal==0.04) and (stats['lmax_1dev'] >= 0.7) and (stats['lmax_1dev'] <= 1.5) and (stats['Negative_model'] == 0):
-                    stats['sspCondition'] = str('ssp')
-                    ssp_cond = 0
-                else:
-                    stats['sspCondition'] = str('not ssp')  
-                    ssp_cond = 1   
-
-                # assessing SSPness based on positivity at all time steps
-                if (stats['Negative_model'] == 0):
-                    stats['sspCondition'] = str('ssp')
-                    ssp_cond = 0
-                else:
-                    stats['sspCondition'] = str('not ssp')  
-                    ssp_cond = 1 
-            #end
-        # # end : end of run type selection
-        
+            else:
+                stats['sspCondition'] = str('ssp')
+                ssp_cond = 0
+    
     return stats, ssp_cond
 ## end of function
 
 
 # shortcuts to executable/configuration of different embedded IMEX SSP methods
-SSP212       = "./population   --IMintegrator ARKODE_SSP_SDIRK_2_1_2        --EXintegrator ARKODE_SSP_ERK_2_1_2" 
+# SSP212       = "./population   --IMintegrator ARKODE_SSP_SDIRK_2_1_2        --EXintegrator ARKODE_SSP_ERK_2_1_2" 
 SSP312       = "./population   --IMintegrator ARKODE_SSP_DIRK_3_1_2         --EXintegrator ARKODE_SSP_ERK_3_1_2"           
 SSPL312      = "./population   --IMintegrator ARKODE_SSP_LSPUM_SDIRK_3_1_2  --EXintegrator ARKODE_SSP_LSPUM_ERK_3_1_2"  
 SSP423       = "./population   --IMintegrator ARKODE_SSP_ESDIRK_4_2_3       --EXintegrator ARKODE_SSP_ERK_4_2_3"  
-SSP923       = "./population   --IMintegrator ARKODE_SSP_ESDIRK_9_2_3       --EXintegrator ARKODE_SSP_ERK_9_2_3"    
+# SSP923       = "./population   --IMintegrator ARKODE_SSP_ESDIRK_9_2_3       --EXintegrator ARKODE_SSP_ERK_9_2_3"    
 
 adaptive_params = [1e-5, 1e-4, 1e-3, 1e-2, 5e-2, 1e-1, 5e-1, 1.0] ## relative tolerances
-# adaptive_params = [1.0, 1e-1, 1e-2] ## relative tolerances
 fixed_params    = [] # fixed time step sizes
 for i in range(4, -10, -1): 
     fixed_params.append(0.25 * (2 ** i))
@@ -332,8 +278,8 @@ for i in range(4, -10, -1):
 # This section uses the Bisection Method to compute the step size or rtol at which the method
 # switches from ssp to nonssp. The step size or rtol values are rounded to 3 significant figures.
 # The values computed in this section are then appended to the run values (rtol or step sizes)
-# to generate the plots. The next section was computed first to determine the interval to bisect 
-# before this section was run. You would not need to that.
+# to generate the plots. The next section (with adaptive and fixed runs) was computed first to determine 
+# the interval to bisect before this section was run. You would not need to that.
 ## ----------------------------------------------------------------------------------------------------
 def round_to_sf(x, sf):
     """
@@ -464,30 +410,31 @@ def bisection_midval(solvers, runtype, paramList):
 # This section generates the data for each method, diffusion coefficient with different fixed step
 # sizes and rtols
 ## ----------------------------------------------------------------------------------------------------
-sorted_adaptive_params = sorted(adaptive_params) ## relative tolerances
-sorted_fixed_params    = sorted(fixed_params) ## fixed time step sizes
-
 ## Diffusion coefficients
-# diff_coef = {'diffk0':0.0, 'diffk02':0.02, 'diffk04':0.04}
-diff_coef = { 'diffk04':0.04}
+diff_coef = {'diffk0':0.0, 'diffk02':0.02, 'diffk04':0.04}
+# diff_coef = { 'diffk04':0.04}
 
 ## Integrator types
-solvertype = [{'name': 'SSP212',       'exe': SSP212},
-              {'name': 'SSP312',       'exe': SSP312},
+solvertype = [{'name': 'SSP312',       'exe': SSP312},
               {'name': 'SSPL312',      'exe': SSPL312},
-              {'name': 'SSP423',       'exe': SSP423},
-              {'name': 'SSP923',       'exe': SSP923}]
+              {'name': 'SSP423',       'exe': SSP423}]
+
+# solvertype = [{'name': 'SSP212',       'exe': SSP212},
+#               {'name': 'SSP312',       'exe': SSP312},
+#               {'name': 'SSPL312',      'exe': SSPL312},
+#               {'name': 'SSP423',       'exe': SSP423},
+#               {'name': 'SSP923',       'exe': SSP923}]
 
 # run tests and collect results as a pandas data frame
 fname = 'population_stats' 
 RunStats = []
 for k_name, k_val in diff_coef.items():
-    for runV_val in sorted_adaptive_params:
+    for runV_val in adaptive_params:
         for solver_adapt in solvertype:
             adaptive_stat, _ = runtest(solver_adapt, "adaptive", runV_val, k_val, k_name, showcommand=True, sspcommand=True)
             RunStats.append(adaptive_stat)
 
-    for runV_val in sorted_fixed_params:
+    for runV_val in fixed_params:
         for solver_adapt in solvertype:
             fixed_stat, _ = runtest(solver_adapt, "fixed", runV_val, k_val, k_name, showcommand=True, sspcommand=True)
             RunStats.append(fixed_stat)
@@ -507,16 +454,15 @@ RunStatsDf.to_excel(fname + '.xlsx', index=False)
 df = pd.read_excel('population_stats' + '.xlsx') # excel file
 methods = df['IMEX_method'].unique()
 
-# colors   = ['red', 'black', 'blue', 'green', 'orange'] 
-# markers  = ['o', '*', 's', '^', '+']
-# modetype = ['fixed', 'adaptive']
+colors   = ['red', 'black', 'blue']#, 'green', 'orange'] 
+diff_coef2 = {'diffk02':0.02, 'diffk04':0.04}
 
-# --------------------------- accepted steps vs erroru ----------------------------------
+# --------------------------- accepted steps vs error ----------------------------------
 #create a figure of subplots (columns are diffusion coefficients parameters and rows are methods)
-fig, axes = plt.subplots(1, len(diff_coef), figsize=(15, 15))
-if len(diff_coef) == 1:
+fig, axes = plt.subplots(1, len(diff_coef2), figsize=(15, 15))
+if len(diff_coef2) == 1:
     axes = [axes]
-for col_ind, (kValName, kVal) in enumerate(diff_coef.items()):
+for col_ind, (kValName, kVal) in enumerate(diff_coef2.items()):
 
     #filter data by fixed and adaptive tests
     col_data = df[(df["diff_coef"] == kVal)]
@@ -529,10 +475,7 @@ for col_ind, (kValName, kVal) in enumerate(diff_coef.items()):
         valid_data = SSPmethodFix_data[SSPmethodFix_data['ReturnCode'] != 1]
         x = valid_data['StepAttempts']
         y = valid_data['error']
-        method_line = axes[col_ind].plot(x, y, marker='.', linestyle='-', label=f"{SSPmethodFix}-h")
-        method_line_color = method_line[0].get_color()
-        sspness = valid_data[valid_data['sspCondition'] == "not ssp"]
-        axes[col_ind].plot(sspness['StepAttempts'], sspness['error'], marker='x', linewidth=2, linestyle='none',color=method_line_color, label='_nolegend_')
+        axes[col_ind].plot(x, y, color = colors[i], marker='o', markersize=5, linestyle='-', label=f"{SSPmethodFix}-h")
 
     #adaptive run
     for i, SSPmethodAdapt in enumerate(data_adaptive['IMEX_method'].unique()):
@@ -540,32 +483,37 @@ for col_ind, (kValName, kVal) in enumerate(diff_coef.items()):
         valid_data = SSPmethodAdapt_data[SSPmethodAdapt_data['ReturnCode'] != 1]
         x = valid_data['StepAttempts']
         y = valid_data['error']
-        method_line = axes[col_ind].plot(x, y, marker='.', linestyle='--', label=f"{SSPmethodAdapt}-rtol")
-        method_line_color = method_line[0].get_color()
-        sspness = valid_data[valid_data['sspCondition'] == "not ssp"]
-        axes[col_ind].plot(sspness['StepAttempts'], sspness['error'], marker='x', linewidth=2, linestyle='none', color=method_line_color, label='_nolegend_')
-        
+        axes[col_ind].plot(x, y, color = colors[i], marker='*', markersize=5, linestyle='-.', label=f"{SSPmethodAdapt}-rtol")
 
     # each column should correspond to a stiffness parameter
     axes[col_ind].set_title(f"d = {kVal}", fontsize=18)
     axes[col_ind].set_xscale('log')
     axes[col_ind].set_yscale('log')
-    axes[col_ind].legend(loc="best", ncol=2, fontsize=18)
     axes[col_ind].tick_params(axis='both', labelsize=15)
 #end
-fig.supxlabel(' StepAttempts ', fontsize=18)
-fig.supylabel(' error ', fontsize=18)
-# fig.suptitle("StepAttempts vs error", fontsize=20)
-fig.tight_layout()
-plt.savefig("StepAttempts_error_population.png")
+
+handles = []
+labels = []
+for ax in axes:
+    h, l = ax.get_legend_handles_labels()
+    handles.extend(h)
+    labels.extend(l)
+
+#remove duplicates
+by_label = dict(zip(labels, handles))
+axes[-1].legend(by_label.values(), by_label.keys(), bbox_to_anchor=(1.05, 1), borderaxespad=0., loc='upper left', fontsize=18)
+
+fig.supxlabel(' step-attempts ', fontsize=18)
+fig.supylabel(' err ', fontsize=18)
+plt.savefig("stepAttempts_err_population.png", bbox_inches="tight")
 
 
-# --------------------------- implicit solves vs erroru ----------------------------------
+# --------------------------- implicit solves vs error ----------------------------------
 #create a figure of subplots (columns are diffusion coefficients parameters and rows are methods)
-fig, axes = plt.subplots(1, len(diff_coef), figsize=(15, 15))
-if len(diff_coef) == 1:
+fig, axes = plt.subplots(1, len(diff_coef2), figsize=(15, 15))
+if len(diff_coef2) == 1:
     axes = [axes]
-for col_ind, (kValName, kVal) in enumerate(diff_coef.items()):
+for col_ind, (kValName, kVal) in enumerate(diff_coef2.items()):
 
     #filter data by fixed and adaptive tests
     col_data = df[(df["diff_coef"] == kVal)]
@@ -578,10 +526,7 @@ for col_ind, (kValName, kVal) in enumerate(diff_coef.items()):
         valid_data = SSPmethodFix_data[SSPmethodFix_data['ReturnCode'] != 1]
         x = valid_data['Implicit_solves']
         y = valid_data['error']
-        method_line = axes[col_ind].plot(x, y, marker='.', linestyle='-', label=f"{SSPmethodFix}-h")
-        method_line_color = method_line[0].get_color()
-        sspness = valid_data[valid_data['sspCondition'] == "not ssp"]
-        axes[col_ind].plot(sspness['Implicit_solves'], sspness['error'], marker='x', linewidth=2, linestyle='none',color=method_line_color, label='_nolegend_')
+        axes[col_ind].plot(x, y, color = colors[i], marker='o', markersize=5, linestyle='-', label=f"{SSPmethodFix}-h")
 
     #adaptive run
     for i, SSPmethodAdapt in enumerate(data_adaptive['IMEX_method'].unique()):
@@ -589,32 +534,39 @@ for col_ind, (kValName, kVal) in enumerate(diff_coef.items()):
         valid_data = SSPmethodAdapt_data[SSPmethodAdapt_data['ReturnCode'] != 1]
         x = valid_data['Implicit_solves']
         y = valid_data['error']
-        method_line = axes[col_ind].plot(x, y, marker='.', linestyle='--', label=f"{SSPmethodAdapt}-rtol")
-        method_line_color = method_line[0].get_color()
-        sspness = valid_data[valid_data['sspCondition'] == "not ssp"]
-        axes[col_ind].plot(sspness['Implicit_solves'], sspness['error'], marker='x', linewidth=2, linestyle='none', color=method_line_color, label='_nolegend_')
+        axes[col_ind].plot(x, y, color = colors[i], marker='*', markersize=5, linestyle='-.', label=f"{SSPmethodAdapt}-rtol")
         
 
     # each column should correspond to a stiffness parameter
     axes[col_ind].set_title(f"d = {kVal}", fontsize=18)
     axes[col_ind].set_xscale('log')
     axes[col_ind].set_yscale('log')
-    axes[col_ind].legend(loc="best", ncol=2,fontsize=18)
     axes[col_ind].tick_params(axis='both', labelsize=15)
 #end
-fig.supxlabel(' Implicit_solves ', fontsize=18)
-fig.supylabel(' error ', fontsize=18)
-# fig.suptitle("Implicit_solves vs error", fontsize=20)
-fig.tight_layout()
-plt.savefig("Implicit_solves_error_population.png")
+
+handles = []
+labels = []
+for ax in axes:
+    h, l = ax.get_legend_handles_labels()
+    handles.extend(h)
+    labels.extend(l)
+
+#remove duplicates
+by_label = dict(zip(labels, handles))
+axes[-1].legend(by_label.values(), by_label.keys(), bbox_to_anchor=(1.05, 1), borderaxespad=0., loc='upper left', fontsize=18)
+
+fig.supxlabel(' implicit solves ', fontsize=18)
+fig.supylabel(' err ', fontsize=18)
+plt.savefig("implicit_solves_err_population.png", bbox_inches="tight")
+
 
 
 # --------------------------- runtime vs erroru ----------------------------------
 #create a figure of subplots (columns are diffusion coefficients parameters and rows are methods)
-fig, axes = plt.subplots(1, len(diff_coef), figsize=(15, 15))
-if len(diff_coef) == 1:
+fig, axes = plt.subplots(1, len(diff_coef2), figsize=(15, 15))
+if len(diff_coef2) == 1:
     axes = [axes]
-for col_ind, (kValName, kVal) in enumerate(diff_coef.items()):
+for col_ind, (kValName, kVal) in enumerate(diff_coef2.items()):
 
     #filter data by fixed and adaptive tests
     col_data = df[(df["diff_coef"] == kVal)]
@@ -627,10 +579,7 @@ for col_ind, (kValName, kVal) in enumerate(diff_coef.items()):
         valid_data = SSPmethodFix_data[SSPmethodFix_data['ReturnCode'] != 1]
         x = valid_data['runtime']
         y = valid_data['error']
-        method_line = axes[col_ind].plot(x, y, marker='.', linestyle='-', label=f"{SSPmethodFix}-h")
-        method_line_color = method_line[0].get_color()
-        sspness = valid_data[valid_data['sspCondition'] == "not ssp"]
-        axes[col_ind].plot(sspness['runtime'], sspness['error'], marker='x', linewidth=2, linestyle='none',color=method_line_color, label='_nolegend_')
+        axes[col_ind].plot(x, y, color = colors[i], marker='o', markersize=5, linestyle='-', label=f"{SSPmethodFix}-h")
 
     #adaptive run
     for i, SSPmethodAdapt in enumerate(data_adaptive['IMEX_method'].unique()):
@@ -638,59 +587,26 @@ for col_ind, (kValName, kVal) in enumerate(diff_coef.items()):
         valid_data = SSPmethodAdapt_data[SSPmethodAdapt_data['ReturnCode'] != 1]
         x = valid_data['runtime']
         y = valid_data['error']
-        method_line = axes[col_ind].plot(x, y, marker='.', linestyle='--', label=f"{SSPmethodAdapt}-rtol")
-        method_line_color = method_line[0].get_color()
-        sspness = valid_data[valid_data['sspCondition'] == "not ssp"]
-        axes[col_ind].plot(sspness['runtime'], sspness['error'], marker='x', linewidth=2, linestyle='none', color=method_line_color, label='_nolegend_')
-        
+        axes[col_ind].plot(x, y, color = colors[i], marker='*', markersize=5, linestyle='-.', label=f"{SSPmethodAdapt}-rtol")
 
     # each column should correspond to a stiffness parameter
     axes[col_ind].set_title(f"d = {kVal}", fontsize=18)
     axes[col_ind].set_xscale('log')
     axes[col_ind].set_yscale('log')
-    axes[col_ind].legend(loc="best", ncol=2,fontsize=18)
     axes[col_ind].tick_params(axis='both', labelsize=15)
 #end
+
+handles = []
+labels = []
+for ax in axes:
+    h, l = ax.get_legend_handles_labels()
+    handles.extend(h)
+    labels.extend(l)
+
+#remove duplicates
+by_label = dict(zip(labels, handles))
+axes[-1].legend(by_label.values(), by_label.keys(), bbox_to_anchor=(1.05, 1), borderaxespad=0., loc='upper left', fontsize=18)
+
 fig.supxlabel(' runtime ', fontsize=18)
-fig.supylabel(' error ', fontsize=18)
-# fig.suptitle("runtime vs error", fontsize=20)
-fig.tight_layout()
-plt.savefig("runtime_error_population.png")
-
-
-
-# --------------------------- runtime vs erroru ----------------------------------
-#create a figure of subplots (columns are diffusion coefficients parameters and rows are methods)
-fig, axes = plt.subplots(1, len(diff_coef), figsize=(15, 15))
-if len(diff_coef) == 1:
-    axes = [axes]
-for col_ind, (kValName, kVal) in enumerate(diff_coef.items()):
-
-    #filter data by fixed and adaptive tests
-    col_data = df[(df["diff_coef"] == kVal)]
-    data_adaptive = col_data[col_data["Runtype"] == "adaptive"]
-
-    #adaptive run
-    for i, SSPmethodAdapt in enumerate(data_adaptive['IMEX_method'].unique()):
-        SSPmethodAdapt_data = data_adaptive[data_adaptive['IMEX_method'] == SSPmethodAdapt]
-        valid_data = SSPmethodAdapt_data[SSPmethodAdapt_data['ReturnCode'] != 1]
-        x = valid_data['runtime']
-        y = valid_data['error']
-        method_line = axes[col_ind].plot(x, y, marker='.', linestyle='--', label=f"{SSPmethodAdapt}-rtol")
-        method_line_color = method_line[0].get_color()
-        sspness = valid_data[valid_data['sspCondition'] == "not ssp"]
-        axes[col_ind].plot(sspness['runtime'], sspness['error'], marker='x', linewidth=2, linestyle='none', color=method_line_color, label='_nolegend_')
-        
-    # each column should correspond to a stiffness parameter
-    axes[col_ind].set_title(f"d = {kVal}", fontsize=18)
-    axes[col_ind].set_xscale('log')
-    axes[col_ind].set_yscale('log')
-    axes[col_ind].legend(loc="best", ncol=2, fontsize=18)
-    axes[col_ind].tick_params(axis='both', labelsize=15)
-#end
-fig.supxlabel(' runtime ', fontsize=18)
-fig.supylabel(' error ', fontsize=18)
-# fig.suptitle("runtime vs error", fontsize=20)
-fig.tight_layout()
-plt.savefig("runtime_error_population_adaptive.png")
-
+fig.supylabel(' err', fontsize=18)
+plt.savefig("runtime_err_population.png", bbox_inches="tight")
