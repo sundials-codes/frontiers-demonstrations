@@ -93,8 +93,8 @@ using namespace std;
   : N(400),
     alpha1(1.0),
     alpha2(0.0),
-    k1(1e6),
-    k2(2e6),
+    k1(1e4),
+    k2(2e4),
     s1(0.0),
     s2(1.0),
     xstart(ZERO),
@@ -369,9 +369,8 @@ static int fe(sunrealtype t, N_Vector y, N_Vector ydot, void* user_data)
   sunrealtype* vdot = Ydot + N;
 
   // left boundary
-  // sunrealtype pi = 3.1415926535897932;
-  sunrealtype expo1 = exp(-1.0 * (t - 0.8) * (t - 0.8) / (2.0 * 0.02 * 0.02) );
-  sunrealtype gamma1t = 1.0 + expo1;
+  sunrealtype expo1 = exp(-1.0 * (t - 0.8) * (t - 0.8) / (2.0 * 0.005 * 0.005) );
+  sunrealtype gamma1t = 1.0 + 1.0 * expo1;
 
   udot[0] = -alpha1 * (-2.0 * gamma1t - 3.0 * u[0] + 6.0 * u[1] - 1.0 * u[2]) / (6.0 * dx);
   udot[1] = -alpha1 * ( 1.0 * gamma1t - 8.0 * u[0] + 8.0 * u[2] - 1.0 * u[3]) / (12.0 * dx);

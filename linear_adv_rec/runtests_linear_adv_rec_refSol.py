@@ -68,8 +68,8 @@ def refSoln(solver, runV, k1Val, showcommand=True):
 # method to generate reference solution
 ARK845 = "./linear_adv_rec_refSol   --dirk_table ARKODE_ARK548L2SA_DIRK_8_4_5   --erk_table ARKODE_ARK548L2SA_ERK_8_4_5"     
 
-adaptive_params = [1e-14] #relative tolerance for reference solution
-k1values = {1e6}
+adaptive_params = [1e-13] #relative tolerance for reference solution
+k1values = [1e4]
 
 ## Integrator types
 solvertype = [{'name': 'ARK-8-4-5', 'exe': ARK845}]

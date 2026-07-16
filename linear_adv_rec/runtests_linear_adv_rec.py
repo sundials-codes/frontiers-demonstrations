@@ -160,12 +160,12 @@ SSPL312 = "./linear_adv_rec --dirk_table ARKODE_SSP_LSPUM_SDIRK_3_1_2 --erk_tabl
 SSP423  = "./linear_adv_rec --dirk_table ARKODE_SSP_ESDIRK_4_2_3      --erk_table ARKODE_SSP_ERK_4_2_3"  
 # SSP923  = "./linear_adv_rec --dirk_table ARKODE_SSP_ESDIRK_9_2_3      --erk_table ARKODE_SSP_ERK_9_2_3"    
 
-adaptive_params = [1e-5, 1e-4, 1e-3, 1e-2, 1e-1]          # relative tolerances
+adaptive_params = [1e-8, 1e-7, 1e-6,1e-5, 1e-4, 1e-3, 1e-2]          # relative tolerances
 fixed_params = [] # fixed time step sizes
 for i in range(10,-1,-1): 
-    fixed_params.append(0.1/(2.0**i))
+    fixed_params.append(0.005/(2.0**i))
 
-k1values = [1e6]
+k1values = [1e4]
 
 
 # ----------------------------------------------------------------------------------------------------
@@ -242,19 +242,18 @@ for col_ind, k1Val in enumerate(k1values):
         y = valid_data['erroru']
         ax.plot(x, y, color = colors[i], marker = '*', markersize=5, linestyle='-.', label=f"{SSPmethodAdapt}-rtol")
 
-    # axes.set_title(f"k1 = {k1Val: .1e}, k2 = {k2Val: .1e}", fontsize=18)
     ax.set_xscale('log')
     ax.set_yscale('log')
-    ax.tick_params(axis='both', labelsize=15)
+    ax.tick_params(axis='both', labelsize=18)
 #end
 
 #remove duplicates
 handles, labels = ax.get_legend_handles_labels()
 by_label = dict(zip(labels, handles))
-ax.legend(by_label.values(), by_label.keys(), bbox_to_anchor=(1.05, 1), borderaxespad=0., loc='upper left', fontsize=18)
+ax.legend(by_label.values(), by_label.keys(), bbox_to_anchor=(1.05, 1), borderaxespad=0., loc='upper left', fontsize=20)
 
-fig.supxlabel(' step-attempts ', fontsize=18)
-fig.supylabel(' erroru ', fontsize=18)
+fig.supxlabel(' step-attempts ', fontsize=20)
+fig.supylabel(' erroru ', fontsize=20)
 plt.savefig("step_attempts_erroru_LAR.png", bbox_inches="tight")
 
 # --------------------------- accepted steps vs errorv ----------------------------------
@@ -283,19 +282,18 @@ for col_ind, k1Val in enumerate(k1values):
         y = valid_data['errorv']
         ax.plot(x, y, color = colors[i], marker = '*', markersize=5, linestyle='-.', label=f"{SSPmethodAdapt}-rtol")
 
-    # axes.set_title(f"k1 = {k1Val: .1e}, k2 = {k2Val: .1e}", fontsize=18)
     ax.set_xscale('log')
     ax.set_yscale('log')
-    ax.tick_params(axis='both', labelsize=15)
+    ax.tick_params(axis='both', labelsize=18)
 #end
 
 #remove duplicates
 handles, labels = ax.get_legend_handles_labels()
 by_label = dict(zip(labels, handles))
-ax.legend(by_label.values(), by_label.keys(), bbox_to_anchor=(1.05, 1), borderaxespad=0., loc='upper left', fontsize=18)
+ax.legend(by_label.values(), by_label.keys(), bbox_to_anchor=(1.05, 1), borderaxespad=0., loc='upper left', fontsize=20)
 
-fig.supxlabel(' step-attempts ', fontsize=18)
-fig.supylabel(' errorv ', fontsize=18)
+fig.supxlabel(' step-attempts ', fontsize=20)
+fig.supylabel(' errorv ', fontsize=20)
 plt.savefig("step_attempts_errorv_LAR.png", bbox_inches="tight")
 
 
@@ -325,19 +323,18 @@ for col_ind, k1Val in enumerate(k1values):
         y = valid_data['erroruv']
         ax.plot(x, y, color = colors[i], marker = '*', markersize=5, linestyle='-.', label=f"{SSPmethodAdapt}-rtol")
 
-    # axes.set_title(f"k1 = {k1Val: .1e}, k2 = {k2Val: .1e}", fontsize=18)
     ax.set_xscale('log')
     ax.set_yscale('log')
-    ax.tick_params(axis='both', labelsize=15)
+    ax.tick_params(axis='both', labelsize=18)
 #end
 
 #remove duplicates
 handles, labels = ax.get_legend_handles_labels()
 by_label = dict(zip(labels, handles))
-ax.legend(by_label.values(), by_label.keys(), bbox_to_anchor=(1.05, 1), borderaxespad=0., loc='upper left', fontsize=18)
+ax.legend(by_label.values(), by_label.keys(), bbox_to_anchor=(1.05, 1), borderaxespad=0., loc='upper left', fontsize=20)
 
-fig.supxlabel(' step-attempts ', fontsize=18)
-fig.supylabel(' erroruv ', fontsize=18)
+fig.supxlabel(' step-attempts ', fontsize=20)
+fig.supylabel(' erroruv ', fontsize=20)
 plt.savefig("step_attempts_erroruv_LAR.png", bbox_inches="tight")
 
 
@@ -367,19 +364,18 @@ for col_ind, k1Val in enumerate(k1values):
         y = valid_data['erroru']
         ax.plot(x, y, color = colors[i], marker = '*', markersize=5, linestyle='-.', label=f"{SSPmethodAdapt}-rtol")
 
-    # axes.set_title(f"k1 = {k1Val: .1e}, k2 = {k2Val: .1e}", fontsize=18)
     ax.set_xscale('log')
     ax.set_yscale('log')
-    ax.tick_params(axis='both', labelsize=15)
+    ax.tick_params(axis='both', labelsize=18)
 #end
 
 #remove duplicates
 handles, labels = ax.get_legend_handles_labels()
 by_label = dict(zip(labels, handles))
-ax.legend(by_label.values(), by_label.keys(), bbox_to_anchor=(1.05, 1), borderaxespad=0., loc='upper left', fontsize=18)
+ax.legend(by_label.values(), by_label.keys(), bbox_to_anchor=(1.05, 1), borderaxespad=0., loc='upper left', fontsize=20)
 
-fig.supxlabel(' implicit-solves ', fontsize=18)
-fig.supylabel(' erroru ', fontsize=18)
+fig.supxlabel(' implicit-solves ', fontsize=20)
+fig.supylabel(' erroru ', fontsize=20)
 plt.savefig("implicit_solves_erroru_LAR.png", bbox_inches="tight")
 
 # --------------------------- implicit solves vs errorv ----------------------------------
@@ -408,19 +404,18 @@ for col_ind, k1Val in enumerate(k1values):
         y = valid_data['errorv']
         ax.plot(x, y, color = colors[i], marker = '*', markersize=5, linestyle='-.', label=f"{SSPmethodAdapt}-rtol")
 
-    # axes.set_title(f"k1 = {k1Val: .1e}, k2 = {k2Val: .1e}", fontsize=18)
     ax.set_xscale('log')
     ax.set_yscale('log')
-    ax.tick_params(axis='both', labelsize=15)
+    ax.tick_params(axis='both', labelsize=18)
 #end
 
 #remove duplicates
 handles, labels = ax.get_legend_handles_labels()
 by_label = dict(zip(labels, handles))
-ax.legend(by_label.values(), by_label.keys(), bbox_to_anchor=(1.05, 1), borderaxespad=0., loc='upper left', fontsize=18)
+ax.legend(by_label.values(), by_label.keys(), bbox_to_anchor=(1.05, 1), borderaxespad=0., loc='upper left', fontsize=20)
 
-fig.supxlabel(' implicit-solves ', fontsize=18)
-fig.supylabel(' errorv ', fontsize=18)
+fig.supxlabel(' implicit-solves ', fontsize=20)
+fig.supylabel(' errorv ', fontsize=20)
 plt.savefig("implicit_solves_errorv_LAR.png", bbox_inches="tight")
 
 
@@ -450,19 +445,18 @@ for col_ind, k1Val in enumerate(k1values):
         y = valid_data['erroruv']
         ax.plot(x, y, color = colors[i], marker = '*', markersize=5, linestyle='-.', label=f"{SSPmethodAdapt}-rtol")
 
-    # axes.set_title(f"k1 = {k1Val: .1e}, k2 = {k2Val: .1e}", fontsize=18)
     ax.set_xscale('log')
     ax.set_yscale('log')
-    ax.tick_params(axis='both', labelsize=15)
+    ax.tick_params(axis='both', labelsize=18)
 #end
 
 #remove duplicates
 handles, labels = ax.get_legend_handles_labels()
 by_label = dict(zip(labels, handles))
-ax.legend(by_label.values(), by_label.keys(), bbox_to_anchor=(1.05, 1), borderaxespad=0., loc='upper left', fontsize=18)
+ax.legend(by_label.values(), by_label.keys(), bbox_to_anchor=(1.05, 1), borderaxespad=0., loc='upper left', fontsize=20)
 
-fig.supxlabel(' implicit-solves ', fontsize=18)
-fig.supylabel(' erroruv ', fontsize=18)
+fig.supxlabel(' implicit-solves ', fontsize=20)
+fig.supylabel(' erroruv ', fontsize=20)
 plt.savefig("implicit_solves_erroruv_LAR.png", bbox_inches="tight")
 
 
@@ -493,19 +487,18 @@ for col_ind, k1Val in enumerate(k1values):
         y = valid_data['erroru']
         ax.plot(x, y, color = colors[i], marker = '*', markersize=5, linestyle='-.', label=f"{SSPmethodAdapt}-rtol")
 
-    # axes.set_title(f"k1 = {k1Val: .1e}, k2 = {k2Val: .1e}", fontsize=18)
     ax.set_xscale('log')
     ax.set_yscale('log')
-    ax.tick_params(axis='both', labelsize=15)
+    ax.tick_params(axis='both', labelsize=18)
 #end
 
 #remove duplicates
 handles, labels = ax.get_legend_handles_labels()
 by_label = dict(zip(labels, handles))
-ax.legend(by_label.values(), by_label.keys(), bbox_to_anchor=(1.05, 1), borderaxespad=0., loc='upper left', fontsize=18)
+ax.legend(by_label.values(), by_label.keys(), bbox_to_anchor=(1.05, 1), borderaxespad=0., loc='upper left', fontsize=20)
 
-fig.supxlabel(' runtime ', fontsize=18)
-fig.supylabel(' erroru ', fontsize=18)
+fig.supxlabel(' runtime ', fontsize=20)
+fig.supylabel(' erroru ', fontsize=20)
 plt.savefig("runtime_erroru_LAR.png", bbox_inches="tight")
 
 # --------------------------- runtime vs errorv ----------------------------------
@@ -534,19 +527,18 @@ for col_ind, k1Val in enumerate(k1values):
         y = valid_data['errorv']
         ax.plot(x, y, color = colors[i], marker = '*', markersize=5, linestyle='-.', label=f"{SSPmethodAdapt}-rtol")
 
-    # axes.set_title(f"k1 = {k1Val: .1e}, k2 = {k2Val: .1e}", fontsize=18)
     ax.set_xscale('log')
     ax.set_yscale('log')
-    ax.tick_params(axis='both', labelsize=15)
+    ax.tick_params(axis='both', labelsize=18)
 #end
 
 #remove duplicates
 handles, labels = ax.get_legend_handles_labels()
 by_label = dict(zip(labels, handles))
-ax.legend(by_label.values(), by_label.keys(), bbox_to_anchor=(1.05, 1), borderaxespad=0., loc='upper left', fontsize=18)
+ax.legend(by_label.values(), by_label.keys(), bbox_to_anchor=(1.05, 1), borderaxespad=0., loc='upper left', fontsize=20)
 
-fig.supxlabel(' runtime ', fontsize=18)
-fig.supylabel(' errorv ', fontsize=18)
+fig.supxlabel(' runtime ', fontsize=20)
+fig.supylabel(' errorv ', fontsize=20)
 plt.savefig("runtime_errorv_LAR.png", bbox_inches="tight")
 
 
@@ -576,17 +568,16 @@ for col_ind, k1Val in enumerate(k1values):
         y = valid_data['erroruv']
         ax.plot(x, y, color = colors[i], marker = '*', markersize=5, linestyle='-.', label=f"{SSPmethodAdapt}-rtol")
 
-    # axes.set_title(f"k1 = {k1Val: .1e}, k2 = {k2Val: .1e}", fontsize=18)
     ax.set_xscale('log')
     ax.set_yscale('log')
-    ax.tick_params(axis='both', labelsize=15)
+    ax.tick_params(axis='both', labelsize=18)
 #end
 
 #remove duplicates
 handles, labels = ax.get_legend_handles_labels()
 by_label = dict(zip(labels, handles))
-ax.legend(by_label.values(), by_label.keys(), bbox_to_anchor=(1.05, 1), borderaxespad=0., loc='upper left', fontsize=18)
+ax.legend(by_label.values(), by_label.keys(), bbox_to_anchor=(1.05, 1), borderaxespad=0., loc='upper left', fontsize=20)
 
-fig.supxlabel(' runtime ', fontsize=18)
-fig.supylabel(' erroruv ', fontsize=18)
+fig.supxlabel(' runtime ', fontsize=20)
+fig.supylabel(' erroruv ', fontsize=20)
 plt.savefig("runtime_erroruv_LAR.png", bbox_inches="tight")
