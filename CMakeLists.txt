@@ -91,7 +91,6 @@ message(STATUS "Found SUNDIALS: ${SUNDIALS_DIR}")
 
 add_subdirectory(population)
 add_subdirectory(Euler_1D)
-add_subdirectory(linear_advection)
 add_subdirectory(linear_adv_rec)
 add_subdirectory(hyperbolic_relaxation)
 add_subdirectory(euler_reaction)
