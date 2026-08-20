@@ -18,22 +18,20 @@
  *    u_t + alpha_1*u_x = -k_1*u + k_2*v + s_1
  *    v_t + alpha_2*v_x =  k_1*u - k_2*v + s_2
  * for t in [0, 1], x in [0, 1] with parameters alpha_1 = 1, alapha_2 = 0
- * k_1 = 1e6, k_2 = 2*k_1, s_1 = 0, s_2 = 1. The initial conditions are
+ * k_1 = 1e4, k_2 = 2*k_1, s_1 = 0, s_2 = 1. The initial conditions are
  * u(x,0) = 1 + s_2*x , v(x,0) = (k_1/k_2)*u(x,0) + (1/k_2)*s_2. 
- * The boundary condition is u(0,t) = gamma_1(t) = 1.
+ * The boundary condition is u(0,t) = 1 + exp(-(t-0.8)^2/(2*sigma^2)).
+ * 
+ * sigma is a parameter that controls the steepness of the pulse at 
+ * the left boundary. The parameter sigma can be 0.1, 0.05, 0.01, 0.02. 
+ * However the default is 0.05.
  *
- * The spatial derivatives are computed using upwind spatial discretization 
- * (backward finite difference), with the data distributed over N = 100 points
+ * The spatial derivatives are computed 3rd (boundary) and 4th (interior) 
+ * order finite differences, with the data distributed over N = 400 points
  * on a uniform spatial grid.
  *
- * This program solves the problem with an ARK method. 
- * For the DIRK method, we use a Newton iteration with
- * the SUNLinSol_PCG linear solver, and a user-supplied Jacobian-vector
- * product routine.
- *
- * 100 outputs are printed at equal intervals, and run statistics
- * are printed at the end.
- *---------------------------------------------------------------*/
+ * This program solves the problem with an ARK method and GMRES linear solver.
+ *----------------------------------------------------------------------------*/
 
 #include <algorithm>
 #include <cmath>
@@ -84,6 +82,7 @@ using namespace std;
     sunrealtype alpha1, alpha2;  /* advection coefficients */
     sunrealtype k1, k2;          /* reaction coefficients */
     sunrealtype s1, s2; 
+    sunrealtype sigma;           /* pulse steepness value */
     sunrealtype xstart;          /* left endpoint on spatial grid */
     sunrealtype xend;            /* right endpoint on spatial grid */
     string swap_type;            /* Swapping or Non-Swapping of b-vectors of the method and its embedding*/ 
@@ -97,6 +96,7 @@ using namespace std;
     k2(2e4),
     s1(0.0),
     s2(1.0),
+    sigma(0.05),
     xstart(ZERO),
     xend(1.0),
     dx(ZERO),
@@ -155,7 +155,6 @@ static int Jac(N_Vector v, N_Vector Jv, sunrealtype t, N_Vector y, N_Vector fy, 
 static int ReadInputs(std::vector<std::string>& args, UserData& udata, ARKODEParameters& uopts, SUNContext ctx);
 static void InputHelp();
 static int PrintSetup(UserData& udata,ARKODEParameters& uopts);
-// static int trueSol(sunrealtype t, N_Vector tSol, void* user_data); //Exact solution
 
 /* Private function to check function return values */
 static int check_flag(void* flagvalue, const char* funcname, int opt);
@@ -264,8 +263,6 @@ int main(int argc, char* argv[])
 
   /* Initialize GMRES solver -- no preconditioning, with up to 2*N iterations  */
   SUNLinearSolver LS = SUNLinSol_SPGMR(y, SUN_PREC_NONE, 2*udata.N, ctx);
-  // SUNLinearSolver LS = SUNLinSol_SPBCGS(y, SUN_PREC_NONE, 2*udata.N, ctx);
-  // SUNLinearSolver LS = SUNLinSol_SPGMR(y, maxl, 2*udata.N, ctx);
   if (check_flag((void*)LS, "SUNLinSol_SPGMR", 0)) { return 1; }
 
   /* Linear solver interface */
@@ -286,8 +283,6 @@ int main(int argc, char* argv[])
   fprintf(UFID, "Left endpoint %f \n", udata.xstart);
   fprintf(UFID, "Right endpoint %f \n", udata.xend);
   sunrealtype* data = N_VGetArrayPointer(y);
-  // sunrealtype* final_data = N_VGetArrayPointer(y); // solution at final time step
-  // sunrealtype* true_data = N_VGetArrayPointer(tSol); // true solution 
 
   /* output initial condition (u and v) to disk */
   for (int i = 0; i < udata.N; i++) { fprintf(UFID, " %.16" ESYM " %.16" ESYM, data[i], data[udata.N + i]); }
@@ -321,9 +316,6 @@ int main(int argc, char* argv[])
   long int nsteps; //use the number of steps taken in the python plot
   ARKodeGetNumSteps(arkode_mem, &nsteps);
   fprintf(UFID, "Number of Time Steps Taken: %ld \n", nsteps);
-
-  /* Print the maximum internal step size */
-  // printf(" Largest avg internal time step size = %.2" GSYM "\n", (sumIntStep/nsteps));
 
   printf(" ---------------------------------\n \n");
   fclose(UFID);
@@ -362,6 +354,7 @@ static int fe(sunrealtype t, N_Vector y, N_Vector ydot, void* user_data)
   const sunrealtype dx     = udata->dx;
   const sunrealtype alpha1 = udata->alpha1;
   const sunrealtype alpha2 = udata->alpha2;
+  const sunrealtype sigma  = udata->sigma;
 
   sunrealtype* u = Y; //the first N entries for vector u
   sunrealtype* v = Y + N; //the next N entries for vector v
@@ -369,7 +362,7 @@ static int fe(sunrealtype t, N_Vector y, N_Vector ydot, void* user_data)
   sunrealtype* vdot = Ydot + N;
 
   // left boundary
-  sunrealtype expo1 = exp(-1.0 * (t - 0.8) * (t - 0.8) / (2.0 * 0.005 * 0.005) );
+  sunrealtype expo1 = exp(-1.0 * (t - 0.8) * (t - 0.8) / (2.0 * sigma * sigma) );
   sunrealtype gamma1t = 1.0 + 1.0 * expo1;
 
   udot[0] = -alpha1 * (-2.0 * gamma1t - 3.0 * u[0] + 6.0 * u[1] - 1.0 * u[2]) / (6.0 * dx);
@@ -405,6 +398,7 @@ static int fi(sunrealtype t, N_Vector y, N_Vector ydot, void* user_data)
   const sunrealtype k2  = udata->k2;
   const sunrealtype s1  = udata->s1;
   const sunrealtype s2  = udata->s2;
+  const sunrealtype sigma  = udata->sigma;
   sunrealtype* u = Y; //the first N entries for vector u
   sunrealtype* v = Y + N; //the next N entries for vector v
   sunrealtype* udot = Ydot;
@@ -510,7 +504,7 @@ static int ReadInputs(std::vector<std::string>& args, UserData& udata,
  find_arg(args, "--swap_type", udata.swap_type);
  find_arg(args, "--k1", udata.k1);
  find_arg(args, "--k2", udata.k2);
-
+ find_arg(args, "--sigma", udata.sigma);
 
 // Integrator options
  find_arg(args, "--dirk_table", uopts.dirk_table);
@@ -548,6 +542,7 @@ static void InputHelp()
    std::cout << "  --fixed_h <real>  : fixed step size\n";
    std::cout << "  --k1 <real>       : stiffness param k1 \n";
    std::cout << "  --k2 <real>       : stiffness param k2 \n";
+   std::cout << "  --sigma <real>    : pulse steepness value\n";
    std::cout << "  --maxsteps <int>  : max steps between outputs\n";
    std::cout << "  --output <int>    : output level\n";
    std::cout << "  --xstart <real>   : left spatial end point  \n";
@@ -572,6 +567,7 @@ static int PrintSetup(UserData& udata, ARKODEParameters& uopts)
   std::cout << "  swap_type    = " << udata.swap_type << std::endl;
   std::cout << "  k1           = " << udata.k1 << std::endl;
   std::cout << "  k2           = " << udata.k2 << std::endl;
+  std::cout << "  sigma        = " << udata.sigma << std::endl;
   std::cout << " --------------------------------- " << std::endl;
   std::cout << "  dirk_table   = " << uopts.dirk_table << std::endl;
   std::cout << "  erk_table    = " << uopts.erk_table << std::endl;

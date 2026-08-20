@@ -42,7 +42,7 @@ with open(datafile, "r") as file:
     N      = int(lines.pop(0).split()[2])     # spatial dimension
     xl     = float(lines.pop(0).split()[2])   # left endpoint on spatial grid
     xr     = float(lines.pop(0).split()[2])   # right endpoint on spatial grid
-    dx     = (xr - xl)/(N)                      # spatial step size
+    dx     = (xr - xl)/(N)                    # spatial step size
     x      = np.linspace(xl + dx, xr, N)
 
     lastline  = (lines[-1])
@@ -92,54 +92,71 @@ with open(datafile, "r") as file:
     fullSol_lastStep = np.zeros((2*N), dtype=float)
     for i in range(len(fullSol[nsteps-1, :])):
         fullSol_lastStep[i] = fullSol[nsteps-1, i]
-   
-    # fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 5))
-    # # ax1.plot(x, uSol[0, :], color = 'r', linestyle = '--', label = "initial solution")
+
+    ##uncomment if you want to plot the initial and final solution for u component only. 
+    ## you can modify the code to plot the initial and final solution for v component only 
+    # fig, (ax1) = plt.subplots(1, 1, figsize=(5, 5))
+    # ax1.plot(x, uSol[0, :], color = 'r', linestyle = '--', label = "initial solution")
+    # ax1.plot(x, uSol[-1, :], color = 'b', linestyle = '-', label = "final solution")
+    # ax1.set_yticks([0.0, 0.5, 1.0, 1.5, 2.0])
+    # ax1.text(0.3, 1.8, "u-component", fontsize=15)
+    # ax1.grid(True)
+    # plt.savefig("linear_adv_rec_frames.png")
+    # plt.close()
+
+    ##uncomment if you want to plot the initial and final solution for u and v components separately
+    # fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 5))
+    # ax1.plot(x, uSol[0, :], color = 'r', linestyle = '--', label = "initial solution")
     # ax1.plot(x, uSol[-1, :], color = 'b', linestyle = '-', label = "final solution")
     # ax1.set_yticks([0.0, 0.5, 1.0, 1.5, 2.0])
     # ax1.set_title("u-component")
     # ax1.grid(True)
 
-    # # ax2.plot(x, vSol[0, :], color = 'r', linestyle = '--', label = "initial solution")
+    # ax2.plot(x, vSol[0, :], color = 'r', linestyle = '--', label = "initial solution")
     # ax2.plot(x, vSol[-1, :], color = 'b', linestyle = '-', label = "final solution")
     # ax2.set_yticks([0.0, 0.5, 1.0, 1.5, 2.0])
     # ax2.set_title("v-component")
     # ax2.grid(True)
 
-    # plot defaults: increase default font size, increase plot width, enable LaTeX rendering
-    plt.rc("font", size=15)
-    plt.rcParams["figure.figsize"] = [7.2, 4.8]
-    plt.rcParams["text.usetex"] = True
-    plt.rcParams["figure.constrained_layout.use"] = True
+    # plt.savefig("linear_adv_rec_frames.png")
+    # plt.close()
 
-    ## subplots with time snapshots of the density, x-velocity, and pressure
-    fig = plt.figure(figsize=(10, 5))
-    gs = GridSpec(1, 3, figure=fig)
-    ax00 = fig.add_subplot(gs[0, 0])  # left column
-    ax01 = fig.add_subplot(gs[0, 1])  # middle column
-    ax02 = fig.add_subplot(gs[0, 2])  # right column
-    it = 0
-    tval = repr(float(t[it])).zfill(3)
-    ax00.plot(x, uSol[it, :], "-b",)
-    ax00.set_title(r"$t =$ " + tval)
-    ax00.set_ylabel(r"$u(t,x)$")
-    ax00.set_xlabel(r"$x$")
+    ## uncomment the following lines if you want to plot the time evolution for each method, each sigma, each rtol or dt
+    ## uncomment the corresponding lines in runtests_linear_adv_rec.py to save the frames as png files
+    # # plot defaults: increase default font size, increase plot width, enable LaTeX rendering
+    # plt.rc("font", size=15)
+    # plt.rcParams["figure.figsize"] = [7.2, 4.8]
+    # plt.rcParams["text.usetex"] = True
+    # plt.rcParams["figure.constrained_layout.use"] = True
 
-    middleval = int(np.ceil(nsteps/2))
-    it = middleval
-    tval = repr(float(t[it])).zfill(3)
-    ax01.plot(x, uSol[it, :], "-b")
-    ax01.set_title(r"$t =$ " + tval)
-    ax01.set_xlabel(r"$x$")
+    # ## subplots with time snapshots of the density, x-velocity, and pressure
+    # fig = plt.figure(figsize=(10, 5))
+    # gs = GridSpec(1, 3, figure=fig)
+    # ax00 = fig.add_subplot(gs[0, 0])  # left column
+    # ax01 = fig.add_subplot(gs[0, 1])  # middle column
+    # ax02 = fig.add_subplot(gs[0, 2])  # right column
+    # it = 0
+    # tval = repr(float(t[it])).zfill(3)
+    # ax00.plot(x, uSol[it, :], "-b",)
+    # ax00.set_title(r"$t =$ " + tval)
+    # ax00.set_ylabel(r"$u(t,x)$")
+    # ax00.set_xlabel(r"$x$")
+
+    # middleval = int(np.ceil(nsteps/2))
+    # it = middleval
+    # tval = repr(float(t[it])).zfill(3)
+    # ax01.plot(x, uSol[it, :], "-b")
+    # ax01.set_title(r"$t =$ " + tval)
+    # ax01.set_xlabel(r"$x$")
     
-    it = -1
-    tval = repr(float(t[it])).zfill(3)
-    ax02.plot(x, uSol[it, :], "-b")
-    ax02.set_title(r"$t =$ " + tval)
-    ax02.set_xlabel(r"$x$")
-    ax02.set_xticks([0.0, 0.2, 0.4, 0.6, 0.8, 1.0])
-    plt.savefig("linear_adv_rec_frames.png")
-    plt.close()
+    # it = -1
+    # tval = repr(float(t[it])).zfill(3)
+    # ax02.plot(x, uSol[it, :], "-b")
+    # ax02.set_title(r"$t =$ " + tval)
+    # ax02.set_xlabel(r"$x$")
+    # ax02.set_xticks([0.0, 0.2, 0.4, 0.6, 0.8, 1.0])
+    # plt.savefig("linear_adv_rec_frames.png")
+    # plt.close()
 
 
 ## ------------------ Extract Reference Solution at Final Time Step -----------------------
@@ -190,18 +207,45 @@ def read_ref_solution(filename):
     return uSolRefFinal, vSolRefFinal, uvSolRefFinal
 
 ## -------------------- Compute L-infinty norm using the reference solution -----------------------
+pulseP1 = True
+pulseP05 = False
+pulseP02 = False
+pulseP01 = False
+
+if pulseP1:
+    uSol_ref, vSol_ref, uvSol_ref = read_ref_solution("refSoln_linear_adv_rec_pulseP1.txt")
+elif pulseP05:
+    uSol_ref, vSol_ref, uvSol_ref = read_ref_solution("refSoln_linear_adv_rec_pulseP05.txt")
+elif pulseP02:
+    uSol_ref, vSol_ref, uvSol_ref = read_ref_solution("refSoln_linear_adv_rec_pulseP02.txt")
+elif pulseP01:
+    uSol_ref, vSol_ref, uvSol_ref = read_ref_solution("refSoln_linear_adv_rec_pulseP01.txt")
+#end
+
 elmaxu = 0.0 
 elmaxv = 0.0 
 elmaxuv = 0.0 
+
+L1erru = 0.0 
+L1errv = 0.0 
+L1erruv = 0.0 
   
-uSol_ref, vSol_ref, uvSol_ref = read_ref_solution("refSoln_linear_adv_rec.txt")
+# uSol_ref, vSol_ref, uvSol_ref = read_ref_solution("refSoln_linear_adv_rec_pulseP05.txt")
 elmaxu = np.max(np.abs(uSol_ref - uSol_lastStep))
 elmaxv = np.max(np.abs(vSol_ref - vSol_lastStep))
 elmaxuv = np.max(np.abs(uvSol_ref - fullSol_lastStep))
+
+L1erru = dx*(np.sum(np.abs(uSol_ref - uSol_lastStep)))
+L1errv = dx*(np.sum(np.abs(vSol_ref - vSol_lastStep)))
+L1erruv = dx*(np.sum(np.abs(uvSol_ref - fullSol_lastStep)))
 
 
 print("Lmax error using reference solution for u = %.4e" %elmaxu)
 print("Lmax error using reference solution for v = %.4e" %elmaxv)
 print("Lmax error using reference solution for uv = %.4e" %elmaxuv)
+
+print("L1 error using reference solution for u = %.4e" %L1erru)
+print("L1 error using reference solution for v = %.4e" %L1errv)
+print("L1 error using reference solution for uv = %.4e" %L1erruv)
 
 ##### end of script #####

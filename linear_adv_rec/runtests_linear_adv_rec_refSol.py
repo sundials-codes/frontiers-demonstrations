@@ -25,7 +25,7 @@ from math import log10, floor
 # utility routine to run a test, storing the run options and solver statistics
 # def refSoln(solver, modetype, runV, kstiff, ksN, knonstiff, showcommand=True):
 # def refSoln(solver, runV, kstiff, ksN, knonstiff, showcommand=True):
-def refSoln(solver, runV, k1Val, showcommand=True):
+def refSoln(solver, runV, k1Val, pulseVal, pulseName, showcommand=True):
     """
     This function generates the reference solution needed to compute the
     error for the population density model.
@@ -42,7 +42,7 @@ def refSoln(solver, runV, k1Val, showcommand=True):
 
     k2Val = 2.0 * k1Val
 
-    runcommand = "%s  --rtol %e  --k1 %e  --k2 %e" % (solver['exe'], runV, k1Val, k2Val)
+    runcommand = "%s  --rtol %e  --k1 %e  --k2 %e  --sigma %e" % (solver['exe'], runV, k1Val, k2Val, pulseVal)
 
     result = subprocess.run(shlex.split(runcommand), stdout=subprocess.PIPE)
 
@@ -52,7 +52,7 @@ def refSoln(solver, runV, k1Val, showcommand=True):
     else:
         if (showcommand):
             print(f"Running reference solution : " + runcommand + " SUCCESS")
-            new_fileName = f"refSoln_linear_adv_rec.txt"
+            new_fileName = f"refSoln_linear_adv_rec_{pulseName}.txt"
 
             ## rename plot file
             if os.path.exists("linear_adv_rec.txt"):
@@ -70,6 +70,7 @@ ARK845 = "./linear_adv_rec_refSol   --dirk_table ARKODE_ARK548L2SA_DIRK_8_4_5   
 
 adaptive_params = [1e-13] #relative tolerance for reference solution
 k1values = [1e4]
+pulse_steepness = {"pulseP1": 0.1, "pulseP05": 0.05, "pulseP02": 0.02, "pulseP01": 0.01} # steepness of the pulse
 
 ## Integrator types
 solvertype = [{'name': 'ARK-8-4-5', 'exe': ARK845}]
@@ -77,5 +78,6 @@ solvertype = [{'name': 'ARK-8-4-5', 'exe': ARK845}]
 # run function to generate reference solution
 for runvalue in adaptive_params:
     for k1_val in k1values:
-        for solver_adapt in solvertype:
-            adaptive_stat= refSoln(solver_adapt, runvalue, k1_val, showcommand=True)
+        for pulse_name, pulse_val in pulse_steepness.items():
+            for solver_adapt in solvertype:
+                adaptive_stat= refSoln(solver_adapt, runvalue, k1_val, pulse_val, pulse_name, showcommand=True)
