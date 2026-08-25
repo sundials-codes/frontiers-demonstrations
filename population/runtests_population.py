@@ -346,7 +346,7 @@ def bisection_midval(solvers, runtype, paramList):
                 solver['nonsspVal'] = midVal
 
             # end run both values have the same ssp condition and store the last midpoint point value 
-            # as well as the previous di./population   --dirk_table ARKODE_SSP_ESDIRK_9_2_3       --erk_table ARKODE_SSP_ERK_9_2_3 stinct midpoint value
+            #  as well as the previous distinct midpoint value
             _,condLow  = runtest(solver, runtype, solver['sspVal'], kval, kname, showcommand=True, sspcommand=True)
             _,condHigh = runtest(solver, runtype, solver['nonsspVal'], kval, kname, showcommand=True, sspcommand=True)
             if (condLow==condHigh):
