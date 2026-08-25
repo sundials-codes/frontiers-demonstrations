@@ -1,5 +1,5 @@
 /*---------------------------------------------------------------
- * Programmer(s): Daniel R. Reynolds and Sylvia Amihere @ UMBC
+ * Programmer(s): Sylvia Amihere and Daniel R. Reynolds @ UMBC
  *---------------------------------------------------------------
  * SUNDIALS Copyright Start
  * Copyright (c) 2002-2024, Lawrence Livermore National Security
@@ -15,16 +15,15 @@
  *
  * The following test simulates a simple 1D Population Density equation,
  *    P_t = f + b(x,P)P - r_d*P + kP_xx
- * for t in [0, 10], x in [0, 1], with initial conditions
- *    P(0,x) =  0
- * Periodic boundary conditions, and a point-source term,
+ * for t in [0, 10], x in [0, 1], with initial condition
+ *    P(0,x) =  0, periodic boundary conditions, and a point-source term,
  *    f(0,x) is a random value in [0.8 1.2]
  *    f(t,x) = 0, for all t>0
  * r_d = 1, b = r_b*(e/(e+P)), e = 0.005
  * r_b = 1*(1 + alpha*t), for 0<=x<=0.5
  * r_b = 100*(1 + alpha*t), for 0.5<x<=1
  * alpha = 0.001 (negative for declining birth rate)
- * k = 0.02, 0.04 (with diffusion) or 0(without diffusion)
+ * k = 0.0,0.02, 0.04 (with diffusion) or 0(without diffusion)
  *
  * The spatial derivatives are computed using second-order
  * centered differences, with the data distributed over N points
@@ -34,9 +33,6 @@
  * For the DIRK method, we use a Newton iteration with
  * the SUNLinSol_PCG linear solver, and a user-supplied Jacobian-vector
  * product routine.
- *
- * 100 outputs are printed at equal intervals, and run statistics
- * are printed at the end.
  *---------------------------------------------------------------*/
 
  #include <algorithm>
@@ -87,15 +83,17 @@ using namespace std;
     sunrealtype k;  /* diffusion coefficient */
     sunrealtype xstart;  /* left endpoint on spatial grid */
     sunrealtype xend;  /* right endpoint on spatial grid */
+    long int seed; /* random seed for initial conditions, the same for all runs */
     string swap_type;  /* Swapping or Non-Swapping of b-vectors of the method and its embedding*/ 
 
   // constructor (with default values)
   UserData()
   : N(100),
+    dx(ZERO),
     k(0.02),
     xstart(ZERO),
     xend(1.0),
-    dx(ZERO),
+    seed(2026),
     swap_type("nonswap"){};
   };
 
@@ -180,6 +178,24 @@ int main(int argc, char* argv[])
   N_Vector y = N_VNew_Serial(udata.N, ctx); /* Create serial vector for solution */
   if (check_flag((void*)y, "N_VNew_Serial", 0)) { return 1; }
   N_VConst(0.0, y); /* Set initial conditions */
+  sunrealtype* y0 = N_VGetArrayPointer(y); /* access data array for initial conditions */
+  srandom((unsigned int)udata.seed);
+  for (int i = 0; i < udata.N; i++){
+    sunrealtype f0 = SUN_RCONST(0.8) + SUN_RCONST(0.4) *
+                    ((sunrealtype)random() / SUN_RCONST(2147483647.0));
+    y0[i] += f0; /* set initial condition: includes the random value when t=0 */
+  }
+
+  /* The following lines is to check if the random number generated in this 
+      file is the same as the one generated in the reference solution. 
+      The lines are not required and can therefore be commented. */
+  sunrealtype lo_val = y0[0], hi_val = y0[0], sum = ZERO;
+  for (int i = 0; i < udata.N; i++){
+    if (y0[i] < lo_val) lo_val = y0[i];
+    if (y0[i] > hi_val) hi_val = y0[i];
+    sum += y0[i];
+  }
+  printf("Initial condition: min = %.16" ESYM ", max = %.16" ESYM ", checksum = %.16" ESYM "\n", lo_val, hi_val, sum);
 
   /* Call ARKStepCreate to initialize the ARK timestepper module and
      specify the right-hand side function in y'=f(t,y), the initial time
@@ -197,11 +213,11 @@ int main(int argc, char* argv[])
 
   /*Keep original butcher tableau or swap b-vectors of method and its embedding*/
   if (udata.swap_type == "nonswap"){
-    flag = ARKStepSetTableName(arkode_mem, uopts.dirk_table.c_str(), uopts.erk_table.c_str()); 
+    flag = ARKStepSetTableName(arkode_mem, uopts.dirk_table.c_str(), "ARKODE_ERK_NONE"); 
     if (check_flag(&flag, "ARKStepSetTableName", 1)) { return 1; } 
   }
   else if (udata.swap_type == "swap") {
-    ARKodeButcherTable Be = ARKodeButcherTable_LoadERKByName(uopts.erk_table.c_str());
+    ARKodeButcherTable Be = ARKodeButcherTable_LoadERKByName("ARKODE_ERK_NONE");
     ARKodeButcherTable Bi = ARKodeButcherTable_LoadDIRKByName(uopts.dirk_table.c_str());
 
     int s = Bi->stages;
@@ -238,8 +254,6 @@ int main(int argc, char* argv[])
   if (check_flag(&flag, "ARKodeSetStopTime", 1)) { return 1; }
   
   /* Initialize PCG solver -- no preconditioning, with up to N iterations  */
-  // SUNLinearSolver LS = SUNLinSol_PCG(y, 0, udata.N, ctx);
-  // if (check_flag((void*)LS, "SUNLinSol_PCG", 0)) { return 1; }
   SUNLinearSolver LS = SUNLinSol_SPGMR(y, SUN_PREC_NONE, udata.N, ctx);
   if (check_flag((void*)LS, "SUNLinSol_SPGMR", 0)) { return 1; }
 
@@ -313,9 +327,6 @@ int main(int argc, char* argv[])
   ARKodeGetNumSteps(arkode_mem, &nsteps);
   fprintf(UFID, "Number of Time Steps Taken: %ld \n", nsteps);
 
-  /* Print the maximum internal step size */
-  // printf("Largest average internal time step size = %.2" GSYM "\n", (sumIntStep/nsteps));
-
   printf("   -------------------------\n \n");
   fclose(UFID);
 
@@ -358,29 +369,13 @@ static int f(sunrealtype t, N_Vector y, N_Vector ydot, void* user_data)
   const sunrealtype c1 = k / dx / dx;
   const sunrealtype c2 = -2.0 * k / dx / dx;
 
-  /* update random seed */
-  srand(time(NULL));
-
-  /* iterate over domain, computing all equations */
-  if (t == 0.0) {
-    for (int i = 0; i < N; i++) {
+  // /* iterate over domain, computing all equations */
+  for (int i = 0; i < N; i++) {
       sunrealtype rb = (dx*i <= 0.5) ? bRateE : 100.0*bRateE;
-      sunrealtype rand_num = (float)random() /(float)RAND_MAX;
-      sunrealtype fsource = rand_num * 0.4 + 0.8;
       sunrealtype Yleft = (i > 0) ? Y[i - 1] : Y[N - 1];
       sunrealtype Yright = (i < N - 1) ? Y[i + 1] : Y[0];
-      Ydot[i] = (fsource + rb * (epsb / (epsb + Y[i]))*Y[i] - rd * Y[i]) 
+      Ydot[i] = (rb * (epsb / (epsb + Y[i]))*Y[i] - rd * Y[i]) 
                 + c1 * Yleft + c2 * Y[i] + c1 * Yright;
-    }
-  } else {
-    for (int i = 0; i < N; i++) {
-      sunrealtype rb = (dx*i <= 0.5) ? bRateE : 100.0*bRateE;
-      sunrealtype fsource = 0.0;
-      sunrealtype Yleft = (i > 0) ? Y[i - 1] : Y[N - 1];
-      sunrealtype Yright = (i < N - 1) ? Y[i + 1] : Y[0];
-      Ydot[i] = (fsource + rb * (epsb / (epsb + Y[i]))*Y[i] - rd * Y[i])
-                + c1 * Yleft + c2 * Y[i] + c1 * Yright;
-    }
   }
 
   return 0; /* Return with success */
@@ -405,24 +400,12 @@ static int fe(sunrealtype t, N_Vector y, N_Vector ydot, void* user_data)
   const sunrealtype c1 = k / dx / dx;
   const sunrealtype c2 = -2.0 * k / dx / dx;
 
-  /* update random seed */
-  srand(time(NULL));
-
   /* iterate over domain, computing all equations */
-  if (t == 0.0) {
-    for (int i = 0; i < N; i++) {
+  for (int i = 0; i < N; i++) {
       sunrealtype Yleft = (i > 0) ? Y[i - 1] : Y[N - 1];
       sunrealtype Yright = (i < N - 1) ? Y[i + 1] : Y[0];
       Ydot[i] = 0.0; //c1 * Yleft + c2 * Y[i] + c1 * Yright;
     }
-  } else {
-    for (int i = 0; i < N; i++) {
-      // sunrealtype rb = (dx*i <= 0.5) ? bRateE : 100.0*bRateE;
-      sunrealtype Yleft = (i > 0) ? Y[i - 1] : Y[N - 1];
-      sunrealtype Yright = (i < N - 1) ? Y[i + 1] : Y[0];
-      Ydot[i] = 0.0;//c1 * Yleft + c2 * Y[i] + c1 * Yright;
-    }
-  }
 
   return 0; /* Return with success */
 }
@@ -517,7 +500,7 @@ static int ReadInputs(std::vector<std::string>& args, UserData& udata,
  find_arg(args, "--xstart", udata.xstart);
  find_arg(args, "--xend", udata.xend);
  find_arg(args, "--swap_type", udata.swap_type);
-
+ find_arg(args, "--seed", udata.seed);
 
 // Integrator options
  find_arg(args, "--dirk_table", uopts.dirk_table);
@@ -549,6 +532,7 @@ static void InputHelp()
                 "ARKODE_SSP_ERK_3_1_2, " 
                 "ARKODE_SSP_LSPUM_ERK_3_1_2, or ARKODE_SSP_ERK_4_2_3)\n";
    std::cout << "  --swap_type <str> : swap, nonswap  \n";
+   std::cout << "  --seed <int>      : random seed for initial conditions\n";
    std::cout << "  --N <int>         : dimension\n";
    std::cout << "  --k <real>        : diffusion coefficient: (0.0, 0.02 or 0.04)\n";
    std::cout << "  --rtol <real>     : relative tolerance\n";
@@ -577,6 +561,7 @@ static int PrintSetup(UserData& udata, ARKODEParameters& uopts)
   std::cout << "  xstart       = " << udata.xstart << std::endl;
   std::cout << "  xend         = " << udata.xend << std::endl;
   std::cout << "  swap_type    = " << udata.swap_type << std::endl;
+  std::cout << "  seed         = " << udata.seed << std::endl;
   std::cout << " --------------------------------- " << std::endl;
   std::cout << "  dirk_table = " << uopts.dirk_table << std::endl;
   std::cout << "  erk_table = " << uopts.erk_table << std::endl;

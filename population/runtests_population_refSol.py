@@ -35,7 +35,7 @@ def refSoln(solver, runV, kval, kname, showcommand=True):
     Output: returns the reference solution as a textfile
     """
 
-    runcommand = " %s --rtol %e  --k %.2f" % (solver['exe'], runV, kval)
+    runcommand = " %s  --rtol %e   --k %e" % (solver['exe'], runV, kval)
 
     result = subprocess.run(shlex.split(runcommand), stdout=subprocess.PIPE)
 
@@ -59,7 +59,7 @@ def refSoln(solver, runV, kval, kname, showcommand=True):
 
 
 # method to generate reference solution
-ARK634 = "./population_refSoln  --IMintegrator ARKODE_ARK436L2SA_DIRK_6_3_4      --EXintegrator ARKODE_ARK436L2SA_ERK_6_3_4"     
+ARK845 = "./population_refSoln  --dirk_table ARKODE_ARK548L2SA_DIRK_8_4_5   --erk_table ARKODE_ARK548L2SA_ERK_8_4_5  --atol 1e-14   "     
 
 adaptive_params = [1e-14] ## relative tolerance for reference solution
 
@@ -67,7 +67,7 @@ adaptive_params = [1e-14] ## relative tolerance for reference solution
 diff_coef = {'diffk0':0.0, 'diffk02':0.02, 'diffk04':0.04}
 
 ## Integrator types
-solvertype = [{'name': 'ARK-6-3-4', 'exe': ARK634}]
+solvertype = [{'name': 'ARK-8-4-5', 'exe': ARK845}]
 
 # run function to generate reference solution
 for k_name, k_val in diff_coef.items():

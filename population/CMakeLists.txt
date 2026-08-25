@@ -12,7 +12,8 @@ set(source_ref
 set(extras
     runtests_population.py
     plot_population.py
-    runtests_population_refSol.py)
+    runtests_population_refSol.py
+    run-all-population-tests.sh)
 
 #   set the target name
 set(target_main 
