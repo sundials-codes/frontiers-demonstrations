@@ -128,7 +128,7 @@ def runtest(solver, modetype, runV, kVal, kName, showcommand=True, sspcommand=Tr
             sys.exit(msg)
         
 
-        # ====== in the plot script, only one diffusion coefficient can be true at a time =========
+        # ==== in the plot script, only one diffusion coefficient can be true at a time =====
         # so that you can use the correct reference solution for each diffusion coefficient
         # ===================================================================================
         K = 0.0
@@ -263,11 +263,11 @@ def runtest(solver, modetype, runV, kVal, kName, showcommand=True, sspcommand=Tr
 
 
 # shortcuts to executable/configuration of different embedded IMEX SSP methods
-SSP212       = "./population   --dirk_table ARKODE_SSP_SDIRK_2_1_2        --erk_table ARKODE_SSP_ERK_2_1_2" 
-SSP312       = "./population   --dirk_table ARKODE_SSP_DIRK_3_1_2         --erk_table ARKODE_SSP_ERK_3_1_2"           
-SSPL312      = "./population   --dirk_table ARKODE_SSP_LSPUM_SDIRK_3_1_2  --erk_table ARKODE_SSP_LSPUM_ERK_3_1_2"  
-SSP423       = "./population   --dirk_table ARKODE_SSP_ESDIRK_4_2_3       --erk_table ARKODE_SSP_ERK_4_2_3"  
-SSP923       = "./population   --dirk_table ARKODE_SSP_ESDIRK_9_2_3       --erk_table ARKODE_SSP_ERK_9_2_3"    
+SSP212       = "./population   --dirk_table ARKODE_SSP_SDIRK_2_1_2        --erk_table ARKODE_SSP_ERK_2_1_2  " 
+SSP312       = "./population   --dirk_table ARKODE_SSP_DIRK_3_1_2         --erk_table ARKODE_SSP_ERK_3_1_2  "           
+SSPL312      = "./population   --dirk_table ARKODE_SSP_LSPUM_SDIRK_3_1_2  --erk_table ARKODE_SSP_LSPUM_ERK_3_1_2  "  
+SSP423       = "./population   --dirk_table ARKODE_SSP_ESDIRK_4_2_3       --erk_table ARKODE_SSP_ERK_4_2_3  "  
+SSP923       = "./population   --dirk_table ARKODE_SSP_ESDIRK_9_2_3       --erk_table ARKODE_SSP_ERK_9_2_3  "    
 
 adaptive_params = [1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 5e-2, 1e-1, 5e-1, 1.0] ## relative tolerances
 fixed_params    = [] # fixed time step sizes
@@ -276,13 +276,15 @@ for i in range(-14, 4, 1):
 #end
 
 
-## ----------------------------------------------------------------------------------------------------
+## -------------------------------------------------------------------------------------------------------------
 # This section uses the Bisection Method to compute the step size or rtol at which the method
-# switches from ssp to nonssp. The step size or rtol values are rounded to 3 significant figures.
+# switches from ssp to nonssp. Here, ssp refers to positiviy at all time steps and a smooth final profile.
+# The step size or rtol values are rounded to 3 significant figures. 
 # The values computed in this section can be appended to the run values (rtol or step sizes)
-# to generate the plots. The next section (with adaptive and fixed runs) was computed first to determine 
-# the interval to bisect before this section was run. You would not need to that.
-## ----------------------------------------------------------------------------------------------------
+# to generate the plots. The next block of codes (with adaptive and fixed runs) was computed first 
+# to determine the interval to bisect before this section was run. You can uncomment the block of codes to 
+# generated the step size or relative tolerance values at which the methods switch from ssp (0) to nonssp (1).
+## -------------------------------------------------------------------------------------------------------------
 def round_to_sf(x, sf):
     """
     Converts a number to three significant figures
@@ -344,7 +346,7 @@ def bisection_midval(solvers, runtype, paramList):
                 solver['nonsspVal'] = midVal
 
             # end run both values have the same ssp condition and store the last midpoint point value 
-            # as well as the previous distinct midpoint value
+            # as well as the previous di./population   --dirk_table ARKODE_SSP_ESDIRK_9_2_3       --erk_table ARKODE_SSP_ERK_9_2_3 stinct midpoint value
             _,condLow  = runtest(solver, runtype, solver['sspVal'], kval, kname, showcommand=True, sspcommand=True)
             _,condHigh = runtest(solver, runtype, solver['nonsspVal'], kval, kname, showcommand=True, sspcommand=True)
             if (condLow==condHigh):
@@ -358,50 +360,43 @@ def bisection_midval(solvers, runtype, paramList):
         # print results
         print(f"{runtype} run with {name}, {kval}, iter {iter} : SSP-value & cond = {solver['sspVal'],condLow}, NonSSP-value & cond = {solver['nonsspVal'], condHigh}")
 
-# # -------------------------------------- adaptive runs -----------------------------------------
-# solvernames_adaptK0 = [{'name': 'SSP212',  'exe': SSP212,             'sspVal': 1e-2, 'nonsspVal': 5e-2, 'kvalue': 0.0, 'kname': 'diffk0'},
+# # #-------------------------------------- adaptive runs -----------------------------------------
+# solvernames_adaptK0 = [{'name': 'SSP212',  'exe': SSP212,             'sspVal': 1e-1, 'nonsspVal': 5e-1, 'kvalue': 0.0, 'kname': 'diffk0'},
 #                        {'name': 'SSP312',  'exe': SSP312,             'sspVal': 1e-1, 'nonsspVal': 5e-1, 'kvalue': 0.0, 'kname': 'diffk0'},
-#                        {'name':  'SSPL312', 'exe': SSPL312,           'sspVal': 1e-1, 'nonsspVal': 5e-1, 'kvalue': 0.0, 'kname': 'diffk0'},
-#                        {'name': 'SSP423',  'exe': SSP423,             'sspVal': 1e-3, 'nonsspVal': 1e-2, 'kvalue': 0.0, 'kname': 'diffk0'}, 
-#                        {'name': 'SSP923',  'exe': SSP923,             'sspVal': 1e-3, 'nonsspVal': 1e-2, 'kvalue': 0.0, 'kname': 'diffk0'} 
-#                        ]
+#                        {'name':  'SSPL312', 'exe': SSPL312,           'sspVal': 1e-2, 'nonsspVal': 5e-2, 'kvalue': 0.0, 'kname': 'diffk0'},
+#                        {'name': 'SSP423',  'exe': SSP423,             'sspVal': 1e-1, 'nonsspVal': 5e-1, 'kvalue': 0.0, 'kname': 'diffk0'} ]
 
-# solvernames_adaptK2 = [{'name': 'SSP212',  'exe': SSP212,             'sspVal': 1e-1, 'nonsspVal': 5e-1, 'kvalue': 0.02, 'kname': 'diffk02'},
+# solvernames_adaptK2 = [{'name': 'SSP212',  'exe': SSP212,             'sspVal': 1e-3, 'nonsspVal': 5e-3, 'kvalue': 0.02, 'kname': 'diffk02'},
 #                        {'name': 'SSP312',  'exe': SSP312,             'sspVal': 1e-1, 'nonsspVal': 5e-1, 'kvalue': 0.02, 'kname': 'diffk02'},
-#                        {'name': 'SSPL312', 'exe': SSPL312,            'sspVal': 5e-2, 'nonsspVal': 1e-1, 'kvalue': 0.02, 'kname': 'diffk02'},
-#                        {'name': 'SSP423',  'exe': SSP423,             'sspVal': 1e-3, 'nonsspVal': 1e-2, 'kvalue': 0.02, 'kname': 'diffk02'},
-#                        {'name': 'SSP923',  'exe': SSP923,             'sspVal': 1e-1, 'nonsspVal': 5e-1, 'kvalue': 0.02, 'kname': 'diffk02'} ]
+#                        {'name': 'SSPL312', 'exe': SSPL312,            'sspVal': 1e-2, 'nonsspVal': 5e-2, 'kvalue': 0.02, 'kname': 'diffk02'},
+#                        {'name': 'SSP423',  'exe': SSP423,             'sspVal': 1e-2, 'nonsspVal': 5e-2, 'kvalue': 0.02, 'kname': 'diffk02'},
+#                        {'name': 'SSP923',  'exe': SSP923,             'sspVal': 1e-3, 'nonsspVal': 5e-3, 'kvalue': 0.02, 'kname': 'diffk02'} ]
 
-# solvernames_adaptK4 = [{'name': 'SSP212', 'exe': SSP212,              'sspVal': 1e-1, 'nonsspVal': 5e-1, 'kvalue': 0.04, 'kname': 'diffk04'},
-#                        {'name': 'SSP312', 'exe': SSP312,              'sspVal': 1e-1, 'nonsspVal': 5e-1, 'kvalue': 0.04, 'kname': 'diffk04'},
-#                        {'name': 'SSPL312', 'exe': SSPL312,            'sspVal': 5e-2, 'nonsspVal': 1e-1, 'kvalue': 0.04, 'kname': 'diffk04'},
-#                        {'name': 'SSP423', 'exe': SSP423,              'sspVal': 1e-1, 'nonsspVal': 5e-1, 'kvalue': 0.04, 'kname': 'diffk04'},
-#                        {'name': 'SSP923', 'exe': SSP923,              'sspVal': 1e-1, 'nonsspVal': 5e-1, 'kvalue': 0.04, 'kname': 'diffk04'}  ]
+# solvernames_adaptK4 = [{'name': 'SSP212', 'exe': SSP212,              'sspVal': 5e-4, 'nonsspVal': 1e-3, 'kvalue': 0.04, 'kname': 'diffk04'},
+#                        {'name': 'SSP312', 'exe': SSP312,              'sspVal': 5e-1, 'nonsspVal': 1.0, 'kvalue': 0.04, 'kname': 'diffk04'},
+#                        {'name': 'SSPL312', 'exe': SSPL312,            'sspVal': 1e-2, 'nonsspVal': 5e-2, 'kvalue': 0.04, 'kname': 'diffk04'},
+#                        {'name': 'SSP423', 'exe': SSP423,              'sspVal': 1e-2, 'nonsspVal': 5e-2, 'kvalue': 0.04, 'kname': 'diffk04'},
+#                        {'name': 'SSP923', 'exe': SSP923,              'sspVal': 5e-4, 'nonsspVal': 1e-3, 'kvalue': 0.04, 'kname': 'diffk04'}  ]
 
 # bisection_midval(solvernames_adaptK0, "adaptive", paramList = adaptive_params)
 # bisection_midval(solvernames_adaptK2, "adaptive", paramList = adaptive_params)
 # bisection_midval(solvernames_adaptK4, "adaptive", paramList = adaptive_params)
 
 
-# # -------------------------------------- fixed runs -----------------------------------------
-# solvernames_fixedK0 = [{'name': 'SSP212',  'exe': SSP212,            'sspVal': 0.25*(2**2), 'nonsspVal': 0.25*(2**3), 'kvalue': 0.0, 'kname': 'diffk0'} ,
-#                        {'name': 'SSP312',  'exe': SSP312,            'sspVal': 0.25*(2**3), 'nonsspVal': 0.25*(2**4), 'kvalue': 0.0, 'kname': 'diffk0'} ,
-#                        {'name': 'SSPL312', 'exe': SSPL312,           'sspVal': 0.25*(2**2), 'nonsspVal': 0.25*(2**3), 'kvalue': 0.0, 'kname': 'diffk0'} ,
-#                        {'name': 'SSP423',  'exe': SSP423,            'sspVal': 0.25*(2**3), 'nonsspVal': 0.25*(2**4), 'kvalue': 0.0, 'kname': 'diffk0'} ,
-#                        {'name': 'SSP923',  'exe': SSP923,            'sspVal': 0.25*(2**3), 'nonsspVal': 0.25*(2**4), 'kvalue': 0.0, 'kname': 'diffk0'} 
-#                        ]
+# # #-------------------------------------- fixed runs -----------------------------------------
+# solvernames_fixedK0 = [{'name': 'SSP212',  'exe': SSP212,            'sspVal': 1.0, 'nonsspVal': 2.0, 'kvalue': 0.0, 'kname': 'diffk0'} ,
+#                        {'name': 'SSP312',  'exe': SSP312,            'sspVal': 1.0, 'nonsspVal': 2.0, 'kvalue': 0.0, 'kname': 'diffk0'} ,
+#                        {'name': 'SSPL312', 'exe': SSPL312,           'sspVal': 1.0, 'nonsspVal': 2.0, 'kvalue': 0.0, 'kname': 'diffk0'} ]
 
-# solvernames_fixedK2 = [{'name': 'SSP212',  'exe': SSP212,             'sspVal': 0.25*(2**1), 'nonsspVal': 0.25*(2**2), 'kvalue': 0.02, 'kname': 'diffk02'},
-#                        {'name': 'SSP312',  'exe': SSP312,             'sspVal': 0.25*(2**2), 'nonsspVal': 0.25*(2**3), 'kvalue': 0.02, 'kname': 'diffk02'},
-#                        {'name': 'SSPL312', 'exe': SSPL312,           'sspVal': 0.25*(2**2), 'nonsspVal': 0.25*(2**3), 'kvalue': 0.02, 'kname': 'diffk02'},
-#                        {'name': 'SSP423',  'exe': SSP423,             'sspVal': 0.25*(2**0), 'nonsspVal': 0.25*(2**1), 'kvalue': 0.02, 'kname': 'diffk02'},
-#                        {'name': 'SSP923',  'exe': SSP923,             'sspVal': 0.25*(2**-7), 'nonsspVal': 0.25*(2**-6), 'kvalue': 0.02, 'kname': 'diffk02'} ]
+# solvernames_fixedK2 = [{'name': 'SSP212',  'exe': SSP212,            'sspVal': 0.015625,'nonsspVal': 0.03125,    'kvalue': 0.02, 'kname': 'diffk02'},
+#                        {'name': 'SSPL312', 'exe': SSPL312,           'sspVal': 1.0,     'nonsspVal': 2.0,    'kvalue': 0.02, 'kname': 'diffk02'},
+#                        {'name': 'SSP423',  'exe': SSP423,            'sspVal': 0.5,     'nonsspVal': 1.0,    'kvalue': 0.02, 'kname': 'diffk02'},
+#                        {'name': 'SSP923',  'exe': SSP923,            'sspVal': 0.03125, 'nonsspVal': 0.0625, 'kvalue': 0.02, 'kname': 'diffk02'} ]
 
-# solvernames_fixedK4 = [{'name': 'SSP212',  'exe': SSP212,             'sspVal': 0.25*(2**1), 'nonsspVal': 0.25*(2**2), 'kvalue': 0.04, 'kname': 'diffk04'},
-#                        {'name': 'SSP312',  'exe': SSP312,             'sspVal': 0.25*(2**2), 'nonsspVal': 0.25*(2**3), 'kvalue': 0.04, 'kname': 'diffk04'},
-#                        {'name': 'SSPL312', 'exe': SSPL312,            'sspVal': 0.25*(2**2), 'nonsspVal': 0.25*(2**3), 'kvalue': 0.04, 'kname': 'diffk04'},
-#                        {'name': 'SSP423',  'exe': SSP423,             'sspVal': 0.25*(2**0), 'nonsspVal': 0.25*(2**1), 'kvalue': 0.04, 'kname': 'diffk04'},
-#                        {'name': 'SSP923',  'exe': SSP923,             'sspVal': 0.25*(2**-8), 'nonsspVal': 0.25*(2**-7), 'kvalue': 0.04, 'kname': 'diffk04'} ]
+# solvernames_fixedK4 = [{'name': 'SSP212',  'exe': SSP212,            'sspVal': 0.015625, 'nonsspVal': 0.03125, 'kvalue': 0.04, 'kname': 'diffk04'},
+#                        {'name': 'SSPL312', 'exe': SSPL312,           'sspVal': 1.0,      'nonsspVal': 2.0,     'kvalue': 0.04, 'kname': 'diffk04'},
+#                        {'name': 'SSP423',  'exe': SSP423,            'sspVal': 0.5,      'nonsspVal': 1.0,     'kvalue': 0.04, 'kname': 'diffk04'},
+#                        {'name': 'SSP923',  'exe': SSP923,            'sspVal': 0.03125,  'nonsspVal': 0.0625,  'kvalue': 0.04, 'kname': 'diffk04'} ]
 
 # bisection_midval(solvernames_fixedK0, "fixed", paramList = fixed_params)
 # bisection_midval(solvernames_fixedK2, "fixed", paramList = fixed_params)
@@ -506,172 +501,4 @@ for x_metric, x_label, x_filename in x_metrics:
         fig.supxlabel(f'{x_label}', fontsize=20)
         fig.supylabel(f'{y_label}', fontsize=20)
         plt.savefig(f"{x_filename}_{y_filename}_population.png", bbox_inches="tight")
-
-
-
-
-
-# # ===============================================================================================================================
-# #  Generate plots to test the efficiency and accuracy of the IMEX SSP methods
-# # ===============================================================================================================================
-# df = pd.read_excel('population_stats' + '.xlsx') # excel file
-# methods = df['IMEX_method'].unique()
-
-# colors   = ['red', 'black', 'blue', 'green', 'orange'] 
-# diff_coef2 = {'diffk0':0.0, 'diffk02':0.02, 'diffk04':0.04}
-
-# # --------------------------- accepted steps vs error ----------------------------------
-# #create a figure of subplots (columns are diffusion coefficients parameters and rows are methods)
-# fig, axes = plt.subplots(1, len(diff_coef2), figsize=(15, 15))
-# if len(diff_coef2) == 1:
-#     axes = [axes]
-# for col_ind, (kValName, kVal) in enumerate(diff_coef2.items()):
-
-#     #filter data by fixed and adaptive tests
-#     col_data = df[(df["diff_coef"] == kVal)]
-#     data_fixed = col_data[col_data["Runtype"] == "fixed"]
-#     data_adaptive = col_data[col_data["Runtype"] == "adaptive"]
-
-#     # fixed run
-#     for i, SSPmethodFix in enumerate(data_fixed['IMEX_method'].unique()):
-#         SSPmethodFix_data = data_fixed[data_fixed['IMEX_method'] == SSPmethodFix]
-#         valid_data = SSPmethodFix_data[SSPmethodFix_data['ReturnCode'] != 1]
-#         x = valid_data['StepAttempts']
-#         y = valid_data['error']
-#         axes[col_ind].plot(x, y, color = colors[i], marker='o', markersize=5, linestyle='-', label=f"{SSPmethodFix}-h")
-
-#     #adaptive run
-#     for i, SSPmethodAdapt in enumerate(data_adaptive['IMEX_method'].unique()):
-#         SSPmethodAdapt_data = data_adaptive[data_adaptive['IMEX_method'] == SSPmethodAdapt]
-#         valid_data = SSPmethodAdapt_data[SSPmethodAdapt_data['ReturnCode'] != 1]
-#         x = valid_data['StepAttempts']
-#         y = valid_data['error']
-#         axes[col_ind].plot(x, y, color = colors[i], marker='*', markersize=5, linestyle='-.', label=f"{SSPmethodAdapt}-rtol")
-
-#     # each column should correspond to a stiffness parameter
-#     axes[col_ind].set_title(f"d = {kVal}", fontsize=18)
-#     axes[col_ind].set_xscale('log')
-#     axes[col_ind].set_yscale('log')
-#     axes[col_ind].tick_params(axis='both', labelsize=15)
-# #end
-
-# handles = []
-# labels = []
-# for ax in axes:
-#     h, l = ax.get_legend_handles_labels()
-#     handles.extend(h)
-#     labels.extend(l)
-
-# #remove duplicates
-# by_label = dict(zip(labels, handles))
-# axes[-1].legend(by_label.values(), by_label.keys(), bbox_to_anchor=(1.05, 1), borderaxespad=0., loc='upper left', fontsize=18)
-
-# fig.supxlabel(' step-attempts ', fontsize=18)
-# fig.supylabel(' err ', fontsize=18)
-# plt.savefig("stepAttempts_err_population.png", bbox_inches="tight")
-
-
-# # --------------------------- implicit solves vs error ----------------------------------
-# #create a figure of subplots (columns are diffusion coefficients parameters and rows are methods)
-# fig, axes = plt.subplots(1, len(diff_coef2), figsize=(15, 15))
-# if len(diff_coef2) == 1:
-#     axes = [axes]
-# for col_ind, (kValName, kVal) in enumerate(diff_coef2.items()):
-
-#     #filter data by fixed and adaptive tests
-#     col_data = df[(df["diff_coef"] == kVal)]
-#     data_fixed = col_data[col_data["Runtype"] == "fixed"]
-#     data_adaptive = col_data[col_data["Runtype"] == "adaptive"]
-
-#     # fixed run
-#     for i, SSPmethodFix in enumerate(data_fixed['IMEX_method'].unique()):
-#         SSPmethodFix_data = data_fixed[data_fixed['IMEX_method'] == SSPmethodFix]
-#         valid_data = SSPmethodFix_data[SSPmethodFix_data['ReturnCode'] != 1]
-#         x = valid_data['Implicit_solves']
-#         y = valid_data['error']
-#         axes[col_ind].plot(x, y, color = colors[i], marker='o', markersize=5, linestyle='-', label=f"{SSPmethodFix}-h")
-
-#     #adaptive run
-#     for i, SSPmethodAdapt in enumerate(data_adaptive['IMEX_method'].unique()):
-#         SSPmethodAdapt_data = data_adaptive[data_adaptive['IMEX_method'] == SSPmethodAdapt]
-#         valid_data = SSPmethodAdapt_data[SSPmethodAdapt_data['ReturnCode'] != 1]
-#         x = valid_data['Implicit_solves']
-#         y = valid_data['error']
-#         axes[col_ind].plot(x, y, color = colors[i], marker='*', markersize=5, linestyle='-.', label=f"{SSPmethodAdapt}-rtol")
-        
-
-#     # each column should correspond to a stiffness parameter
-#     axes[col_ind].set_title(f"d = {kVal}", fontsize=18)
-#     axes[col_ind].set_xscale('log')
-#     axes[col_ind].set_yscale('log')
-#     axes[col_ind].tick_params(axis='both', labelsize=15)
-# #end
-
-# handles = []
-# labels = []
-# for ax in axes:
-#     h, l = ax.get_legend_handles_labels()
-#     handles.extend(h)
-#     labels.extend(l)
-
-# #remove duplicates
-# by_label = dict(zip(labels, handles))
-# axes[-1].legend(by_label.values(), by_label.keys(), bbox_to_anchor=(1.05, 1), borderaxespad=0., loc='upper left', fontsize=18)
-
-# fig.supxlabel(' implicit solves ', fontsize=18)
-# fig.supylabel(' err ', fontsize=18)
-# plt.savefig("implicit_solves_err_population.png", bbox_inches="tight")
-
-
-
-# # --------------------------- runtime vs erroru ----------------------------------
-# #create a figure of subplots (columns are diffusion coefficients parameters and rows are methods)
-# fig, axes = plt.subplots(1, len(diff_coef2), figsize=(15, 15))
-# if len(diff_coef2) == 1:
-#     axes = [axes]
-# for col_ind, (kValName, kVal) in enumerate(diff_coef2.items()):
-
-#     #filter data by fixed and adaptive tests
-#     col_data = df[(df["diff_coef"] == kVal)]
-#     data_fixed = col_data[col_data["Runtype"] == "fixed"]
-#     data_adaptive = col_data[col_data["Runtype"] == "adaptive"]
-
-#     # fixed run
-#     for i, SSPmethodFix in enumerate(data_fixed['IMEX_method'].unique()):
-#         SSPmethodFix_data = data_fixed[data_fixed['IMEX_method'] == SSPmethodFix]
-#         valid_data = SSPmethodFix_data[SSPmethodFix_data['ReturnCode'] != 1]
-#         x = valid_data['runtime']
-#         y = valid_data['error']
-#         axes[col_ind].plot(x, y, color = colors[i], marker='o', markersize=5, linestyle='-', label=f"{SSPmethodFix}-h")
-
-#     #adaptive run
-#     for i, SSPmethodAdapt in enumerate(data_adaptive['IMEX_method'].unique()):
-#         SSPmethodAdapt_data = data_adaptive[data_adaptive['IMEX_method'] == SSPmethodAdapt]
-#         valid_data = SSPmethodAdapt_data[SSPmethodAdapt_data['ReturnCode'] != 1]
-#         x = valid_data['runtime']
-#         y = valid_data['error']
-#         axes[col_ind].plot(x, y, color = colors[i], marker='*', markersize=5, linestyle='-.', label=f"{SSPmethodAdapt}-rtol")
-
-#     # each column should correspond to a stiffness parameter
-#     axes[col_ind].set_title(f"d = {kVal}", fontsize=18)
-#     axes[col_ind].set_xscale('log')
-#     axes[col_ind].set_yscale('log')
-#     axes[col_ind].tick_params(axis='both', labelsize=15)
-# #end
-
-# handles = []
-# labels = []
-# for ax in axes:
-#     h, l = ax.get_legend_handles_labels()
-#     handles.extend(h)
-#     labels.extend(l)
-
-# #remove duplicates
-# by_label = dict(zip(labels, handles))
-# axes[-1].legend(by_label.values(), by_label.keys(), bbox_to_anchor=(1.05, 1), borderaxespad=0., loc='upper left', fontsize=18)
-
-# fig.supxlabel(' runtime ', fontsize=18)
-# fig.supylabel(' err', fontsize=18)
-# plt.savefig("runtime_err_population.png", bbox_inches="tight")
-
 

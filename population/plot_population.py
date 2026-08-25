@@ -84,7 +84,7 @@ with open(datafile, "r") as file:
             lmax_pSol_xi = pSol_xi
     print("Lmax of first derivative at final time step = %.6f" %lmax_pSol_xi)
 
-    ##uncomment if you want to plot the solution at the final time step only 
+    # ##uncomment if you want to plot the solution at the final time step only 
     # ## plotting only the solution at the final time step 
     # plt.xlabel(r"$x$")
     # plt.ylabel(r"pSol")
