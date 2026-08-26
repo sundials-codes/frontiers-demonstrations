@@ -89,12 +89,9 @@ with open(datafile, "r") as file:
     # plt.xlabel(r"$x$")
     # plt.ylabel(r"pSol")
     # plt.plot(x, pSol[-1, :])
-    # # plt.savefig("populationModel_finalsoln.png")
-    # # plt.close()
     # plt.show()
    
     ##uncomment if you want to plot the solution at 3 time intervals (initial, middle, final)
-    # ## plot defaults: increase default font size, increase plot width, enable LaTeX rendering
     # plt.rc("font", size=15)
     # plt.rcParams["figure.figsize"] = [7.2, 4.8]
     # plt.rcParams["text.usetex"] = True

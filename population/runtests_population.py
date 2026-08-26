@@ -361,21 +361,21 @@ def bisection_midval(solvers, runtype, paramList):
         print(f"{runtype} run with {name}, {kval}, iter {iter} : SSP-value & cond = {solver['sspVal'],condLow}, NonSSP-value & cond = {solver['nonsspVal'], condHigh}")
 
 # # #-------------------------------------- adaptive runs -----------------------------------------
-# solvernames_adaptK0 = [{'name': 'SSP212',  'exe': SSP212,             'sspVal': 1e-1, 'nonsspVal': 5e-1, 'kvalue': 0.0, 'kname': 'diffk0'},
-#                        {'name': 'SSP312',  'exe': SSP312,             'sspVal': 1e-1, 'nonsspVal': 5e-1, 'kvalue': 0.0, 'kname': 'diffk0'},
+# solvernames_adaptK0 = [{'name': 'SSP212',  'exe': SSP212,             'sspVal': 1e-2, 'nonsspVal': 5e-2, 'kvalue': 0.0, 'kname': 'diffk0'},
+#                        {'name': 'SSP312',  'exe': SSP312,             'sspVal': 5e-2, 'nonsspVal': 1e-1, 'kvalue': 0.0, 'kname': 'diffk0'},
 #                        {'name':  'SSPL312', 'exe': SSPL312,           'sspVal': 1e-2, 'nonsspVal': 5e-2, 'kvalue': 0.0, 'kname': 'diffk0'},
 #                        {'name': 'SSP423',  'exe': SSP423,             'sspVal': 1e-1, 'nonsspVal': 5e-1, 'kvalue': 0.0, 'kname': 'diffk0'} ]
 
-# solvernames_adaptK2 = [{'name': 'SSP212',  'exe': SSP212,             'sspVal': 1e-3, 'nonsspVal': 5e-3, 'kvalue': 0.02, 'kname': 'diffk02'},
+# solvernames_adaptK2 = [{'name': 'SSP212',  'exe': SSP212,             'sspVal': 1e-3, 'nonsspVal': 2e-3, 'kvalue': 0.02, 'kname': 'diffk02'},
 #                        {'name': 'SSP312',  'exe': SSP312,             'sspVal': 1e-1, 'nonsspVal': 5e-1, 'kvalue': 0.02, 'kname': 'diffk02'},
 #                        {'name': 'SSPL312', 'exe': SSPL312,            'sspVal': 1e-2, 'nonsspVal': 5e-2, 'kvalue': 0.02, 'kname': 'diffk02'},
-#                        {'name': 'SSP423',  'exe': SSP423,             'sspVal': 1e-2, 'nonsspVal': 5e-2, 'kvalue': 0.02, 'kname': 'diffk02'},
-#                        {'name': 'SSP923',  'exe': SSP923,             'sspVal': 1e-3, 'nonsspVal': 5e-3, 'kvalue': 0.02, 'kname': 'diffk02'} ]
+#                        {'name': 'SSP423',  'exe': SSP423,             'sspVal': 5e-3, 'nonsspVal': 1e-2, 'kvalue': 0.02, 'kname': 'diffk02'},
+#                        {'name': 'SSP923',  'exe': SSP923,             'sspVal': 5e-4, 'nonsspVal': 1e-3, 'kvalue': 0.02, 'kname': 'diffk02'} ]
 
 # solvernames_adaptK4 = [{'name': 'SSP212', 'exe': SSP212,              'sspVal': 5e-4, 'nonsspVal': 1e-3, 'kvalue': 0.04, 'kname': 'diffk04'},
 #                        {'name': 'SSP312', 'exe': SSP312,              'sspVal': 5e-1, 'nonsspVal': 1.0, 'kvalue': 0.04, 'kname': 'diffk04'},
-#                        {'name': 'SSPL312', 'exe': SSPL312,            'sspVal': 1e-2, 'nonsspVal': 5e-2, 'kvalue': 0.04, 'kname': 'diffk04'},
-#                        {'name': 'SSP423', 'exe': SSP423,              'sspVal': 1e-2, 'nonsspVal': 5e-2, 'kvalue': 0.04, 'kname': 'diffk04'},
+#                        {'name': 'SSPL312','exe': SSPL312,            'sspVal': 1e-2, 'nonsspVal': 5e-2, 'kvalue': 0.04, 'kname': 'diffk04'},
+#                        {'name': 'SSP423', 'exe': SSP423,              'sspVal': 5e-3, 'nonsspVal': 1e-2, 'kvalue': 0.04, 'kname': 'diffk04'},
 #                        {'name': 'SSP923', 'exe': SSP923,              'sspVal': 5e-4, 'nonsspVal': 1e-3, 'kvalue': 0.04, 'kname': 'diffk04'}  ]
 
 # bisection_midval(solvernames_adaptK0, "adaptive", paramList = adaptive_params)
@@ -384,13 +384,13 @@ def bisection_midval(solvers, runtype, paramList):
 
 
 # # #-------------------------------------- fixed runs -----------------------------------------
-# solvernames_fixedK0 = [{'name': 'SSP212',  'exe': SSP212,            'sspVal': 1.0, 'nonsspVal': 2.0, 'kvalue': 0.0, 'kname': 'diffk0'} ,
-#                        {'name': 'SSP312',  'exe': SSP312,            'sspVal': 1.0, 'nonsspVal': 2.0, 'kvalue': 0.0, 'kname': 'diffk0'} ,
+# solvernames_fixedK0 = [{'name': 'SSP212',  'exe': SSP212,            'sspVal': 0.5, 'nonsspVal': 1.0, 'kvalue': 0.0, 'kname': 'diffk0'} ,
+#                        {'name': 'SSP312',  'exe': SSP312,            'sspVal': 1.0, 'nonsspVal': 1.3, 'kvalue': 0.0, 'kname': 'diffk0'} ,
 #                        {'name': 'SSPL312', 'exe': SSPL312,           'sspVal': 1.0, 'nonsspVal': 2.0, 'kvalue': 0.0, 'kname': 'diffk0'} ]
 
-# solvernames_fixedK2 = [{'name': 'SSP212',  'exe': SSP212,            'sspVal': 0.015625,'nonsspVal': 0.03125,    'kvalue': 0.02, 'kname': 'diffk02'},
+# solvernames_fixedK2 = [{'name': 'SSP212',  'exe': SSP212,            'sspVal': 0.015625,'nonsspVal': 0.03125,'kvalue': 0.02, 'kname': 'diffk02'},
 #                        {'name': 'SSPL312', 'exe': SSPL312,           'sspVal': 1.0,     'nonsspVal': 2.0,    'kvalue': 0.02, 'kname': 'diffk02'},
-#                        {'name': 'SSP423',  'exe': SSP423,            'sspVal': 0.5,     'nonsspVal': 1.0,    'kvalue': 0.02, 'kname': 'diffk02'},
+#                        {'name': 'SSP423',  'exe': SSP423,            'sspVal': 0.5,    'nonsspVal': 0.65,    'kvalue': 0.02, 'kname': 'diffk02'},
 #                        {'name': 'SSP923',  'exe': SSP923,            'sspVal': 0.03125, 'nonsspVal': 0.0625, 'kvalue': 0.02, 'kname': 'diffk02'} ]
 
 # solvernames_fixedK4 = [{'name': 'SSP212',  'exe': SSP212,            'sspVal': 0.015625, 'nonsspVal': 0.03125, 'kvalue': 0.04, 'kname': 'diffk04'},
