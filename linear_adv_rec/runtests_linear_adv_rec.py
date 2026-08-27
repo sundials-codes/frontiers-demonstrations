@@ -372,4 +372,5 @@ for pulse_name, pulse_val in pulse_steepness.items():
             fig.supxlabel(f'{x_label}', fontsize=20)
             fig.supylabel(f'{y_label}', fontsize=20)
             plt.savefig(f"{x_filename}_{y_filename}_LAR_{pulse_name}.png", bbox_inches="tight")
+            plt.close(fig)
 
