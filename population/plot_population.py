@@ -88,7 +88,7 @@ with open(datafile, "r") as file:
     # ## plotting only the solution at the final time step 
     # plt.xlabel(r"$x$")
     # plt.ylabel(r"pSol")
-    # plt.plot(x, pSol[-1, :])
+    # plt.plot(x, pSol[-1, :], linewidth=2)
     # plt.show()
    
     ##uncomment if you want to plot the solution at 3 time intervals (initial, middle, final)
