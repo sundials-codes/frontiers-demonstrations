@@ -453,15 +453,14 @@ x_metrics = [('StepAttempts', 'step-attempts','step_attempts'),
 
 y_metrics = [('error', 'error','error')]
 
-for x_metric, x_label, x_filename in x_metrics:
-    for y_metric, y_label, y_filename in y_metrics:
-        fig, axes = plt.subplots(1, len(diff_coef2), figsize=(15, 15))
-        if len(diff_coef2) == 1:
-            axes = [axes]
-        for col_ind, (kValName, kVal) in enumerate(diff_coef2.items()):
+for k_name, k_val in diff_coef2.items():
+    for x_metric, x_label, x_filename in x_metrics:
+        for y_metric, y_label, y_filename in y_metrics:
+            fig, ax = plt.subplots( figsize=(15, 15))
+            # for col_ind, (kValName, kVal) in enumerate(diff_coef2.items()):
 
             #filter data by fixed and adaptive tests
-            col_data = df[(df["diff_coef"] == kVal)]
+            col_data = df[(df["diff_coef"] == k_val)]
             data_fixed = col_data[col_data["Runtype"] == "fixed"]
             data_adaptive = col_data[col_data["Runtype"] == "adaptive"]
 
@@ -471,7 +470,7 @@ for x_metric, x_label, x_filename in x_metrics:
                 valid_data = SSPmethodFix_data[SSPmethodFix_data['ReturnCode'] != 1]
                 x = valid_data[x_metric]
                 y = valid_data[y_metric]
-                axes[col_ind].plot(x, y, color = colors[i], marker='o', markersize=5, linestyle='-', label=f"{SSPmethodFix}-h")
+                ax.plot(x, y, color = colors[i], marker='o', markersize=5, linestyle='-', label=f"{SSPmethodFix}-h")
 
             # adaptive run
             for i, SSPmethodAdapt in enumerate(data_adaptive['IMEX_method'].unique()):
@@ -479,26 +478,21 @@ for x_metric, x_label, x_filename in x_metrics:
                 valid_data = SSPmethodAdapt_data[SSPmethodAdapt_data['ReturnCode'] != 1]
                 x = valid_data[x_metric]
                 y = valid_data[y_metric]
-                axes[col_ind].plot(x, y, color = colors[i], marker='*', markersize=5, linestyle='-.', label=f"{SSPmethodAdapt}-rtol")
+                ax.plot(x, y, color = colors[i], marker='*', markersize=5, linestyle='-.', label=f"{SSPmethodAdapt}-rtol")
 
             # each column should correspond to a stiffness parameter
-            axes[col_ind].set_title(f"d = {kVal}", fontsize=18)
-            axes[col_ind].set_xscale('log')
-            axes[col_ind].set_yscale('log')
-            axes[col_ind].tick_params(axis='both', labelsize=15)
+            # axes[col_ind].set_title(f"d = {kVal}", fontsize=18)
+            ax.set_xscale('log')
+            ax.set_yscale('log')
+            ax.tick_params(axis='both', labelsize=15)
 
-        handles = []
-        labels = []
-        for ax in axes:
-            h, l = ax.get_legend_handles_labels()
-            handles.extend(h)
-            labels.extend(l)
+            #remove duplicates
+            handles, labels = ax.get_legend_handles_labels()
+            by_label = dict(zip(labels, handles))
+            ax.legend(by_label.values(), by_label.keys(), bbox_to_anchor=(1.05, 1), borderaxespad=0., loc='upper left', fontsize=18)
 
-        #remove duplicates
-        by_label = dict(zip(labels, handles))
-        axes[-1].legend(by_label.values(), by_label.keys(), bbox_to_anchor=(1.05, 1), borderaxespad=0., loc='upper left', fontsize=18)
-
-        fig.supxlabel(f'{x_label}', fontsize=20)
-        fig.supylabel(f'{y_label}', fontsize=20)
-        plt.savefig(f"{x_filename}_{y_filename}_population.png", bbox_inches="tight")
+            fig.supxlabel(f'{x_label}', fontsize=20)
+            fig.supylabel(f'{y_label}', fontsize=20)
+            plt.savefig(f"{x_filename}_{y_filename}_population_{k_name}.png", bbox_inches="tight")
+            plt.close(fig)
 
