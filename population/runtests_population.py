@@ -269,9 +269,11 @@ SSPL312      = "./population   --dirk_table ARKODE_SSP_LSPUM_SDIRK_3_1_2  --erk_
 SSP423       = "./population   --dirk_table ARKODE_SSP_ESDIRK_4_2_3       --erk_table ARKODE_SSP_ERK_4_2_3  "  
 SSP923       = "./population   --dirk_table ARKODE_SSP_ESDIRK_9_2_3       --erk_table ARKODE_SSP_ERK_9_2_3  "    
 
-adaptive_params = [1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 5e-2, 1e-1, 5e-1, 1.0] ## relative tolerances
-fixed_params    = [] # fixed time step sizes
-for i in range(-14, 4, 1): 
+## These are points for which the method attains non-negativity at all time steps and a smooth solution at the final time
+## step for each diffusion coefficient.
+adaptive_params = [1e-11, 1e-10, 1e-9, 1e-8, 1e-7, 1e-6, 1e-5, 5e-5, 1e-4, 5e-4, 1e-3, 5e-3] # relative tolerances
+fixed_params    = [] # fixed step sizes
+for i in range(-14, -2, 1): 
     fixed_params.append(0.25 * (2 ** i))
 #end
 
@@ -284,6 +286,9 @@ for i in range(-14, 4, 1):
 # to generate the plots. The next block of codes (with adaptive and fixed runs) was computed first 
 # to determine the interval to bisect before this section was run. You can uncomment the block of codes to 
 # generated the step size or relative tolerance values at which the methods switch from ssp (0) to nonssp (1).
+# You do not need to run this section unless you want to recompute the bisection values.
+# In that case, adaptive params can run from 10^{r}, r = 0, -1, ..., -8, and
+#               fixed params can run from 0.25 * 2^{r}, r = 4, -3, ..., -14.
 ## -------------------------------------------------------------------------------------------------------------
 def round_to_sf(x, sf):
     """
@@ -374,7 +379,7 @@ def bisection_midval(solvers, runtype, paramList):
 
 # solvernames_adaptK4 = [{'name': 'SSP212', 'exe': SSP212,              'sspVal': 5e-4, 'nonsspVal': 1e-3, 'kvalue': 0.04, 'kname': 'diffk04'},
 #                        {'name': 'SSP312', 'exe': SSP312,              'sspVal': 5e-1, 'nonsspVal': 1.0, 'kvalue': 0.04, 'kname': 'diffk04'},
-#                        {'name': 'SSPL312','exe': SSPL312,            'sspVal': 1e-2, 'nonsspVal': 5e-2, 'kvalue': 0.04, 'kname': 'diffk04'},
+#                        {'name': 'SSPL312','exe': SSPL312,             'sspVal': 1e-2, 'nonsspVal': 5e-2, 'kvalue': 0.04, 'kname': 'diffk04'},
 #                        {'name': 'SSP423', 'exe': SSP423,              'sspVal': 5e-3, 'nonsspVal': 1e-2, 'kvalue': 0.04, 'kname': 'diffk04'},
 #                        {'name': 'SSP923', 'exe': SSP923,              'sspVal': 5e-4, 'nonsspVal': 1e-3, 'kvalue': 0.04, 'kname': 'diffk04'}  ]
 
@@ -456,8 +461,7 @@ y_metrics = [('error', 'error','error')]
 for k_name, k_val in diff_coef2.items():
     for x_metric, x_label, x_filename in x_metrics:
         for y_metric, y_label, y_filename in y_metrics:
-            fig, ax = plt.subplots( figsize=(15, 15))
-            # for col_ind, (kValName, kVal) in enumerate(diff_coef2.items()):
+            fig, ax = plt.subplots( figsize=(7, 6))
 
             #filter data by fixed and adaptive tests
             col_data = df[(df["diff_coef"] == k_val)]
@@ -480,19 +484,17 @@ for k_name, k_val in diff_coef2.items():
                 y = valid_data[y_metric]
                 ax.plot(x, y, color = colors[i], marker='*', markersize=5, linestyle='-.', label=f"{SSPmethodAdapt}-rtol")
 
-            # each column should correspond to a stiffness parameter
-            # axes[col_ind].set_title(f"d = {kVal}", fontsize=18)
             ax.set_xscale('log')
             ax.set_yscale('log')
-            ax.tick_params(axis='both', labelsize=15)
+            ax.tick_params(axis='both', labelsize=13)
 
             #remove duplicates
             handles, labels = ax.get_legend_handles_labels()
             by_label = dict(zip(labels, handles))
-            ax.legend(by_label.values(), by_label.keys(), bbox_to_anchor=(1.05, 1), borderaxespad=0., loc='upper left', fontsize=18)
+            ax.legend(by_label.values(), by_label.keys(), bbox_to_anchor=(1.05, 1), borderaxespad=0., loc='upper left', fontsize=10)
 
-            fig.supxlabel(f'{x_label}', fontsize=20)
-            fig.supylabel(f'{y_label}', fontsize=20)
+            fig.supxlabel(f'{x_label}', fontsize=11)
+            fig.supylabel(f'{y_label}', fontsize=11)
             plt.savefig(f"{x_filename}_{y_filename}_population_{k_name}.png", bbox_inches="tight")
             plt.close(fig)
 
