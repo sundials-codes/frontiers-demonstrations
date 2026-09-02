@@ -24,7 +24,7 @@ from math import log10, floor
 
 # utility routine to run a test, storing the run options and solver statistics
 # def refSoln(solver, modetype, runV, kstiff, ksN, knonstiff, showcommand=True):
-def refSoln(solver, runV, kstiff, ksN, knonstiff, showcommand=True):
+def refSoln(solver, runV, showcommand=True):
     """
     This function generates the reference solution needed to compute the
     error for the population density model.
@@ -32,62 +32,68 @@ def refSoln(solver, runV, kstiff, ksN, knonstiff, showcommand=True):
     Input: solver:            imex scheme to run
         #    modetype (string): adaptive or fixed time stepping
            runV:              rtol (adaptive) or fixed_h (fixed)
-           runN:              given name of rtol or fixed_h
-           kstiff:            stiffness parameter
-           knonstiff:         nonstiffness parameter
 
     Output: returns the reference solution as a textfile
     """
 
-    # if (modetype == "adaptive"):
-    runcommand = " %s  --rtol %.6e  --eps_stiff %.6e  --eps_nonstiff %.6e" % (solver['exe'], runV, kstiff, knonstiff)
-    # elif (modetype == "fixed"):
-    #     runcommand = " %s  --fixed_h %.6e  --eps_stiff %.2e  --eps_nonstiff %.2e" % (solver['exe'], runV, kstiff, knonstiff)
+    runcommand = " %s  --rtol %e " % (solver['exe'], runV)
 
-    result = subprocess.run(shlex.split(runcommand), stdout=subprocess.PIPE)
+    result = subprocess.run(shlex.split(runcommand), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    stdout_lines = result.stdout.decode().split('\n')
+    stderr_lines = result.stderr.decode().split('\n')
 
     if (result.returncode != 0):
-        print("Running: " + runcommand + " FAILURE: \n" + str(result.returncode))
-        print(result.stderr)
+        print(result.stderr.decode())
+        sys.exit("Reference run failed")
     else:
-        if (showcommand):
-            # print(f"Running {modetype} reference solution : " + runcommand + " SUCCESS")
-            # new_fileName = f"{modetype}_referenceSoln_{ksN}.out"
+        # If SUNDIALS failed  
+        sundials_failed = False
+        for line in stderr_lines:
+            if (("test failed repeatedly" in line) or ("mxstep steps taken before reaching tout" in line)):
+                sundials_failed = True
+        if sundials_failed == True:
+            msg = "Running: " + runcommand + " FAILED"
+            sys.exit(msg)
+            
+        # If SUNDIALS did not fail
+        if not sundials_failed:
+            print("Running reference solution!")
+            final_time = None
+            for line in stdout_lines:
+                if line.strip().startswith("Current time"):
+                    final_time = float(line.split('=')[1].strip())
+                    break 
+
+            if final_time is None:
+                sys.exit("ERROR: 'Current time' not found in reference output")
+            if abs(final_time - 0.3) > 1e-10:
+                sys.exit(f"ERROR: reference reached only t = {final_time}, not 0.3")
+            
             print(f"Running reference solution : " + runcommand + " SUCCESS")
-            new_fileName = f"referenceSoln_{ksN}.out"
+            new_fileName = f"hyperbolic_relaxation_reference_solution.out"
 
             ## rename plot file
-            if os.path.exists("hyperbolic_relaxation.out"):
-                os.rename("hyperbolic_relaxation.out", new_fileName)
+            if os.path.exists("hyperbolic_relaxation_refSol.out"):
+                os.rename("hyperbolic_relaxation_refSol.out", new_fileName)
                 print(f"reference solution saved as: {new_fileName}")
             else:
-                print("Warning: hyperbolic_relaxation.out not found.")
+                sys.exit("Warning: hyperbolic_relaxation_refSol.out not found.")
 
-    return new_fileName 
+            return new_fileName 
+
 ## end of function
 
 
 # method to generate reference solution
-SSP423 = "./hyperbolic_relaxation  --IMintegrator ARKODE_ARK548L2SA_DIRK_8_4_5      --EXintegrator ARKODE_ARK548L2SA_ERK_8_4_5  --output 2"     
+DIRK845 = "./hyperbolic_relaxation_refSol  --dirk_table ARKODE_ARK548L2SA_DIRK_8_4_5  --erk_table ARKODE_ARK548L2SA_ERK_8_4_5  --output 2"     
 
-adaptive_params = [1e-14] #relative tolerance for reference solution
-# fixed_params    = [1e-10]  #fixed time step size for reference solution
-nonstiff_params = [1e2]
-stiff_params    = {'ks1e6': 1e6, 'ks1e8': 1e8}
+adaptive_params = [1e-13] #relative tolerance for reference solution
 
 ## Integrator types
-solvertype = [{'name': 'SSP-ARK-4-2-3', 'exe': SSP423}]
+solvertype = [{'name': 'DIRK-8-4-5', 'exe': DIRK845}]
 
 # run function to generate reference solution
-for knsval in nonstiff_params:
-    for ksname, ksval in stiff_params.items():
-        for run_val in adaptive_params:
-            for solver in solvertype:
-                adapt_refSoln = refSoln(solver, run_val, ksval, ksname, knsval, showcommand=True)
-
-# for knsval in nonstiff_params:
-#     for ksname, ksval in stiff_params.items():
-#         for run_val in fixed_params:
-#             for solver in solvertype:
-#                 fixed_refSoln = refSoln(solver, "fixed", run_val, ksval, ksname, knsval, showcommand=True)
+for run_val in adaptive_params:
+    for solver in solvertype:
+        adapt_refSoln = refSoln(solver, run_val, showcommand=True)
 

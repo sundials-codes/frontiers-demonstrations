@@ -37,16 +37,17 @@
 
 // Macros for problem constants
 #define rhoL   SUN_RCONST(1.0)
-#define rhoR   SUN_RCONST(0.2)
+#define rhoR   SUN_RCONST(0.125)
 #define uL     SUN_RCONST(0.0)
 #define uR     SUN_RCONST(0.0)
-#define pL     SUN_RCONST(0.4)
-#define pR     SUN_RCONST(0.4)
+#define pL     SUN_RCONST(1.0)
+#define pR     SUN_RCONST(0.1)
 #define HALF   SUN_RCONST(0.5)
 #define ZERO   SUN_RCONST(0.0)
 #define ONE    SUN_RCONST(1.0)
 #define TWO    SUN_RCONST(2.0)
 #define TEN    SUN_RCONST(10.0)
+#define FOUR   SUN_RCONST(4.0)
 #define FOURTH SUN_RCONST(0.25)
 
 #define NSPECIES 5
@@ -68,8 +69,8 @@ public:
   //                                      ARKODE_SSP_LSPUM_ERK_3_1_2, ARKODE_SSP_ERK_4_2_3)
 
   // Integration method
-   std::string IMintegrator;
-   std::string EXintegrator;
+   std::string dirk_table;
+   std::string erk_table;
 
   // Relative and absolute tolerances
   sunrealtype rtol;
@@ -89,13 +90,13 @@ public:
 
   // constructor (with default values)
   ARKODEParameters()
-    : IMintegrator("ARKODE_SSP_DIRK_3_1_2"),
-      EXintegrator("ARKODE_SSP_ERK_3_1_2"),
+    : dirk_table("ARKODE_SSP_DIRK_3_1_2"),
+      erk_table("ARKODE_SSP_ERK_3_1_2"),
       rtol(SUN_RCONST(1.e-4)),
-      atol(SUN_RCONST(1.e-11)),
+      atol(SUN_RCONST(1.e-14)),
       fixed_h(ZERO),
-      maxsteps(10000),
-      nstepsmax(10000),
+      maxsteps(100000),
+      nstepsmax(100000),
       output(1),
       nout(10){};
 
@@ -120,7 +121,6 @@ public:
   ///// problem-defining data /////
   sunrealtype gamma;     // ratio of specific heat capacities, cp/cv
   sunrealtype eps_stiff; //stiffness parameter 
-  sunrealtype eps_nonstiff; //stiffness parameter 
 
   ///// reusable arrays for WENO flux calculations /////
   sunrealtype* flux;
@@ -132,11 +132,10 @@ public:
   EulerData()
     : nx(200),
       t0(ZERO),
-      tf(SUN_RCONST(0.3)),
+      tf(SUN_RCONST(0.3)), 
       xl(ZERO),
       xr(ONE),
-      eps_stiff(1e8),
-      eps_nonstiff(1e2),
+      eps_stiff(1e6),
       dx(ZERO),
       gamma(SUN_RCONST(1.4)),
       flux(nullptr){};
@@ -244,7 +243,7 @@ public:
 
 // ODE explicit and implicit right hand side (RHS) functions
 int fe_rhs(sunrealtype t, N_Vector y, N_Vector f, void* user_data);
-int fi_rhs(sunrealtype t, N_Vector y, N_Vector f, void* user_data);
+int fi(sunrealtype t, N_Vector y, N_Vector f, void* user_data);
 
 // -----------------------------------------------------------------------------
 // Helper functions
@@ -285,10 +284,10 @@ static void InputHelp()
 {
   std::cout << std::endl;
   std::cout << "Command line options:" << std::endl;
-  std::cout << "  --IMintegrator <str> : method (ARKODE_SSP_SDIRK_2_1_2, "
+  std::cout << "  --dirk_table <str> : method (ARKODE_SSP_SDIRK_2_1_2, "
               "ARKODE_SSP_DIRK_3_1_2, " 
               "ARKODE_SSP_LSPUM_SDIRK_3_1_2, or ARKODE_SSP_ESDIRK_4_2_3)\n";
-  std::cout << "  --EXintegrator <str> : method (ARKODE_SSP_ERK_2_1_2, "
+  std::cout << "  --erk_table <str> : method (ARKODE_SSP_ERK_2_1_2, "
               "ARKODE_SSP_ERK_3_1_2, " 
               "ARKODE_SSP_LSPUM_ERK_3_1_2, or ARKODE_SSP_ERK_4_2_3)\n";
   std::cout << "  --tf <real>           : final time\n";
@@ -296,7 +295,6 @@ static void InputHelp()
   std::cout << "  --xr <real>           : domain upper boundary\n";
   std::cout << "  --gamma <real>        : ideal gas constant\n";
   std::cout << "  --eps_stiff <real>    : stiffness parameter\n";
-  std::cout << "  --eps_nonstiff <real> : non-stiffness parameter\n";
   std::cout << "  --nx <int>            : number of mesh points\n";
   std::cout << "  --rtol <real>         : relative tolerance\n";
   std::cout << "  --atol <real>         : absolute tolerance\n";
@@ -380,15 +378,14 @@ static int ReadInputs(std::vector<std::string>& args, EulerData& udata,
   // Problem parameters
   find_arg(args, "--gamma", udata.gamma);
   find_arg(args, "--eps_stiff", udata.eps_stiff);
-  find_arg(args, "--eps_nonstiff", udata.eps_nonstiff);
   find_arg(args, "--tf", udata.tf);
   find_arg(args, "--xl", udata.xl);
   find_arg(args, "--xr", udata.xr);
   find_arg(args, "--nx", udata.nx);
 
   // Integrator options
-  find_arg(args, "--IMintegrator", uopts.IMintegrator);
-  find_arg(args, "--EXintegrator", uopts.EXintegrator);
+  find_arg(args, "--dirk_table", uopts.dirk_table);
+  find_arg(args, "--erk_table", uopts.erk_table);
   find_arg(args, "--rtol", uopts.rtol);
   find_arg(args, "--atol", uopts.atol);
   find_arg(args, "--fixed_h", uopts.fixed_h);
@@ -412,7 +409,6 @@ static int PrintSetup(EulerData& udata, ARKODEParameters& uopts)
   std::cout << " --------------------------------- " << std::endl;
   std::cout << "  gamma        = " << udata.gamma << std::endl;
   std::cout << "  eps_stiff    = " << udata.eps_stiff << std::endl;
-  std::cout << "  eps_nonstiff = " << udata.eps_nonstiff << std::endl;
   std::cout << " --------------------------------- " << std::endl;
   std::cout << "  tf           = " << udata.tf << std::endl;
   std::cout << "  xl           = " << udata.xl << std::endl;
@@ -420,8 +416,8 @@ static int PrintSetup(EulerData& udata, ARKODEParameters& uopts)
   std::cout << "  nx           = " << udata.nx << std::endl;
   std::cout << "  dx           = " << udata.dx << std::endl;
   std::cout << " --------------------------------- " << std::endl;
-  std::cout << "  IMintegrator = " << uopts.IMintegrator << std::endl;
-  std::cout << "  EXintegrator = " << uopts.EXintegrator << std::endl;
+  std::cout << "  dirk_table = " << uopts.dirk_table << std::endl;
+  std::cout << "  erk_table = " << uopts.erk_table << std::endl;
   std::cout << "  rtol         = " << uopts.rtol << std::endl;
   std::cout << "  atol         = " << uopts.atol << std::endl;
   std::cout << "  fixed h      = " << uopts.fixed_h << std::endl;
@@ -463,7 +459,7 @@ static int OpenOutput(EulerData& udata, ARKODEParameters& uopts)
 
     uopts.uout << std::scientific;
     uopts.uout << std::setprecision(std::numeric_limits<sunrealtype>::digits10);
-    uopts.uout << "# title Linear Advection" << std::endl;
+    uopts.uout << "# title Hyperbolic Relaxation Reference Solution" << std::endl;
     uopts.uout << "# nvar 5" << std::endl;
     uopts.uout << "# vars rho mx my mz et" << std::endl;
     uopts.uout << "# nt "     << uopts.nout + 1 << std::endl;
@@ -525,51 +521,6 @@ static int WriteOutput(sunrealtype t, N_Vector y, EulerData& udata,
 
   return 0;
 }
-
-// static int L2error_norm(sunrealtype t, N_Vector y, EulerData& udata,
-//                        ARKODEParameters& uopts)
-// {
-//   if (uopts.output)
-//   {
-//     // Compute rms norm of the state
-//     N_Vector rho       = N_VGetSubvector_ManyVector(y, 0);
-//     N_Vector mx        = N_VGetSubvector_ManyVector(y, 1);
-//     N_Vector my        = N_VGetSubvector_ManyVector(y, 2);
-//     N_Vector mz        = N_VGetSubvector_ManyVector(y, 3);
-//     N_Vector et        = N_VGetSubvector_ManyVector(y, 4);
-//     N_Vector prz       = N_VClone(rho); //pressure
-
-//     sunrealtype* rhodata = N_VGetArrayPointer(rho);
-//     if (check_ptr(rhodata, "N_VGetArrayPointer")) { return -1; }
-//     sunrealtype* mxdata = N_VGetArrayPointer(mx);
-//     if (check_ptr(mxdata, "N_VGetArrayPointer")) { return -1; }
-//     sunrealtype* mydata = N_VGetArrayPointer(my);
-//     if (check_ptr(mydata, "N_VGetArrayPointer")) { return -1; }
-//     sunrealtype* mzdata = N_VGetArrayPointer(mz);
-//     if (check_ptr(mzdata, "N_VGetArrayPointer")) { return -1; }
-//     sunrealtype* etdata = N_VGetArrayPointer(et);
-//     if (check_ptr(etdata, "N_VGetArrayPointer")) { return -1; }
-//     sunrealtype* przdata = N_VGetArrayPointer(prz);
-//     if (check_ptr(przdata, "N_VGetArrayPointer")) { return -1; }
-
-//     for (int i = 0; i < udata.nx; i++){
-//       przdata[i] = udata.eos(rhodata[i], mxdata[i], mydata[i], mzdata[i], etdata[i]);
-//     }
-
-//     sunrealtype error_sum = 0.0;
-//     for (int i = 0; i < udata.nx; i++){
-//       error_sum = error_sum + SUNRpowerI((rhodata[i] - przdata[i]),2);
-//     }
-//     error_sum = SUNRsqrt(error_sum / udata.nx);
-//     std::cout
-//       << " -----------------------------------------------------------------"
-//          "---------"
-//       << std::endl;
-//     printf("  L2 error norm = %e\n", error_sum);
-//   }
-
-//   return 0;
-// }
 
 // Finalize output
 static int CloseOutput(ARKODEParameters& uopts)

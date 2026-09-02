@@ -51,20 +51,21 @@ with open(datafile, "r") as file:
     nsteps    = int(num_steps[1].strip()) # total number of steps taken
     lines.pop()   # remove "Number of Time Steps Taken: 2604"
 
+    ndata = nsteps+1
     # allocate solution data as 2D Python arrays
-    t = np.zeros((nsteps), dtype=float)
-    rho = np.zeros((nsteps, nx), dtype=float)
-    mx = np.zeros((nsteps, nx), dtype=float)
-    my = np.zeros((nsteps, nx), dtype=float)
-    mz = np.zeros((nsteps, nx), dtype=float)
-    et = np.zeros((nsteps, nx), dtype=float)
+    t = np.zeros((ndata), dtype=float)
+    rho = np.zeros((ndata, nx), dtype=float)
+    mx = np.zeros((ndata, nx), dtype=float)
+    my = np.zeros((ndata, nx), dtype=float)
+    mz = np.zeros((ndata, nx), dtype=float)
+    et = np.zeros((ndata, nx), dtype=float)
     x = np.linspace(xl, xr, nx)
     dx = (xr - xl)/nx
 
     # lines.pop(0) #remove the initial solution
     
     # store remaining data into numpy arrays, the first element in each array is the time step
-    for it in range(nsteps):
+    for it in range(ndata):
         line = (lines.pop(0)).split()
         t[it] = line.pop(0)
         for ix in range(nx):
@@ -74,9 +75,10 @@ with open(datafile, "r") as file:
             mz[it, ix] = line.pop(0)
             et[it, ix] = line.pop(0)
 
+print("last time read =", t[ndata-1], " tf should be 0.3")
 largeDev_xgrid = [] #contains grid values were largest derivative occurs
 largeDev_time  = [] #contains the time step corresponding to the largest derivative value
-for it in range(nsteps):
+for it in range(ndata):
     largeDev      = 0.0 #largest derivative value
     largeDev_xloc = 0   # spatial grid location of the largest derivative
     for ix in range(nx-1):
@@ -91,30 +93,17 @@ for it in range(nsteps):
     largeDev_time.append(float(t[timeV]))
 #end
 
-# # determine the shock speed and its corresponding time step
-# tstar = None
-# for i in range(len(largeDev_xgrid)):
-#     if largeDev_xgrid[i] >= 0.5:
-#         xgrid_star = largeDev_xgrid[i]
-#         tstar     = largeDev_time[i]
-#         break
-#     # end
-# # end
-# if tstar is not None:
-#     print ("Time step where grid point is not less than the shock value = %f" %tstar)
-# # end
-
 # solution at the final time step
 przdata = np.zeros((nx), dtype=float) #pressure
 rhodata = np.zeros((nx), dtype=float) #density
 veldata = np.zeros((nx), dtype=float) #velocity
-eknot   = np.ones((nx),  dtype=float) #e_{0}
+e_eq    = 25.0 * np.ones((nx),  dtype=float) #e_{0}
 etdiff  = np.zeros((nx), dtype=float) #E - E_{0}
 for i in range(nx):
-    przdata[i] = (gamma-1.0) * (et[nsteps-1, i] - (mx[nsteps-1, i] * mx[nsteps-1, i] + my[nsteps-1, i] * my[nsteps-1, i] + mz[nsteps-1, i] * mz[nsteps-1, i]) * 0.5 / rho[nsteps-1, i])
-    rhodata[i] = rho[nsteps-1, i]
-    veldata[i] = mx[nsteps-1, i]/rho[nsteps-1, i]
-    etdiff[i] = ( (et[nsteps-1, i]/rho[nsteps-1, i]) - 0.5 * ((mx[nsteps-1, i]/rho[nsteps-1, i])**2) ) - eknot[i] 
+    przdata[i] = (gamma-1.0) * (et[-1, i] - (mx[-1, i] * mx[-1, i] + my[-1, i] * my[-1, i] + mz[-1, i] * mz[-1, i]) * 0.5 / rho[-1, i])
+    rhodata[i] = rho[-1, i]
+    veldata[i] = mx[-1, i]/rho[-1, i]
+    etdiff[i] = ( (et[-1, i]/rho[-1, i]) - 0.5 * ((mx[-1, i]/rho[-1, i])**2) ) - e_eq[i] 
 # end
 
 # determine interface location
@@ -138,125 +127,42 @@ for i in range(len(etdiff_stiff)):
 #end
 print("Maximum energy error = %.4e" %energy_errMax)
 
-# # plot solutions
-# fig = plt.figure(figsize=(10, 5))
-# gs  = GridSpec(2, 2, figure=fig)
-
-# ## density 
-# ax00 = fig.add_subplot(gs[0, 0])  
-# ax00.plot(x, rhodata, linestyle='-',  color='blue', label="density", linewidth=0.8)
-# ax00.set_ylabel(r"density")
-# ax00.set_xlabel(r"x")
-# plt.legend()
-
-# ## pressure
-# ax01 = fig.add_subplot(gs[0, 1]) 
-# ax01.plot(x, przdata, linestyle='-.', color='red', label="pressure", linewidth=0.8)
-# ax01.set_ylabel(r"pressure")
-# ax01.set_xlabel(r"x")
-# plt.legend()
-
-# ## velocity
-# ax03 = fig.add_subplot(gs[1, 0]) 
-# ax03.plot(x, veldata, linestyle='--', color='black',  label="velocity", linewidth=0.8)
-# ax03.set_ylabel(r"velocity")
-# ax03.set_xlabel(r"x")
-# plt.legend()
-
-# ## E - E_{0}
-# ax04 = fig.add_subplot(gs[1, 1]) 
-# ax04.plot(x[iloc:], etdiff_stiff, linestyle=':', color='green', label="$E - E_{0}$", linewidth=0.8)
-# ax04.set_ylabel(r"$E - E_{0}$")
-# ax04.set_xlabel(r"x")
-# plt.legend()
-
-# # plt.savefig("hyperbolic_relaxation_frames.png")
-# plt.show()
-
-# plt.plot(x, rho[-1, :])
-# plt.show()
-
-
 ## plot defaults: increase default font size, increase plot width, enable LaTeX rendering
-plt.rc("font", size=15)
-plt.rcParams["figure.figsize"] = [7.2, 4.8]
-plt.rcParams["text.usetex"] = True
-plt.rcParams["figure.constrained_layout.use"] = True
-
-## subplots with time snapshots of the density, x-velocity, and pressure
-fig = plt.figure(figsize=(10, 5))
-gs = GridSpec(1, 3, figure=fig)
-ax00 = fig.add_subplot(gs[0, 0])  # 1st column - initial time step
+# ## subplots with time snapshots of the density, x-velocity, and pressure
+# fig = plt.figure(figsize=(10, 5))
+# gs = GridSpec(1, 3, figure=fig)
+# ax00 = fig.add_subplot(gs[0, 0])  # 1st column - initial time step
 # ax01 = fig.add_subplot(gs[0, 1])  # 2nd column
 # ax02 = fig.add_subplot(gs[0, 2])  # 3rd column
-ax03 = fig.add_subplot(gs[0, 1])  # 4th column
-ax04 = fig.add_subplot(gs[0, 2])  # 5th colum - final time step
 
-it = 0
-tval = repr(float(t[it])).zfill(3)
-ax00.plot(x, rho[it, :], "-b",)
-ax00.set_title(r"$t =$ " + tval)
-ax00.set_ylabel(r"$P(t,x)$")
-ax00.set_xlabel(r"$x$")
+# it = 0
+# tval = repr(float(t[it])).zfill(3)
+# ax00.plot(x, rho[it, :], "-b",)
+# ax00.set_title(r"$t =$ " + tval)
+# ax00.set_ylabel(r"$P(t,x)$")
+# ax00.set_xlabel(r"$x$")
 
-# it = 1
+# middleval = int(np.ceil(nsteps/2))
+# it = middleval
 # tval = repr(float(t[it])).zfill(3)
 # ax01.plot(x, rho[it, :], "-b")
 # ax01.set_title(r"$t =$ " + tval)
+# ax01.set_ylabel(r"$P(t,x)$")
 # ax01.set_xlabel(r"$x$")
 
-# it = 2
+# it = -1
 # tval = repr(float(t[it])).zfill(3)
 # ax02.plot(x, rho[it, :], "-b")
 # ax02.set_title(r"$t =$ " + tval)
+# ax02.set_ylabel(r"$P(t,x)$")
 # ax02.set_xlabel(r"$x$")
 
-middleval = int(np.ceil(nsteps/2))
-it = middleval
-tval = repr(float(t[it])).zfill(3)
-ax03.plot(x, rho[it, :], "-b")
-ax03.set_title(r"$t =$ " + tval)
-ax03.set_xlabel(r"$x$")
-
-it = -1
-tval = repr(float(t[it])).zfill(3)
-ax04.plot(x, rho[it, :], "-b")
-ax04.set_title(r"$t =$ " + tval)
-ax04.set_xlabel(r"$x$")
-
-plt.rc("font", size=15)
-plt.rcParams["figure.figsize"] = [7.2, 4.8]
-plt.rcParams["text.usetex"] = True
-plt.rcParams["figure.constrained_layout.use"] = True
-# plt.savefig("hyperbolic_relaxation_frames.png")
+# plt.rc("font", size=15)
+# plt.rcParams["figure.figsize"] = [7.2, 4.8]
+# plt.rcParams["text.usetex"] = True
+# plt.rcParams["figure.constrained_layout.use"] = True
+# # plt.savefig("hyperbolic_relaxation_frames.pdf")
 # plt.close()
-plt.show()
-
-
-
-# ## ==============================================================================
-# ## use the tstar value in the time step history to determine time history 
-# ## on the left and right side of the shock (only use this part of the script
-# ## when doing a single run and not running multiple tests at a time using 
-# ## runtests_hyperbolic_relaxation.py)
-# ## ==============================================================================
-# # copy sun.log file into the /sundials/tools folder
-# file_to_copy = './sun.log'
-# destination_directory = './../deps/sundials/tools'
-# shutil.copy(file_to_copy, destination_directory)
-
-# # change the working directory to sundials/tools
-# curent_directory = os.getcwd()
-# # print("Current directory:", curent_directory)
-# tools_directory  = os.chdir("../deps/sundials/tools")
-# new_directory    = os.getcwd()
-# # print("New directory:", new_directory)
-
-# # add tstar to time histroy plot
-# runcommand = f"./log_example.py {file_to_copy} --tstar %f  --save sun_save " %(tstar)
-# # runcommand = f"./log_example.py {file_to_copy} --tstar %f " %(tstar)
-# # runcommand = f"./log_example.py {file_to_copy}  "
-# result = subprocess.run(shlex.split(runcommand), stdout=subprocess.PIPE)
 
 
 ## ------------------ Extract Reference Solution at Final Time Step -----------------------
@@ -296,7 +202,7 @@ def read_ref_solution(filename):
 
     # store only solution at the final step
     last_data = last_line.split()
-    last_data.pop(0) #ignore the time step at each solution
+    t_ref_final = float(last_data.pop(0)) #final time step
 
     rho_ref = np.zeros((nx_ref), dtype=float)
     mx_ref  = np.zeros((nx_ref), dtype=float)
@@ -323,39 +229,17 @@ def read_ref_solution(filename):
         etRefFinal[i]  = et_ref[i] 
         przRefFinal[i] = (gamma-1.0) * (et_ref[i] - (mx_ref[i] * mx_ref[i] + my_ref[i] * my_ref[i] + mz_ref[i] * mz_ref[i]) * 0.5 / rho_ref[i])
     
-    return rhoRefFinal
+    return rhoRefFinal, t_ref_final
 
 
-# ## -------------------- Compute L-infinty norm using the reference solution -----------------------
-# stiff1e6 = False #only one type of stiffness parameter option cna be true at a time (keep as only "1" space before and after =)
-# stiff1e8 = True
+## -------------------- Compute L-infinty norm using the reference solution -----------------------
+elmax = 0.0 
+refLastSoln_rho, refLastSoln_t = read_ref_solution("hyperbolic_relaxation_reference_solution.out")
+if np.abs(refLastSoln_t - 0.3) > 1e-10:
+    sys.exit(f"ERROR: reference solution is at t = {refLastSoln_t}, not 0.3")
+else:
+    elmax = np.max(np.abs(refLastSoln_rho - rhodata))
+    print("Lmax error using reference solution = %e" %elmax)
 
-# AdaptiveRun = True #only one type of run can be true at a time (keep as only "1" space before and after =)
-# FixedRun = False
 
-# # l-infinity error
-# elmax = 0.0 
-# if (FixedRun):
-#     if(stiff1e6):
-#         fixed_ks1e6_refLastSoln_rho  = read_ref_solution("referenceSoln_ks1e6.out")
-#         elmax = np.max(np.abs(fixed_ks1e6_refLastSoln_rho - rhodata))
-#     elif(stiff1e8):
-#         fixed_ks1e8_refLastSoln_rho = read_ref_solution("referenceSoln_ks1e8.out")
-#         elmax = np.max(np.abs(fixed_ks1e8_refLastSoln_rho - rhodata))
-#     # elif(stiff1e7):
-#     #     fixed_ks1e7_refLastSoln_rho = read_ref_solution("referenceSoln_ks1e7.out")
-#     #     elmax = np.max(np.abs(fixed_ks1e7_refLastSoln_rho - rhodata))
-# elif (AdaptiveRun):
-#     if (stiff1e6): 
-#         adapt_ks1e6_refLastSoln_rho = read_ref_solution("referenceSoln_ks1e6.out")
-#         elmax = np.max(np.abs(adapt_ks1e6_refLastSoln_rho - rhodata))
-#     elif (stiff1e8): 
-#         adapt_ks1e8_refLastSoln_rho = read_ref_solution("referenceSoln_ks1e8.out")
-#         elmax = np.max(np.abs(adapt_ks1e8_refLastSoln_rho - rhodata))
-#     # elif (stiff1e7): 
-#     #     adapt_ks1e7_refLastSoln_rho = read_ref_solution("referenceSoln_ks1e7.out")
-#     #     elmax = np.max(np.abs(adapt_ks1e7_refLastSoln_rho - rhodata))
-# # end
-
-# print("Lmax error using reference solution = %.4e" %elmax)
-# ##### end of script #####
+##### end of script #####

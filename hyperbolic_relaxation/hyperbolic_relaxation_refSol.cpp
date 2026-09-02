@@ -98,10 +98,10 @@ int main(int argc, char* argv[])
   // --------------------
   void* arkode_mem = nullptr;
 
-  arkode_mem = ARKStepCreate(nullptr, fi_rhs, udata.t0, y, ctx);
+  arkode_mem = ARKStepCreate(nullptr, fi, udata.t0, y, ctx);
   if (check_ptr(arkode_mem, "ARKStepCreate")) { return 1; }
 
-  flag = ARKStepSetTableName(arkode_mem, uopts.IMintegrator.c_str(), nullptr); 
+  flag = ARKStepSetTableName(arkode_mem, uopts.dirk_table.c_str(), "ARKODE_ERK_NONE"); 
   if (check_flag(flag, "ARKStepSetTableName")) { return 1; } 
 
   // Shared setup
@@ -193,10 +193,6 @@ int main(int argc, char* argv[])
   ARKodeGetNumSteps(arkode_mem, &nsteps);
   uopts.nstepsmax = nsteps;
 
-  /* compute the difference between E_eq and E (or difference between pressure and density)*/
-  // flag = L2error_norm(t, y, udata, uopts);
-  // if (check_flag(flag, "L2error_norm")) { return 1; }
-
   // Close output
   flag = CloseOutput(uopts);
   if (check_flag(flag, "CloseOutput")) { return 1; }
@@ -228,7 +224,7 @@ int main(int argc, char* argv[])
 // -----------------------------------------------------------------------------
 
 // ODE Explicit RHS function
-int fi_rhs(sunrealtype t, N_Vector y, N_Vector f, void* user_data)
+int fi(sunrealtype t, N_Vector y, N_Vector f, void* user_data)
 {
   // Access problem data
   EulerData* udata = (EulerData*)user_data;
@@ -259,19 +255,13 @@ int fi_rhs(sunrealtype t, N_Vector y, N_Vector f, void* user_data)
   sunrealtype* etdot = N_VGetSubvectorArrayPointer_ManyVector(f, 4);
   if (check_ptr(etdot, "N_VGetSubvectorArrayPointer_ManyVector")) { return -1; }
 
-  N_Vector rhodot_vec = N_VGetSubvector_ManyVector(f, 0);
-  if (check_ptr(rhodot, "N_VGetSubvector_ManyVector")){ return -1; }
-  N_Vector eKnot = N_VClone(rhodot_vec); //SA: internal energy at equilibrium
-  sunrealtype* eKnot_data = N_VGetArrayPointer(eKnot);
-
   // Set shortcut variables
   const long int nx              = udata->nx;
   const sunrealtype dx           = udata->dx;
   sunrealtype* flux              = udata->flux;
   const sunrealtype xl           = udata->xl;
-  const sunrealtype eps_nonstiff = udata->eps_nonstiff;
-  const sunrealtype gamma        = udata->gamma; 
-  const sunrealtype eps_stiff = udata->eps_stiff;
+  const sunrealtype eps_stiff = udata->eps_stiff; 
+  const sunrealtype gamma     = udata->gamma;
 
   // compute face-centered fluxes over domain interior: pack 1D x-directional array
   // of variable shortcuts, and compute flux at lower x-directional face
@@ -305,60 +295,18 @@ int fi_rhs(sunrealtype t, N_Vector y, N_Vector f, void* user_data)
     etdot[i] -= (flux[(i + 1) * NSPECIES + 4] - flux[i * NSPECIES + 4]) / dx;
   }
 
-
-  const sunrealtype e_eq = SUN_RCONST(1.0); 
-  const sunrealtype K_rate = 1e4 + eps_stiff*exp(-2000.0*(t-0.15)*(t-0.15)); 
+  /* Using Arrhenius term*/  
+  const sunrealtype E_act = SUN_RCONST(40.0); 
+  const sunrealtype e_eq = SUN_RCONST(25.0); 
 
   // iterate over subdomain, updating RHS
   for (long int i = 0; i < nx; i++)
   {
-    sunrealtype rhoth = ONE / rho[i];
-    sunrealtype e = (et[i] * rhoth) - ((mx[i]*mx[i] + my[i]*my[i] + mz[i]*mz[i]) * HALF * rhoth * rhoth);
-    etdot[i] += -K_rate * rho[i] * (e - e_eq);
+    sunrealtype one_rhoth = ONE / rho[i];
+    sunrealtype e = (et[i] * one_rhoth) - ((mx[i]*mx[i] + my[i]*my[i] + mz[i]*mz[i]) * HALF * one_rhoth * one_rhoth);
+    sunrealtype arrhenius = exp(-E_act / e) * (e_eq - e);
+    etdot[i] += (eps_stiff * rho[i] * arrhenius);
   }
-
-  // const sunrealtype e_eq    = SUN_RCONST(25.0); // Target equilibrium energy
-  // const sunrealtype E_act   = SUN_RCONST(40.0); // Activation energy
-
-  // // iterate over subdomain, updating RHS
-  // for (long int i = 0; i < nx; i++)
-  // {
-  //   /* 1.0 / rho */
-  //   sunrealtype rhoth = ONE / rho[i];
-
-  //   /* e = E/rho - 0.5 * u^2 (internal energy per unit mass) */
-  //   sunrealtype e = (et[i] * rhoth) - ((mx[i]*mx[i] + my[i]*my[i] + mz[i]*mz[i]) * HALF * rhoth * rhoth);
-
-  //   /* Arrhenius exponential factor (with a safeguard against unphysical negative energy) */
-  //   sunrealtype arrhenius = (e > ZERO) ? exp(-E_act / e) : ZERO;
-
-  //   /* Stiff relaxation term using Arrhenius kinetics */
-  //   etdot[i] += eps_stiff * arrhenius * rho[i] * (e_eq - e);
-  // }
-
-  // for (long int i = 0; i < nx; i++) 
-  // {
-  //   eKnot_data[i] = ONE;
-  // }  
-
-  // for (long int i = 0; i < nx; i++) 
-  // {
-  //   sunrealtype xloc = ((sunrealtype)i) * dx + xl;
-  //   if (xloc < HALF)
-  //   {
-  //     /* -K * rho*/ 
-  //     sunrealtype coef = -eps_nonstiff*rho[i];
-
-  //     /* 1.0 / rho*/
-  //     sunrealtype rhoth = 1.0/rho[i];
-
-  //     /* E - 0.5 * rho * u^2 */
-  //     sunrealtype rhoe = et[i] - ((mx[i] * mx[i] + my[i] * my[i] + mz[i] * mz[i]) * HALF / rho[i]);
-
-  //     /* relaxation term */
-  //     etdot[i] = etdot[i] + coef*(rhoth*rhoe - eKnot_data[i]);
-  //   }
-  // }
 
   return 0;
 }
@@ -396,76 +344,6 @@ int fe_rhs(sunrealtype t, N_Vector y, N_Vector f, void* user_data)
   sunrealtype* etdot = N_VGetSubvectorArrayPointer_ManyVector(f, 4);
   if (check_ptr(etdot, "N_VGetSubvectorArrayPointer_ManyVector")) { return -1; }
 
-  N_Vector rhodot_vec = N_VGetSubvector_ManyVector(f, 0);
-  if (check_ptr(rhodot, "N_VGetSubvector_ManyVector")){ return -1; }
-  N_Vector eKnot = N_VClone(rhodot_vec); //SA: internal energy at equilibrium
-  // int local_length = N_VGetSubvectorLocalLength_ManyVector(f,0);//SA: to check the length of eknot
-  // printf("X is equal to %d\n", local_length);
-  sunrealtype* eKnot_data = N_VGetArrayPointer(eKnot);
-
-  // Set shortcut variables
-  const long int nx           = udata->nx;
-  const sunrealtype dx        = udata->dx;
-  const sunrealtype xl        = udata->xl;
-  const sunrealtype eps_stiff = udata->eps_stiff; 
-  const sunrealtype gamma     = udata->gamma; 
-  sunrealtype* flux           = udata->flux;
-
-  // iterate over subdomain, updating RHS
-  for (long int i = 0; i < nx; i++)
-  {
-    rhodot[i] = 0.0;
-    mxdot[i]  = 0.0;
-    mydot[i]  = 0.0;
-    mzdot[i]  = 0.0;
-    etdot[i]  = 0.0;
-  }
-
-  // for (long int i = 0; i < nx; i++)
-  // {
-  //   eKnot_data[i] = ONE;
-  // }     
-
-  // // iterate over subdomain, updating RHS
-  // for (long int i = 0; i < nx; i++)
-  // {
-  //   sunrealtype xloc = ((sunrealtype)i) * dx + xl;
-  //   if (xloc >= HALF)
-  //   {
-
-  //     /* -K * rho*/ 
-  //     sunrealtype coef = -eps_stiff*rho[i];
-
-  //     /* 1.0 / rho*/
-  //     sunrealtype rhoth = 1.0/rho[i];
-
-  //     /* E - 0.5 * rho * u^2 */
-  //     sunrealtype rhoe = et[i] - ((mx[i] * mx[i] + my[i] * my[i] + mz[i] * mz[i]) * HALF / rho[i]);
-
-  //     /* relaxation term */
-  //     etdot[i] = etdot[i] + coef*(rhoth*rhoe - eKnot_data[i]);
-  //   }
-  // }
-
-  // const sunrealtype e_ignite = SUN_RCONST(10.0); // Ignition threshold
-  // const sunrealtype e_eq     = SUN_RCONST(25.0); // Target equilibrium energy
-  // const sunrealtype k_smooth = SUN_RCONST(2.0);  // Smoothness of the ignition switch
-
-  // // iterate over subdomain, updating RHS
-  // for (long int i = 0; i < nx; i++)
-  // {
-  //   /* 1.0 / rho */
-  //   sunrealtype rhoth = ONE / rho[i];
-
-  //   /* e = E/rho - 0.5 * u^2 (internal energy per unit mass) */
-  //   sunrealtype e = (et[i] * rhoth) - ((mx[i]*mx[i] + my[i]*my[i] + mz[i]*mz[i]) * HALF * rhoth * rhoth);
-
-  //   /* Smooth activation: 0 when dormant (e < e_ignite), 1 when active (e > e_ignite) */
-  //   sunrealtype activation = HALF * (ONE + tanh(k_smooth * (e - e_ignite)));
-
-  //   /* Stiff relaxation term: drives e towards e_eq only when activated */
-  //   etdot[i] += eps_stiff * activation * rho[i] * (e_eq - e);
-  // }
 
   return 0;
 }
@@ -729,6 +607,13 @@ int SetIC(N_Vector y, EulerData& udata)
   if (check_ptr(et, "N_VGetSubvectorArrayPointer_ManyVector")) { return -1; }
 
   const double PI = 3.141592653589793;
+  const sunrealtype rhoL_prim = 3.857143;
+  const sunrealtype uL_prim = 2.629369;
+  const sunrealtype pL_prim = 10.333333;
+
+  const sunrealtype uR_prim = 0.0;
+  const sunrealtype pR_prim = 1.0;
+
 
   for (long int i = 0; i < udata.nx; i++)
   {
@@ -736,14 +621,14 @@ int SetIC(N_Vector y, EulerData& udata)
     sunrealtype xloc = ((sunrealtype)i) * udata.dx + udata.xl;
     if (xloc < HALF)
     {
-      rho[i] = rhoL;//(3.857143 + HALF * sin(TEN * PI * xloc)); //rhoL;
+      rho[i] = rhoL;
       mx[i]  = rhoL * uL;
       et[i]  = udata.eos_inv(rhoL, rhoL*uL, ZERO, ZERO, pL);
     }
     else
     {
-      rho[i] = rhoR;//(3.857143 + HALF * sin(TEN * PI * xloc));//rhoR;
-      mx[i]  = rhoR * uR;
+      rho[i] = rhoR;
+      mx[i]  = rhoR * uR; 
       et[i]  = udata.eos_inv(rhoR, rhoR*uR, ZERO, ZERO, pR);
     }
     my[i] = ZERO;
