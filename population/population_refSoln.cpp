@@ -267,7 +267,7 @@ int main(int argc, char* argv[])
   fclose(FID);
 
   /* Open output stream for results, access data array */
-  FILE* UFID = fopen("population.txt", "w");
+  FILE* UFID = fopen("population_refSol.txt", "w");
   fprintf(UFID, "Title: Population Model \n");
   fprintf(UFID, "Initial Time %f \n", uopts.T0);
   fprintf(UFID, "Final Time %f \n", uopts.Tf);
@@ -311,14 +311,14 @@ int main(int argc, char* argv[])
       }
     }
     if (minVal < 0.0){
-      printf("Model has a negative (min) value of %.14f at time step t = %.2f \n", minVal, t);
+      printf("Model has a negative (min) value of %.14f at time step t = %.16f \n", minVal, t);
     }
     // else {
     //   printf("Model has no negative value at time step t = %.2f. \n", t);
     // }
 
     /* output results to disk */
-    fprintf(UFID, "Time step: %.2" FSYM "\n", t); 
+    fprintf(UFID, "Time step: %.16" FSYM "\n", t); 
     for (int i = 0; i < udata.N; i++) { fprintf(UFID, " %.16" ESYM "", data[i]); }
     fprintf(UFID, "\n \n");
   }

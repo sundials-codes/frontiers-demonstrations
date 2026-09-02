@@ -37,24 +37,63 @@ def refSoln(solver, runV, kval, kname, showcommand=True):
 
     runcommand = " %s  --rtol %e   --k %e" % (solver['exe'], runV, kval)
 
-    result = subprocess.run(shlex.split(runcommand), stdout=subprocess.PIPE)
+    result = subprocess.run(shlex.split(runcommand), stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+    stdout_lines = result.stdout.decode().split('\n')
+    stderr_lines = result.stderr.decode().split('\n')
 
     if (result.returncode != 0):
-        print("Running: " + runcommand + " FAILURE: \n" + str(result.returncode))
-        print(result.stderr)
+        print(result.stderr.decode())
+        sys.exit("Reference run failed")
+        # print("Running: " + runcommand + " FAILURE: \n" + str(result.returncode))
+        # print(result.stderr)
     else:
-        if (showcommand):
+        # If SUNDIALS failed  
+        sundials_failed = False
+        for line in stderr_lines:
+            if (("test failed repeatedly" in line) or ("mxstep steps taken before reaching tout" in line)):
+                sundials_failed = True
+        if sundials_failed == True:
+            msg = "Running: " + runcommand + " FAILED"
+            sys.exit(msg)
+            
+        # If SUNDIALS did not fail
+        if not sundials_failed:
+            print("Running reference solution!")
+            final_time = None
+            for line in stdout_lines:
+                if line.strip().startswith("Current time"):
+                    final_time = float(line.split('=')[1].strip())
+                    break 
+
+            if final_time is None:
+                sys.exit("ERROR: 'Current time' not found in reference output")
+            if abs(final_time - 10.0) > 1e-10:
+                sys.exit(f"ERROR: reference reached only t = {final_time}, not 10.0")
+
             print(f"Running reference solution for {kval}: " + runcommand + " SUCCESS")
             new_fileName = f"referenceSoln_population_{kname}.txt"
 
             ## rename plot file
-            if os.path.exists("population.txt"):
-                os.rename("population.txt", new_fileName)
+            if os.path.exists("population_refSol.txt"):
+                os.rename("population_refSol.txt", new_fileName)
                 print(f"reference solution saved as: {new_fileName}")
             else:
-                print("Warning: population.txt not found.")
+                sys.exit("Warning: population_refSol.txt not found.")
 
-    return new_fileName 
+            return new_fileName 
+                
+        # if (showcommand):
+        #     print(f"Running reference solution for {kval}: " + runcommand + " SUCCESS")
+        #     new_fileName = f"referenceSoln_population_{kname}.txt"
+
+        #     ## rename plot file
+        #     if os.path.exists("population_refSol.txt"):
+        #         os.rename("population_refSol.txt", new_fileName)
+        #         print(f"reference solution saved as: {new_fileName}")
+        #     else:
+        #         print("Warning: population_refSol.txt not found.")
+
+    # return new_fileName 
 ## end of function
 
 

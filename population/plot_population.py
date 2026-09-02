@@ -62,7 +62,6 @@ with open(datafile, "r") as file:
         if "Time step" in lines[i]:
             get_t  = lines[i].split(':')
             time_t = get_t[1].strip()
-            i = i + 1
             pSol[it,:] = np.array(list(map(float, lines[i].split()))) #to remove single quotes around the vectors since each vector is a line
             t[it] = time_t #(it + 1) * dt
             it = it + 1
@@ -72,6 +71,7 @@ with open(datafile, "r") as file:
     for i in range(len(pSol[nsteps-1, :])):
         pSol_lastStep[i] = pSol[nsteps-1, i] 
 
+    print("last time read =", t[nsteps-1], " tf should be 10.0")
     ## Use First Derivative to Determine Smoothness of Graph 
     pSol_x = np.zeros((N), dtype=float)
     for i in range(len(pSol[nsteps-1,:])):

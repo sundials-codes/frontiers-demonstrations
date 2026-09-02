@@ -323,7 +323,7 @@ int main(int argc, char* argv[])
     // }
 
     /* output results to disk */
-    fprintf(UFID, "Time step: %.2" FSYM "\n", t); 
+    fprintf(UFID, "Time step: %.16" FSYM "\n", t); 
     for (int i = 0; i < udata.N; i++) { fprintf(UFID, " %.16" ESYM "", data[i]); }
     fprintf(UFID, "\n \n");
   }
