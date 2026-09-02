@@ -78,6 +78,7 @@ with open(datafile, "r") as file:
             fullSol[it, :] = full_sol
             it = it + 1
 
+    print("last time read =", t[nsteps-1], " tf should be 1.0")
     ## Extract solution u at the last time step
     uSol_lastStep = np.zeros((N), dtype=float)
     for i in range(len(uSol[nsteps-1, :])):

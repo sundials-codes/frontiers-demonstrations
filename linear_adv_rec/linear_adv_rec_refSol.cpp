@@ -279,7 +279,7 @@ int main(int argc, char* argv[])
   fclose(FID);
 
   /* Open output stream for results, access data array */
-  FILE* UFID = fopen("linear_adv_rec.txt", "w");
+  FILE* UFID = fopen("linear_adv_rec_refSol.txt", "w");
   fprintf(UFID, "Title: Linear Advection Reaction Problem \n");
   fprintf(UFID, "Initial Time %f \n", uopts.T0);
   fprintf(UFID, "Final Time %f \n", uopts.Tf);
@@ -312,7 +312,7 @@ int main(int argc, char* argv[])
     sumIntStep = sumIntStep + hcur;
 
     /* output results to disk */
-    fprintf(UFID, "Time step: %.2" FSYM "\n", t); 
+    fprintf(UFID, "Time step: %.16" FSYM "\n", t); 
     for (int i = 0; i < udata.N; i++) { fprintf(UFID, " %.16" ESYM " %.16" ESYM, data[i], data[udata.N + i]); }
     fprintf(UFID, "\n \n");
   }

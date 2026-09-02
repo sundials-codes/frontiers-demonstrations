@@ -308,7 +308,7 @@ int main(int argc, char* argv[])
     sumIntStep = sumIntStep + hcur;
 
     /* output results to disk */
-    fprintf(UFID, "Time step: %.2" FSYM "\n", t); 
+    fprintf(UFID, "Time step: %.16" FSYM "\n", t); 
     for (int i = 0; i < udata.N; i++) { fprintf(UFID, " %.16" ESYM " %.16" ESYM, data[i], data[udata.N + i]); }
     fprintf(UFID, "\n \n");
   }

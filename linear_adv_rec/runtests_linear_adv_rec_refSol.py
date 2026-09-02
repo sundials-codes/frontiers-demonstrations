@@ -44,24 +44,64 @@ def refSoln(solver, runV, k1Val, pulseVal, pulseName, showcommand=True):
 
     runcommand = "%s  --rtol %e  --k1 %e  --k2 %e  --sigma %e" % (solver['exe'], runV, k1Val, k2Val, pulseVal)
 
-    result = subprocess.run(shlex.split(runcommand), stdout=subprocess.PIPE)
+    result = subprocess.run(shlex.split(runcommand), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    stdout_lines = result.stdout.decode().split('\n')
+    stderr_lines = result.stderr.decode().split('\n')
 
     if (result.returncode != 0):
-        print("Running: " + runcommand + " FAILURE: \n" + str(result.returncode))
-        print(result.stderr)
+        print(result.stderr.decode())
+        sys.exit("Reference run failed")
+        # print("Running: " + runcommand + " FAILURE: \n" + str(result.returncode))
+        # print(result.stderr)
     else:
-        if (showcommand):
+        # If SUNDIALS failed  
+        sundials_failed = False
+        for line in stderr_lines:
+            if (("test failed repeatedly" in line) or ("mxstep steps taken before reaching tout" in line)):
+                sundials_failed = True
+        if sundials_failed == True:
+            msg = "Running: " + runcommand + " FAILED"
+            sys.exit(msg)
+
+        # If SUNDIALS did not fail
+        if not sundials_failed:
+            print("Running reference solution!")
+            final_time = None
+            for line in stdout_lines:
+                if line.strip().startswith("Current time"):
+                    final_time = float(line.split('=')[1].strip())
+                    break 
+
+            if final_time is None:
+                sys.exit("ERROR: 'Current time' not found in reference output")
+            if abs(final_time - 1.0) > 1e-10:
+                sys.exit(f"ERROR: reference reached only t = {final_time}, not 1.0")
+
             print(f"Running reference solution : " + runcommand + " SUCCESS")
             new_fileName = f"refSoln_linear_adv_rec_{pulseName}.txt"
-
-            ## rename plot file
-            if os.path.exists("linear_adv_rec.txt"):
-                os.rename("linear_adv_rec.txt", new_fileName)
+            
+            # ## rename plot file
+            if os.path.exists("linear_adv_rec_refSol.txt"):
+                os.rename("linear_adv_rec_refSol.txt", new_fileName)
                 print(f"reference solution saved as: {new_fileName}")
             else:
-                print("Warning: linear_adv_rec.txt not found.")
+                sys.exit("Warning: linear_adv_rec_refSol.txt not found.")
 
-    return new_fileName 
+            return new_fileName
+
+        # if (showcommand):
+        #     print(f"Running reference solution : " + runcommand + " SUCCESS")
+        #     new_fileName = f"refSoln_linear_adv_rec_{pulseName}.txt"
+
+        #     ## rename plot file
+        #     if os.path.exists("linear_adv_rec_refSol.txt"):
+        #         os.rename("linear_adv_rec_refSol.txt", new_fileName)
+        #         print(f"reference solution saved as: {new_fileName}")
+        #     else:
+        #         sys.exit("Warning: linear_adv_rec_refSol.txt not found.")
+    # return new_fileName 
+
+    
 ## end of function
 
 
