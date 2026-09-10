@@ -66,8 +66,8 @@ def refSoln(solver, runV, showcommand=True):
 
             if final_time is None:
                 sys.exit("ERROR: 'Current time' not found in reference output")
-            if abs(final_time - 0.3) > 1e-10:
-                sys.exit(f"ERROR: reference reached only t = {final_time}, not 0.3")
+            if abs(final_time - 0.08) > 1e-10:
+                sys.exit(f"ERROR: reference reached only t = {final_time}, not 0.08")
             
             print(f"Running reference solution : " + runcommand + " SUCCESS")
             new_fileName = f"hyperbolic_relaxation_reference_solution.out"

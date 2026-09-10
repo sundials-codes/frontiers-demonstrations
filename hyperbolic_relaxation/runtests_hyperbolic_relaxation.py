@@ -40,8 +40,8 @@ def runtest(solver, modetype, runV, showcommand=True, sspcommand=True):
     Output: returns the statistics
     """
     stats = {'Runtype': modetype,'ReturnCode': 0, 'IMEX_method': solver['name'], 'runVal': runV, 'runtime':0.0, 
-             'Steps': 0, 'StepAttempts': 0, 'ErrTestFails': 0, 'Explicit_RHS': 0, 'Implicit_RHS': 0, 
-             'Implicit_solves': 0, 'err_rho': 0.0, 'energy_err': 0.0, 'avg_dt':0.0}
+             'Steps': 0, 'StepAttempts': 0, 'ErrTestFails': 0, 'Explicit_RHS': 0, 'Implicit_RHS': 0, 'Implicit_solves': 0, 
+             'err_rho': 0.0, 'err_vel': 0.0, 'err_et': 0.0, 'err_prz': 0.0, 'avg_dt':0.0}
 
     if (modetype == "adaptive"):
         runcommand = " %s  --rtol %e  " % (solver['exe'], runV)
@@ -74,7 +74,10 @@ def runtest(solver, modetype, runV, showcommand=True, sspcommand=True):
         stats['Implicit_RHS']    = 0  
         stats['Implicit_solves'] = 0  
         stats['err_rho']         = 0 
-        stats['energy_err']      = 0
+        stats['err_vel']         = 0
+        stats['err_et']          = 0
+        stats['err_prz']         = 0
+        # stats['energy_err']      = 0
         stats['runtime']         = 0     # runtime should be 0 is test failed
         stats['avg_dt']          = 0
 
@@ -94,7 +97,7 @@ def runtest(solver, modetype, runV, showcommand=True, sspcommand=True):
             elif (("Implicit" in txt) and ("RHS" in txt)):
                 stats['Implicit_RHS'] = int(txt[5])       #right hand side evaluations for implicit method
 
-        stats['avg_dt'] = (0.3 - 0.0) / stats['StepAttempts'] 
+        stats['avg_dt'] = (0.08 - 0.0) / stats['StepAttempts'] 
 
         # number of implicit solves for each method
         if (solver['name']== 'SSP212'):
@@ -124,10 +127,16 @@ def runtest(solver, modetype, runV, showcommand=True, sspcommand=True):
         ssp_stdout_lines = str(ssp_result.stdout).split('\\n')
         for line in ssp_stdout_lines:
             txt = line.split()
-            if (("Lmax" in txt) and ("reference" in txt) and ("solution" in txt)):
-                stats['err_rho'] = float(txt[6])
-            elif (("Maximum" in txt) and ("energy" in txt) and ("error" in txt)):
-                stats['energy_err'] = float(txt[4])
+            if (("Lmax" in txt) and ("rho" in txt) and ("error" in txt) and ("reference" in txt) and ("solution" in txt)):
+                stats['err_rho'] = float(txt[7])
+            elif (("Lmax" in txt) and ("velocity" in txt) and ("error" in txt) and ("reference" in txt) and ("solution" in txt)):
+                stats['err_vel'] = float(txt[7])
+            elif (("Lmax" in txt) and ("energy" in txt) and ("error" in txt) and ("reference" in txt) and ("solution" in txt)):
+                stats['err_et'] = float(txt[7])
+            elif (("Lmax" in txt) and ("pressure" in txt) and ("error" in txt) and ("reference" in txt) and ("solution" in txt)):
+                stats['err_prz'] = float(txt[7])
+            # elif (("Maximum" in txt) and ("energy" in txt) and ("error" in txt)):
+            #     stats['energy_err'] = float(txt[4])
 
     return stats
 ## end of function
@@ -141,7 +150,7 @@ SSP423  = "  ./hyperbolic_relaxation  --dirk_table ARKODE_SSP_ESDIRK_4_2_3      
 SSP923  = "  ./hyperbolic_relaxation  --dirk_table ARKODE_SSP_ESDIRK_9_2_3       --erk_table ARKODE_SSP_ERK_9_2_3        --output 2"   
 
 ## common testing parameters
-adaptive_params = [1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1] 
+adaptive_params = [1e-9, 1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3] 
 fixed_params    = [] 
 for i in range(18, -2, -1): 
     fixed_params.append(0.01/(2.0**i))
@@ -186,7 +195,10 @@ x_metrics = [('StepAttempts', 'step-attempts','step_attempts'),
              ('Implicit_solves', 'implicit-solves','implicit_solves'), 
              ('runtime', 'runtime','runtime')]
 
-y_metrics = [('err_rho', 'err_rho','err_rho')]
+y_metrics = [('err_rho', 'err_rho','err_rho'),
+             ('err_vel', 'err_vel','err_vel'),
+             ('err_et', 'err_et','err_et'),
+             ('err_prz', 'err_prz','err_prz')]
 
 for x_metric, x_label, x_filename in x_metrics:
     for y_metric, y_label, y_filename in y_metrics:

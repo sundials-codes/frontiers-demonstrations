@@ -52,46 +52,49 @@ with open(datafile, "r") as file:
     lines.pop()   # remove "Number of Time Steps Taken: 2604"
 
     ndata = nsteps+1
-    # allocate solution data as 2D Python arrays
-    t = np.zeros((ndata), dtype=float)
-    rho = np.zeros((ndata, nx), dtype=float)
-    mx = np.zeros((ndata, nx), dtype=float)
-    my = np.zeros((ndata, nx), dtype=float)
-    mz = np.zeros((ndata, nx), dtype=float)
-    et = np.zeros((ndata, nx), dtype=float)
+    # store solution at final time step in numpy arrays
+    rho = np.zeros((nx), dtype=float)
+    mx = np.zeros((nx), dtype=float)
+    my = np.zeros((nx), dtype=float)
+    mz = np.zeros((nx), dtype=float)
+    et = np.zeros((nx), dtype=float)
     x = np.linspace(xl, xr, nx)
     dx = (xr - xl)/nx
 
-    # lines.pop(0) #remove the initial solution
+    last_line_run = ""
+    for line in lines:
+        if line.strip():
+            last_line_run = line
+
+    last_line_run_data = last_line_run.split()
+    t = float(last_line_run_data.pop(0))
+
     
     # store remaining data into numpy arrays, the first element in each array is the time step
-    for it in range(ndata):
-        line = (lines.pop(0)).split()
-        t[it] = line.pop(0)
-        for ix in range(nx):
-            rho[it, ix] = line.pop(0)
-            mx[it, ix] = line.pop(0)
-            my[it, ix] = line.pop(0)
-            mz[it, ix] = line.pop(0)
-            et[it, ix] = line.pop(0)
+    for ix in range(nx):
+        rho[ix] = last_line_run_data.pop(0)
+        mx[ix] = last_line_run_data.pop(0)
+        my[ix] = last_line_run_data.pop(0)
+        mz[ix] = last_line_run_data.pop(0)
+        et[ix] = last_line_run_data.pop(0)
 
-print("last time read =", t[ndata-1], " tf should be 0.3")
-largeDev_xgrid = [] #contains grid values were largest derivative occurs
-largeDev_time  = [] #contains the time step corresponding to the largest derivative value
-for it in range(ndata):
-    largeDev      = 0.0 #largest derivative value
-    largeDev_xloc = 0   # spatial grid location of the largest derivative
-    for ix in range(nx-1):
-        max_derv = abs(rho[it, ix+1] - rho[it, ix])/dx
-        if (max_derv > largeDev):
-            largeDev      = max_derv
-            largeDev_xloc = ix
-        timeV = it
-        #end
-    #end
-    largeDev_xgrid.append(float(x[largeDev_xloc]))
-    largeDev_time.append(float(t[timeV]))
-#end
+print("last time read =", t, " tf should be 0.08")
+# largeDev_xgrid = [] #contains grid values were largest derivative occurs
+# largeDev_time  = [] #contains the time step corresponding to the largest derivative value
+# for it in range(ndata):
+#     largeDev      = 0.0 #largest derivative value
+#     largeDev_xloc = 0   # spatial grid location of the largest derivative
+#     for ix in range(nx-1):
+#         max_derv = abs(rho[it, ix+1] - rho[it, ix])/dx
+#         if (max_derv > largeDev):
+#             largeDev      = max_derv
+#             largeDev_xloc = ix
+#         timeV = it
+#         #end
+#     #end
+#     largeDev_xgrid.append(float(x[largeDev_xloc]))
+#     largeDev_time.append(float(t[timeV]))
+# #end
 
 # solution at the final time step
 przdata = np.zeros((nx), dtype=float) #pressure
@@ -100,69 +103,11 @@ veldata = np.zeros((nx), dtype=float) #velocity
 e_eq    = 25.0 * np.ones((nx),  dtype=float) #e_{0}
 etdiff  = np.zeros((nx), dtype=float) #E - E_{0}
 for i in range(nx):
-    przdata[i] = (gamma-1.0) * (et[-1, i] - (mx[-1, i] * mx[-1, i] + my[-1, i] * my[-1, i] + mz[-1, i] * mz[-1, i]) * 0.5 / rho[-1, i])
-    rhodata[i] = rho[-1, i]
-    veldata[i] = mx[-1, i]/rho[-1, i]
-    etdiff[i] = ( (et[-1, i]/rho[-1, i]) - 0.5 * ((mx[-1, i]/rho[-1, i])**2) ) - e_eq[i] 
+    przdata[i] = (gamma-1.0) * (et[i] - (mx[i] * mx[i] + my[i] * my[i] + mz[i] * mz[i]) * 0.5 / rho[i])
+    rhodata[i] = rho[i]
+    veldata[i] = mx[i]/rho[i]
+    etdiff[i] = ( (et[i]/rho[i]) - 0.5 * ((mx[i]/rho[i])**2) ) - e_eq[i] 
 # end
-
-# determine interface location
-iloc = 0
-for i in range(nx):
-    if x[i]>=0.5:
-        iloc = i
-        break
-
-# energy error in the stiff region (E - E_{0})
-etdiff_stiff  = np.zeros((len(x[iloc:])), dtype=float) 
-etdiff_stiff = etdiff[iloc:]
-
-# Lmax error for between the energy at the final time step and the equilibrium energy
-energy_errMax = 0.0
-for i in range(len(etdiff_stiff)):
-    energy_err = np.abs(etdiff_stiff[i])
-    if (energy_err > energy_errMax) :
-       energy_errMax = energy_err
-    # end
-#end
-print("Maximum energy error = %.4e" %energy_errMax)
-
-## plot defaults: increase default font size, increase plot width, enable LaTeX rendering
-# ## subplots with time snapshots of the density, x-velocity, and pressure
-# fig = plt.figure(figsize=(10, 5))
-# gs = GridSpec(1, 3, figure=fig)
-# ax00 = fig.add_subplot(gs[0, 0])  # 1st column - initial time step
-# ax01 = fig.add_subplot(gs[0, 1])  # 2nd column
-# ax02 = fig.add_subplot(gs[0, 2])  # 3rd column
-
-# it = 0
-# tval = repr(float(t[it])).zfill(3)
-# ax00.plot(x, rho[it, :], "-b",)
-# ax00.set_title(r"$t =$ " + tval)
-# ax00.set_ylabel(r"$P(t,x)$")
-# ax00.set_xlabel(r"$x$")
-
-# middleval = int(np.ceil(nsteps/2))
-# it = middleval
-# tval = repr(float(t[it])).zfill(3)
-# ax01.plot(x, rho[it, :], "-b")
-# ax01.set_title(r"$t =$ " + tval)
-# ax01.set_ylabel(r"$P(t,x)$")
-# ax01.set_xlabel(r"$x$")
-
-# it = -1
-# tval = repr(float(t[it])).zfill(3)
-# ax02.plot(x, rho[it, :], "-b")
-# ax02.set_title(r"$t =$ " + tval)
-# ax02.set_ylabel(r"$P(t,x)$")
-# ax02.set_xlabel(r"$x$")
-
-# plt.rc("font", size=15)
-# plt.rcParams["figure.figsize"] = [7.2, 4.8]
-# plt.rcParams["text.usetex"] = True
-# plt.rcParams["figure.constrained_layout.use"] = True
-# # plt.savefig("hyperbolic_relaxation_frames.pdf")
-# plt.close()
 
 
 ## ------------------ Extract Reference Solution at Final Time Step -----------------------
@@ -220,26 +165,73 @@ def read_ref_solution(filename):
     rhoRefFinal = np.zeros((nx_ref), dtype=float) #density
     velRefFinal = np.zeros((nx_ref), dtype=float) #velocity
     etRefFinal  = np.zeros((nx_ref), dtype=float) #energy
+    e_eq        = 25.0 * np.ones((nx_ref),  dtype=float) #e_{0}
     przRefFinal = np.zeros((nx_ref), dtype=float) #pressure
 
     gamma = 7.0/5.0
     for i in range(nx_ref):
         rhoRefFinal[i] = rho_ref[i] 
         velRefFinal[i] = mx_ref[i]/rho_ref[i] 
-        etRefFinal[i]  = et_ref[i] 
+        etRefFinal[i]  = ( (et_ref[i]/rho_ref[i]) - 0.5 * ((mx_ref[i]/rho_ref[i])**2) ) - e_eq[i] 
         przRefFinal[i] = (gamma-1.0) * (et_ref[i] - (mx_ref[i] * mx_ref[i] + my_ref[i] * my_ref[i] + mz_ref[i] * mz_ref[i]) * 0.5 / rho_ref[i])
     
-    return rhoRefFinal, t_ref_final
+    return rhoRefFinal, velRefFinal, etRefFinal, przRefFinal, t_ref_final
 
 
 ## -------------------- Compute L-infinty norm using the reference solution -----------------------
-elmax = 0.0 
-refLastSoln_rho, refLastSoln_t = read_ref_solution("hyperbolic_relaxation_reference_solution.out")
-if np.abs(refLastSoln_t - 0.3) > 1e-10:
-    sys.exit(f"ERROR: reference solution is at t = {refLastSoln_t}, not 0.3")
+elmax_rho = 0.0 
+elmax_vel = 0.0 
+elmax_et = 0.0 
+elmax_prz = 0.0 
+
+refLastSoln_rho, refLastSoln_vel, refLastSoln_et, refLastSoln_prz, refLastSoln_t = read_ref_solution("hyperbolic_relaxation_reference_solution.out")
+if np.abs(refLastSoln_t - 0.08) > 1e-10:
+    sys.exit(f"ERROR: reference solution is at t = {refLastSoln_t}, not 0.08")
 else:
-    elmax = np.max(np.abs(refLastSoln_rho - rhodata))
-    print("Lmax error using reference solution = %e" %elmax)
+    elmax_rho = np.max(np.abs(refLastSoln_rho - rhodata))
+    elmax_vel = np.max(np.abs(refLastSoln_vel - veldata))
+    elmax_et = np.max(np.abs(refLastSoln_et - etdiff))
+    elmax_prz = np.max(np.abs(refLastSoln_prz - przdata))
+    print("Lmax rho error using reference solution = %e" %elmax_rho)
+    print("Lmax velocity error using reference solution = %e" %elmax_vel)
+    print("Lmax energy error using reference solution = %e" %elmax_et)
+    print("Lmax pressure error using reference solution = %e" %elmax_prz)
 
 
 ##### end of script #####
+
+
+# ## -------------------- plot solution overlaid with reference solution: solution at final time step -----------------------
+# x_ref = np.linspace(xl, xr, len(refLastSoln_rho))
+# fig, ax = plt.subplots(2, 2, figsize=(10, 7), constrained_layout=True)
+# # plot density
+# ax[0, 0].plot(x, rhodata, linestyle='-', label='computed', color='blue', linewidth=2)
+# ax[0, 0].plot(x_ref, refLastSoln_rho, linestyle='--',label='reference', color='red', linewidth=2)
+# ax[0, 0].set_xlabel('x', fontsize=10)
+# ax[0, 0].set_ylabel(r'Density ($\rho$)', fontsize=10)
+# ax[0, 0].legend()
+
+# # plot velocity
+# ax[0, 1].plot(x, veldata, linestyle='-', label='computed', color='blue', linewidth=2)
+# ax[0, 1].plot(x_ref, refLastSoln_vel, linestyle='--',label='reference', color='red', linewidth=2)
+# ax[0, 1].set_xlabel('x', fontsize=10)
+# ax[0, 1].set_ylabel(r'velocity ($\mu$)', fontsize=10)
+# ax[0, 1].legend()
+
+# # plot pressure
+# ax[1, 0].plot(x, przdata, linestyle='-', label='computed', color='blue', linewidth=2)
+# ax[1, 0].plot(x_ref, refLastSoln_prz, linestyle='--',label='reference', color='red', linewidth=2)
+# ax[1, 0].set_xlabel('x', fontsize=10)
+# ax[1, 0].set_ylabel(r'pressure ($p$)', fontsize=10)
+# ax[1, 0].legend()
+
+# # plot internal energy difference
+# ax[1, 1].plot(x, etdiff, linestyle='-', label='computed', color='blue', linewidth=2)
+# ax[1, 1].plot(x_ref, refLastSoln_et, linestyle='--',label='reference', color='red', linewidth=2)
+# ax[1, 1].set_xlabel('x', fontsize=10)
+# ax[1, 1].set_ylabel(r'energy ($e - e_{eq}$)', fontsize=10)
+# ax[1, 1].legend()
+
+# plt.show()
+# # plt.savefig("hyperbolic_relaxation_final_time_solution.png")
+# # plt.close()

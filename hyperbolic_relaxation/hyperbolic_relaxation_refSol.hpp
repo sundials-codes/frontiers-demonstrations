@@ -132,10 +132,10 @@ public:
   EulerData()
     : nx(200),
       t0(ZERO),
-      tf(SUN_RCONST(0.3)), 
+      tf(SUN_RCONST(0.08)), 
       xl(ZERO),
       xr(ONE),
-      eps_stiff(1e6),
+      eps_stiff(1e7),
       dx(ZERO),
       gamma(SUN_RCONST(1.4)),
       flux(nullptr){};
