@@ -11,31 +11,37 @@
  * SPDX-License-Identifier: BSD-3-Clause
  * SUNDIALS Copyright End
  * -----------------------------------------------------------------------------
- * This example performs a 1D hyperbolic equation with a stiff relaxation term.
+ * This script solves a 1D hyperbolic relaxation problem with Arrhenius term.
+ * 
  * This is a modification of the 1D Euler equation with conserved quanties for 
- * an ideal gas (Embedded pairs for optimal explicit strong stability
- * preserving Runge–Kutta methods (2022) by Fekete et.al.)
+ * gas dynamics (Runge-kutta methods for hyperbolic conservation laws with stiff 
+ * relaxation terms by Shin Jin 1995). The Arrhenius term is from Theoretical and 
+ * numerical structure for reacting shock waves, SIAM Journal on Scientific and 
+ * Statistical Computing, by Colella et al (1986)
+ * 
  *  U_t + F(U)_x = R(U)
  *  U    = [rho    rho*u       E]
  *  F(U) = [rho*u  rho*u^2+p  (E+p)*u]
- *  R(U) = [0      0          -K*rho*(E/rho - 0.5*u^2 - e_0)]
+ *  R(U) = [0      0          K*exp(-E_act/e)*rho*(e_eq - e)]
  * 
  *  where rho, rho*u and E are the density, momentum and total energy, respectively, 
  *  e is the internal energy and 1/K = epsilon, the stiffness parameter. 
  *
  *    E(x) = p(x)/(gamma - 1) + 0.5*(u^2)
  *    p(x) = (gamma - 1)(E - 0.5*rho*u^2)
+ *    e    =  E(x) / rho(x) - 0.5*u^2
  *   
  * The code solves the 1D compressible Euler equations in conserved variables,
- * over the domain (t,x) in [0, 0.3] x [0, 1] with a stiff relaxation term, R(U).
+ * over the domain (t,x) in [0, 0.08] x [0, 1] with a stiff relaxation term, R(U).
  * 
  * Initial data:
- *              rho(x,0)   = 1.0 for x<0.5, rho(x,0) = 0.2 for x>=0.5
+ *              rho(x,0)   = 1.0 for x<0.5, rho(x,0) = 0.0 for x>=0.5
  *              rho*u(x,0) = 0.0, for all x in [0, 1]
- *              E(x,0)     = 1.0, for all x in [0, 1]
- *              e_0        = 1.0, for all x in [0, 1]
+ *              E(x,0)     = 1.0, for x<0.5, E(x,0) = 0.1 for x>=0.5
+ *              e_eq       = 25.0
+ *              E_A        = 40.0
  *
- * Since the Linear Advection is specified in terms of primitive variables, we
+ * Since the Euler equations are specified in terms of primitive variables, we
  * convert between primitive and conserved variables for the initial conditions
  * and accuracy results.
  *
@@ -152,31 +158,6 @@ int main(int argc, char* argv[])
   flag = WriteOutput(t, y, udata, uopts);
   if (check_flag(flag, "WriteOutput")) { return 1; }
 
-  // // Loop over output times
-  // for (int iout = 0; iout < uopts.nout; iout++)
-  // {
-  //   // Evolve
-  //   if (uopts.output == 3)
-  //   {
-  //     // Stop at output time (do not interpolate output)
-  //     flag = ARKodeSetStopTime(arkode_mem, tout);
-  //     if (check_flag(flag, "ARKodeSetStopTime")) { return 1; }
-  //   }
-
-  //   //   Advance in time
-  //   flag = ARKodeEvolve(arkode_mem, tout, y, &t, ARK_NORMAL);
-  //   if (check_flag(flag, "ARKodeEvolve")) { break; }
-
-  //   // Output solution
-  //   flag = WriteOutput(t, y, udata, uopts);
-  //   if (check_flag(flag, "WriteOutput")) { return 1; }
-
-  //   // Update output time
-  //   tout += dTout;
-  //   tout = (tout > udata.tf) ? udata.tf : tout;
-  // }
-
-
     /* print the solution at all time steps in the .out file */
   while (t < udata.tf)
   {
@@ -192,10 +173,6 @@ int main(int argc, char* argv[])
   /* total number of steps used in run */
   ARKodeGetNumSteps(arkode_mem, &nsteps);
   uopts.nstepsmax = nsteps;
-
-  /* compute the difference between E_eq and E (or difference between pressure and density)*/
-  // flag = L2error_norm(t, y, udata, uopts);
-  // if (check_flag(flag, "L2error_norm")) { return 1; }
 
   // Close output
   flag = CloseOutput(uopts);
