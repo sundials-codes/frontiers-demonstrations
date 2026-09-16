@@ -29,10 +29,10 @@
  * centered differences, with the data distributed over N points
  * on a uniform spatial grid.
  *
- * This program solves the problem with an ARK method. 
- * For the DIRK method, we use a Newton iteration with
- * the SUNLinSol_PCG linear solver, and a user-supplied Jacobian-vector
- * product routine.
+ * This program solves the problem fully implicit with an ARK method.
+ *
+ * Several additional command line options are available to change the
+ * and integrator settings. Use the flag --help for more information.
  *---------------------------------------------------------------*/
 
  #include <algorithm>

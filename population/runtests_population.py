@@ -480,7 +480,7 @@ for k_name, k_val in diff_coef2.items():
                 valid_data = SSPmethodFix_data[SSPmethodFix_data['ReturnCode'] != 1]
                 x = valid_data[x_metric]
                 y = valid_data[y_metric]
-                ax.plot(x, y, color = colors[i], marker='o', markersize=5, linestyle='-', label=f"{SSPmethodFix}-h")
+                ax.plot(x, y, color = colors[i], marker='o', markersize=5, linestyle='-', linewidth=2, label=f"{SSPmethodFix}-h")
 
             # adaptive run
             for i, SSPmethodAdapt in enumerate(data_adaptive['IMEX_method'].unique()):
@@ -488,18 +488,18 @@ for k_name, k_val in diff_coef2.items():
                 valid_data = SSPmethodAdapt_data[SSPmethodAdapt_data['ReturnCode'] != 1]
                 x = valid_data[x_metric]
                 y = valid_data[y_metric]
-                ax.plot(x, y, color = colors[i], marker='*', markersize=5, linestyle='-.', label=f"{SSPmethodAdapt}-rtol")
+                ax.plot(x, y, color = colors[i], marker='*', markersize=5, linestyle='-.', linewidth=2, label=f"{SSPmethodAdapt}-rtol")
 
             ax.set_xscale('log')
             ax.set_yscale('log')
-            ax.tick_params(axis='both', labelsize=13)
+            ax.tick_params(axis='both', labelsize=20)
 
             #remove duplicates
             handles, labels = ax.get_legend_handles_labels()
             by_label = dict(zip(labels, handles))
-            ax.legend(by_label.values(), by_label.keys(), bbox_to_anchor=(1.05, 1), borderaxespad=0., loc='upper left', fontsize=10)
+            ax.legend(by_label.values(), by_label.keys(), bbox_to_anchor=(1.05, 1), borderaxespad=0., loc='upper left', fontsize=20)
 
-            fig.supxlabel(f'{x_label}', fontsize=11)
-            fig.supylabel(f'{y_label}', fontsize=11)
+            fig.supxlabel(f'{x_label}', fontsize=20)
+            fig.supylabel(f'{y_label}', fontsize=20)
             plt.savefig(f"{x_filename}_{y_filename}_population_{k_name}.png", bbox_inches="tight")
             plt.close(fig)

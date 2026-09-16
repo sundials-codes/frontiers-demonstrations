@@ -81,19 +81,7 @@ def refSoln(solver, runV, kval, kname, showcommand=True):
                 sys.exit("Warning: population_refSol.txt not found.")
 
             return new_fileName 
-                
-        # if (showcommand):
-        #     print(f"Running reference solution for {kval}: " + runcommand + " SUCCESS")
-        #     new_fileName = f"referenceSoln_population_{kname}.txt"
-
-        #     ## rename plot file
-        #     if os.path.exists("population_refSol.txt"):
-        #         os.rename("population_refSol.txt", new_fileName)
-        #         print(f"reference solution saved as: {new_fileName}")
-        #     else:
-        #         print("Warning: population_refSol.txt not found.")
-
-    # return new_fileName 
+        
 ## end of function
 
 

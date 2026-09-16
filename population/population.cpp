@@ -29,10 +29,17 @@
  * centered differences, with the data distributed over N points
  * on a uniform spatial grid.
  *
- * This program solves the problem with an ARK method. 
- * For the DIRK method, we use a Newton iteration with
- * the SUNLinSol_PCG linear solver, and a user-supplied Jacobian-vector
- * product routine.
+ * The system is advanced in time using one of implicit-explicit 
+ * strong-stability-preserving (IMEX SSP) Runge--Kutta methods. 
+ * The following options are available:
+ *
+ *   SSP-ARK-2-1-2:       ARKODE_SSP_SDIRK_2_1_2       + ARKODE_SSP_SDIRK_2_1_2
+ *   SSP-ARK-3-1-2:       ARKODE_SSP_DIRK_3_1_2        + ARKODE_SSP_DIRK_3_1_2
+ *   SSP-LSPUM-ARK-3-1-2: ARKODE_SSP_LSPUM_SDIRK_3_1_2 + ARKODE_SSP_LSPUM_SDIRK_3_1_2
+ *   SSP-ARK-4-2-3:       ARKODE_SSP_ESDIRK_4_2_3      + ARKODE_SSP_ESDIRK_4_2_3 
+ *
+ * Several additional command line options are available to change the
+ * and integrator settings. Use the flag --help for more information.
  *---------------------------------------------------------------*/
 
  #include <algorithm>
@@ -216,12 +223,6 @@ int main(int argc, char* argv[])
   if (udata.swap_type == "nonswap"){
     flag = ARKStepSetTableName(arkode_mem, uopts.dirk_table.c_str(), uopts.erk_table.c_str()); 
     if (check_flag(&flag, "ARKStepSetTableName", 1)) { return 1; } 
-
-    // if ((uopts.dirk_table == "ARKODE_SSP_LSPUM_SDIRK_3_1_2") && (uopts.erk_table == "ARKODE_SSP_LSPUM_ERK_3_1_2"))
-    // {
-    //   flag = ARKodeSetErrorBias(arkode_mem, SUN_RCONST(2.0));
-    //   if (check_flag(&flag, "ARKodeSetErrorBias", 1)) { return 1; }
-    // }
   }
   else if (udata.swap_type == "swap") {
     ARKodeButcherTable Be = ARKodeButcherTable_LoadERKByName(uopts.erk_table.c_str());
