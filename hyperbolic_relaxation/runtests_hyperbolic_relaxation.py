@@ -7,7 +7,8 @@
 # For details, see the LICENSE file.
 #------------------------------------------------------------------------------------------------------------------------------------
 # ReadME: This scripts runs the different imex schemes with different diffusion coefficients and parameters, 
-#         using either adaptive or fixed time stepping
+#         using either adaptive or fixed time stepping.
+#         The stats for the fixed runs and the adaptive runs are stored in two separate excel files.
 #-------------------------------------------------------------------------------------------------------------------------------------
 
 # imports
@@ -27,8 +28,8 @@ from math import log10, floor
 # utility routine to run a test, storing the run options and solver statistics
 def runtest(solver, modetype, runV, showcommand=True, sspcommand=True):
     """
-    This function runs the hyperbolic equation with relaxation using both fixed and adaptive time
-    stepping with different parameters and stores the stats in an excel file
+    This function runs the hyperbolic equation with relaxation using either fixed or adaptive time
+    stepping with different parameters and returns the stats
 
     Input: solver:            imex scheme to tun
            modetype (string): adaptive or fixed time stepping
@@ -162,33 +163,39 @@ solvertype = [{'name': 'SSP212',  'exe': SSP212},
               {'name': 'SSP423',  'exe': SSP423},
               {'name': 'SSP923',  'exe': SSP923}]
               
-# run tests and collect results as a pandas data frame
-fname = 'hyperbolic_relaxation_stats' 
-RunStats = []
+# run tests and collect results as pandas data frames (one for fixed, one for adaptive)
+fnameFixed    = 'hyperbolic_relaxation_stats_fixed'
+fnameAdaptive = 'hyperbolic_relaxation_stats_adaptive'
+RunStatsFixed    = []
+RunStatsAdaptive = []
 
 for runvalue in adaptive_params:
     for solver_adapt in solvertype:
         adaptive_stat = runtest(solver_adapt, "adaptive", runvalue, showcommand=True, sspcommand=True)
-        RunStats.append(adaptive_stat)
+        RunStatsAdaptive.append(adaptive_stat)
 
 for runvalue in fixed_params:
     for solver_fixed in solvertype:
         fixed_stat = runtest(solver_fixed, "fixed", runvalue, showcommand=True, sspcommand=True)
-        RunStats.append(fixed_stat)
-RunStatsDf = pd.DataFrame.from_records(RunStats)
+        RunStatsFixed.append(fixed_stat)
+RunStatsFixedDf    = pd.DataFrame.from_records(RunStatsFixed)
+RunStatsAdaptiveDf = pd.DataFrame.from_records(RunStatsAdaptive)
 
-# save dataframe as Excel file
-print("RunStatsDf object:")
-print(RunStatsDf)
+# save each dataframe as a separate Excel file
+print("RunStatsFixedDf object:")
+print(RunStatsFixedDf)
+print("RunStatsAdaptiveDf object:")
+print(RunStatsAdaptiveDf)
 print("Saving as Excel")
-RunStatsDf.to_excel(fname + '.xlsx', index=False)
+RunStatsFixedDf.to_excel(fnameFixed + '.xlsx', index=False)
+RunStatsAdaptiveDf.to_excel(fnameAdaptive + '.xlsx', index=False)
 
 
 # ===============================================================================================================================
 #  Generate plots to test the efficiency and accuracy of the IMEX SSP methods
 # ===============================================================================================================================
-df = pd.read_excel('hyperbolic_relaxation_stats' + '.xlsx') # excel file
-methods = df['IMEX_method'].unique()
+df_fixed    = pd.read_excel('hyperbolic_relaxation_stats_fixed' + '.xlsx')    # excel file with the fixed step size runs
+df_adaptive = pd.read_excel('hyperbolic_relaxation_stats_adaptive' + '.xlsx') # excel file with the adaptive runs
 colors   = ['red', 'black', 'blue', 'green', 'orange'] 
 
 x_metrics = [('StepAttempts', 'step-attempts','step_attempts'), 
@@ -204,20 +211,17 @@ for x_metric, x_label, x_filename in x_metrics:
     for y_metric, y_label, y_filename in y_metrics:
         fig, ax = plt.subplots( figsize=(7, 6))
 
-        data_fixed = df[df["Runtype"] == "fixed"]
-        data_adaptive = df[df["Runtype"] == "adaptive"]
-
         # fixed run
-        for i, SSPmethodFix in enumerate(data_fixed['IMEX_method'].unique()):
-            SSPmethodFix_data = data_fixed[data_fixed['IMEX_method'] == SSPmethodFix]
+        for i, SSPmethodFix in enumerate(df_fixed['IMEX_method'].unique()):
+            SSPmethodFix_data = df_fixed[df_fixed['IMEX_method'] == SSPmethodFix]
             valid_data = SSPmethodFix_data[SSPmethodFix_data['ReturnCode'] != 1]
             x = valid_data[x_metric]
             y = valid_data[y_metric]
             ax.plot(x, y, color = colors[i], marker = 'o', markersize=5, linestyle='-', linewidth=2,label=f"{SSPmethodFix}-h")
     
         #adaptive run
-        for i, SSPmethodAdapt in enumerate(data_adaptive['IMEX_method'].unique()):
-            SSPmethodAdapt_data = data_adaptive[data_adaptive['IMEX_method'] == SSPmethodAdapt]
+        for i, SSPmethodAdapt in enumerate(df_adaptive['IMEX_method'].unique()):
+            SSPmethodAdapt_data = df_adaptive[df_adaptive['IMEX_method'] == SSPmethodAdapt]
             valid_data = SSPmethodAdapt_data[SSPmethodAdapt_data['ReturnCode'] != 1]
             x = valid_data[x_metric]
             y = valid_data[y_metric]
@@ -236,4 +240,3 @@ for x_metric, x_label, x_filename in x_metrics:
         fig.supylabel(f'{y_label}', fontsize=11)
         plt.savefig(f"{x_filename}_{y_filename}_hyperbolic.png", bbox_inches="tight")
         plt.close(fig)
-
