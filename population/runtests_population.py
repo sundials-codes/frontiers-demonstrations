@@ -8,6 +8,7 @@
 #------------------------------------------------------------------------------------------------------------------------------------
 # Description: This scripts runs the different imex schemes with different diffusion coefficients and parameters,
 #              using either adaptive or fixed time stepping for the population density model.
+#              The stats for the fixed runs and the adaptive runs are stored in two separate excel files.
 #-------------------------------------------------------------------------------------------------------------------------------------
 
 # imports
@@ -26,8 +27,8 @@ from math import log10, floor
 # utility routine to run a test, storing the run options and solver statistics
 def runtest(solver, modetype, runV, kVal, kName, showcommand=True, sspcommand=True):
     """
-    This function runs the population model using both fixed and adaptive time
-    stepping with different parameters and stores the stats in an excel file
+    This function runs the population model using either fixed or adaptive time
+    stepping with different parameters and returns the stats
 
     Input: solver:            imex scheme to tun
            modetype (string): adaptive or fixed time stepping
@@ -421,33 +422,39 @@ solvertype = [{'name': 'SSP212',       'exe': SSP212},
               {'name': 'SSP423',       'exe': SSP423},
               {'name': 'SSP923',       'exe': SSP923}]
 
-# run tests and collect results as a pandas data frame
-fname = 'population_stats' 
-RunStats = []
+# run tests and collect results as pandas data frames (one for fixed, one for adaptive)
+fnameFixed    = 'population_stats_fixed'
+fnameAdaptive = 'population_stats_adaptive'
+RunStatsFixed    = []
+RunStatsAdaptive = []
 for k_name, k_val in diff_coef.items():
     for runV_val in adaptive_params:
         for solver_adapt in solvertype:
             adaptive_stat, _ = runtest(solver_adapt, "adaptive", runV_val, k_val, k_name, showcommand=True, sspcommand=True)
-            RunStats.append(adaptive_stat)
+            RunStatsAdaptive.append(adaptive_stat)
 
     for runV_val in fixed_params:
         for solver_adapt in solvertype:
             fixed_stat, _ = runtest(solver_adapt, "fixed", runV_val, k_val, k_name, showcommand=True, sspcommand=True)
-            RunStats.append(fixed_stat)
-RunStatsDf = pd.DataFrame.from_records(RunStats)
+            RunStatsFixed.append(fixed_stat)
+RunStatsFixedDf    = pd.DataFrame.from_records(RunStatsFixed)
+RunStatsAdaptiveDf = pd.DataFrame.from_records(RunStatsAdaptive)
 
-# save dataframe as Excel file
-print("RunStatsDf object:")
-print(RunStatsDf)
+# save each dataframe as a separate Excel file
+print("RunStatsFixedDf object:")
+print(RunStatsFixedDf)
+print("RunStatsAdaptiveDf object:")
+print(RunStatsAdaptiveDf)
 print("Saving as Excel")
-RunStatsDf.to_excel(fname + '.xlsx', index=False)
+RunStatsFixedDf.to_excel(fnameFixed + '.xlsx', index=False)
+RunStatsAdaptiveDf.to_excel(fnameAdaptive + '.xlsx', index=False)
 
 
 # ===============================================================================================================================
 #  Generate plots to test the efficiency and accuracy of the IMEX SSP methods
 # ===============================================================================================================================
-df = pd.read_excel('population_stats' + '.xlsx') # excel file
-methods = df['IMEX_method'].unique()
+df_fixed    = pd.read_excel('population_stats_fixed' + '.xlsx')    # excel file with the fixed step size runs
+df_adaptive = pd.read_excel('population_stats_adaptive' + '.xlsx') # excel file with the adaptive runs
 
 colors   = ['red', 'black', 'blue', 'green', 'orange'] 
 diff_coef2 = {'diffk0':0.0, 'diffk02':0.02, 'diffk04':0.04}
@@ -464,9 +471,8 @@ for k_name, k_val in diff_coef2.items():
             fig, ax = plt.subplots( figsize=(7, 6))
 
             #filter data by fixed and adaptive tests
-            col_data = df[(df["diff_coef"] == k_val)]
-            data_fixed = col_data[col_data["Runtype"] == "fixed"]
-            data_adaptive = col_data[col_data["Runtype"] == "adaptive"]
+            data_fixed = df_fixed[(df_fixed["diff_coef"] == k_val)]
+            data_adaptive = df_adaptive[(df_adaptive["diff_coef"] == k_val)]
 
             # fixed run
             for i, SSPmethodFix in enumerate(data_fixed['IMEX_method'].unique()):
@@ -497,4 +503,3 @@ for k_name, k_val in diff_coef2.items():
             fig.supylabel(f'{y_label}', fontsize=11)
             plt.savefig(f"{x_filename}_{y_filename}_population_{k_name}.png", bbox_inches="tight")
             plt.close(fig)
-
