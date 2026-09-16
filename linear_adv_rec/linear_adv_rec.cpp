@@ -29,9 +29,20 @@
  * The spatial derivatives are computed 3rd (boundary) and 4th (interior) 
  * order finite differences, with the data distributed over N = 400 points
  * on a uniform spatial grid.
+ * 
+ * The system is advanced in time using one of implicit-explicit 
+ * strong-stability-preserving (IMEX SSP) Runge--Kutta methods. 
+ * The following options are available:
  *
- * This program solves the problem with an ARK method and GMRES linear solver.
+ *   SSP-ARK-2-1-2:       ARKODE_SSP_SDIRK_2_1_2       + ARKODE_SSP_SDIRK_2_1_2
+ *   SSP-ARK-3-1-2:       ARKODE_SSP_DIRK_3_1_2        + ARKODE_SSP_DIRK_3_1_2
+ *   SSP-LSPUM-ARK-3-1-2: ARKODE_SSP_LSPUM_SDIRK_3_1_2 + ARKODE_SSP_LSPUM_SDIRK_3_1_2
+ *   SSP-ARK-4-2-3:       ARKODE_SSP_ESDIRK_4_2_3      + ARKODE_SSP_ESDIRK_4_2_3 
+ *
+ * Several additional command line options are available to change the
+ * and integrator settings. Use the flag --help for more information.
  *----------------------------------------------------------------------------*/
+
 
 #include <algorithm>
 #include <cmath>

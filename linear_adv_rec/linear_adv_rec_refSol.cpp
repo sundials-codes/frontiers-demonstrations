@@ -30,8 +30,11 @@
  * order finite differences, with the data distributed over N = 400 points
  * on a uniform spatial grid.
  *
- * This program solves the problem with an a fully implicit method and GMRES linear solver 
- * to generate the reference solution. ARK method.
+ * This program solves the problem with an a fully implicit method and GMRES 
+ * linear solver to generate the reference solution.
+ *
+ * Several additional command line options are available to change the
+ * and integrator settings. Use the flag --help for more information.
  *----------------------------------------------------------------------------*/
 
 #include <algorithm>

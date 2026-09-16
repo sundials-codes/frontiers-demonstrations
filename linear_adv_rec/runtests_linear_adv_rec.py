@@ -355,7 +355,7 @@ for pulse_name, pulse_val in pulse_steepness.items():
                     valid_data = SSPmethodFix_data[SSPmethodFix_data['ReturnCode'] != 1]
                     x = valid_data[x_metric]
                     y = valid_data[y_metric]
-                    ax.plot(x, y, color = colors[i], marker = 'o', markersize=5, linestyle='-', label=f"{SSPmethodFix}-h")
+                    ax.plot(x, y, color = colors[i], marker = 'o', markersize=5, linestyle='-', linewidth=2, label=f"{SSPmethodFix}-h")
 
                 #adaptive run
                 for i, SSPmethodAdapt in enumerate(data_adaptive['IMEX_method'].unique()):
@@ -363,11 +363,11 @@ for pulse_name, pulse_val in pulse_steepness.items():
                     valid_data = SSPmethodAdapt_data[SSPmethodAdapt_data['ReturnCode'] != 1]
                     x = valid_data[x_metric]
                     y = valid_data[y_metric]
-                    ax.plot(x, y, color = colors[i], marker = '*', markersize=5, linestyle='-.', label=f"{SSPmethodAdapt}-rtol")
+                    ax.plot(x, y, color = colors[i], marker = '*', markersize=5, linestyle='-.', linewidth=2, label=f"{SSPmethodAdapt}-rtol")
 
                 ax.set_xscale('log')
                 ax.set_yscale('log')
-                ax.tick_params(axis='both', labelsize=18)
+                ax.tick_params(axis='both', labelsize=20)
             #end
 
             #remove duplicates

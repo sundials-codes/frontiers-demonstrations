@@ -51,8 +51,6 @@ def refSoln(solver, runV, k1Val, pulseVal, pulseName, showcommand=True):
     if (result.returncode != 0):
         print(result.stderr.decode())
         sys.exit("Reference run failed")
-        # print("Running: " + runcommand + " FAILURE: \n" + str(result.returncode))
-        # print(result.stderr)
     else:
         # If SUNDIALS failed  
         sundials_failed = False
@@ -88,19 +86,6 @@ def refSoln(solver, runV, k1Val, pulseVal, pulseName, showcommand=True):
                 sys.exit("Warning: linear_adv_rec_refSol.txt not found.")
 
             return new_fileName
-
-        # if (showcommand):
-        #     print(f"Running reference solution : " + runcommand + " SUCCESS")
-        #     new_fileName = f"refSoln_linear_adv_rec_{pulseName}.txt"
-
-        #     ## rename plot file
-        #     if os.path.exists("linear_adv_rec_refSol.txt"):
-        #         os.rename("linear_adv_rec_refSol.txt", new_fileName)
-        #         print(f"reference solution saved as: {new_fileName}")
-        #     else:
-        #         sys.exit("Warning: linear_adv_rec_refSol.txt not found.")
-    # return new_fileName 
-
     
 ## end of function
 
