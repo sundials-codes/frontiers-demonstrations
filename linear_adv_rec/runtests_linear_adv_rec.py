@@ -334,9 +334,7 @@ x_metrics = [('StepAttempts', 'step-attempts','step_attempts'),
              ('Implicit_solves', 'implicit-solves','implicit_solves'), 
              ('runtime', 'runtime','runtime')]
 
-y_metrics = [('erroru', 'erroru','erroru'), 
-             ('errorv', 'errorv','errorv'), 
-             ('erroruv', 'erroruv','erroruv')]
+y_metrics = [('erroruv', 'erroruv','erroruv')]
 
 for pulse_name, pulse_val in pulse_steepness.items():
     for x_metric, x_label, x_filename in x_metrics:
