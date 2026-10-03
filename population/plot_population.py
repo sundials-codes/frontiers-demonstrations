@@ -57,14 +57,14 @@ with open(datafile, "r") as file:
     pSol = np.zeros((nsteps, N), dtype=float)
 
     # store remaining data into numpy arrays
-    it  = 0
-    for i in range(0, len(lines)):
+    it = 0
+    for i in range(len(lines)):
         if "Time step" in lines[i]:
-            get_t  = lines[i].split(':')
-            time_t = get_t[1].strip()
-            pSol[it,:] = np.array(list(map(float, lines[i].split()))) #to remove single quotes around the vectors since each vector is a line
-            t[it] = time_t #(it + 1) * dt
-            it = it + 1
+            t[it] = float(lines[i].split(':')[1])
+            pSol[it, :] = np.array(lines[i+1].split(), dtype=float)
+            it += 1
+            if it == nsteps:
+                break
 
     ## Extract vector solution at the last time step
     pSol_lastStep = np.zeros((N), dtype=float)

@@ -154,7 +154,7 @@ def runtest(solver, modetype, runV, kVal, kName, showcommand=True, sspcommand=Tr
                 f.writelines(modified_lines)
 
         # K = 0.02
-        if (kName == "diffk02"):
+        elif (kName == "diffk02"):
             with open(datafile, "r") as file:
                 original_lines = file.readlines()
             modified_lines = []
@@ -229,35 +229,35 @@ def runtest(solver, modetype, runV, kVal, kName, showcommand=True, sspcommand=Tr
             elif (("Lmax" in txt) and ("error" in txt) and ("using" in txt) and ("reference" in txt) and ("solution" in txt)):
                 stats['error'] = float(line.split('=')[-1].strip())
 
-            # ignore errors greater than 10  
-            if stats['error'] > 10.0:
-                stats['ReturnCode'] = 1
+        # ignore errors greater than 10  
+        if stats['error'] > 10.0:
+            stats['ReturnCode'] = 1
 
-            # assessing SSPness based on positivity at all time steps and smooth profile at final time step
-            if (kVal==0.0) or (kVal==0.02) or (kVal==0.04):
-                if (stats['Negative_model'] == 0):
-                    if (kVal==0.0) and (stats['lmax_1dev'] >= 49.28) and (stats['lmax_1dev'] <= 49.45):
-                        stats['sspCondition'] = str('ssp')
-                        ssp_cond = 0
-                    elif (kVal==0.02) and (stats['lmax_1dev'] >= 1.2) and (stats['lmax_1dev'] <= 1.66):
-                        stats['sspCondition'] = str('ssp')
-                        ssp_cond = 0
-                    elif (kVal==0.04) and (stats['lmax_1dev'] >= 0.7) and (stats['lmax_1dev'] <= 1.05):
-                        stats['sspCondition'] = str('ssp')
-                        ssp_cond = 0
-                    else:
-                        stats['sspCondition'] = 'not ssp'
-                        ssp_cond = 1
+        # assessing SSPness based on positivity at all time steps and smooth profile at final time step
+        if (kVal==0.0) or (kVal==0.02) or (kVal==0.04):
+            if (stats['Negative_model'] == 0):
+                if (kVal==0.0) and (stats['lmax_1dev'] >= 49.28) and (stats['lmax_1dev'] <= 49.45):
+                    stats['sspCondition'] = str('ssp')
+                    ssp_cond = 0
+                elif (kVal==0.02) and (stats['lmax_1dev'] >= 1.2) and (stats['lmax_1dev'] <= 1.66):
+                    stats['sspCondition'] = str('ssp')
+                    ssp_cond = 0
+                elif (kVal==0.04) and (stats['lmax_1dev'] >= 0.7) and (stats['lmax_1dev'] <= 1.05):
+                    stats['sspCondition'] = str('ssp')
+                    ssp_cond = 0
                 else:
-                    stats['sspCondition'] = str('not ssp')  
-                    ssp_cond = 1   
-                
-                if ssp_cond == 1:
-                    stats['ReturnCode'] = 1
-                #end
+                    stats['sspCondition'] = 'not ssp'
+                    ssp_cond = 1
             else:
-                stats['sspCondition'] = str('ssp')
-                ssp_cond = 0
+                stats['sspCondition'] = str('not ssp')  
+                ssp_cond = 1   
+            
+            if ssp_cond == 1:
+                stats['ReturnCode'] = 1
+            #end
+        else:
+            stats['sspCondition'] = str('ssp')
+            ssp_cond = 0
     
     return stats, ssp_cond
 ## end of function
@@ -499,7 +499,7 @@ for k_name, k_val in diff_coef2.items():
             by_label = dict(zip(labels, handles))
             ax.legend(by_label.values(), by_label.keys(), bbox_to_anchor=(1.05, 1), borderaxespad=0., loc='upper left', fontsize=20)
 
-            fig.supxlabel(f'{x_label}', fontsize=20)
-            fig.supylabel(f'{y_label}', fontsize=20)
+            ax.set_xlabel(f'{x_label}', fontsize=20)
+            ax.set_ylabel(f'{y_label}', fontsize=20)
             plt.savefig(f"{x_filename}_{y_filename}_population_{k_name}.png", bbox_inches="tight")
             plt.close(fig)
