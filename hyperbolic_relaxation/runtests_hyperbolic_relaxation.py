@@ -234,7 +234,7 @@ for x_metric, x_label, x_filename in x_metrics:
         by_label = dict(zip(labels, handles))
         ax.legend(by_label.values(), by_label.keys(), bbox_to_anchor=(1.05, 1), borderaxespad=0., loc='upper left', fontsize=20)
 
-        fig.supxlabel(f'{x_label}', fontsize=20)
-        fig.supylabel(f'{y_label}', fontsize=20)
+        ax.set_xlabel(f'{x_label}', fontsize=20)
+        ax.set_ylabel(f'{y_label}', fontsize=20)
         plt.savefig(f"{x_filename}_{y_filename}_hyperbolic.png", bbox_inches="tight")
         plt.close(fig)
