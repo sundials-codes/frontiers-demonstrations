@@ -8,7 +8,9 @@
 #------------------------------------------------------------------------------------------------------------------------------------
 # Description: This scripts runs the different imex schemes with different diffusion coefficients and parameters,
 #              using either adaptive or fixed time stepping for the population density model.
-#              The stats for the fixed runs and the adaptive runs are stored in two separate excel files.
+#              The stats for the fixed runs and the adaptive runs, for the efficiency plots are stored in two separate excel files.
+#              The excel file population_all_runs.xlsx contains the stats for all runs.
+#              The excel file population_brackets.xlsx contains the brackets for each method and diffusion coefficient to use for the bisection method.
 #-------------------------------------------------------------------------------------------------------------------------------------
 
 # imports
@@ -22,7 +24,10 @@ import matplotlib.pyplot as plt
 import itertools
 from itertools import cycle
 from matplotlib.gridspec import GridSpec
-from math import log10, floor
+from math import log10, floor, isnan
+
+# smoothness tolerances (tau_low, tau_high): final profile is smooth if D_ref*(1 - tau_low) <= D <= D_ref*(1 + tau_high)
+smooth_tol = {0.0: (0.0015, 0.0015), 0.02: (0.17, 0.02), 0.04: (0.17, 0.02)}
 
 # utility routine to run a test, storing the run options and solver statistics
 def runtest(solver, modetype, runV, kVal, kName, showcommand=True, sspcommand=True):
@@ -40,8 +45,9 @@ def runtest(solver, modetype, runV, kVal, kName, showcommand=True, sspcommand=Tr
     """
     stats = {'Runtype': modetype,'ReturnCode': 0, 'IMEX_method': solver['name'], 'diff_coef': kVal, 
              'runVal': runV, 'Steps': 0, 'StepAttempts': 0, 'ErrTestFails': 0, 'Explicit_RHS': 0, 
-             'Implicit_RHS': 0, 'Implicit_solves':0,  'Negative_model': 0, 
-             'lmax_1dev': 0.0, 'error': 0.0, 'runtime':0.0, 'avg_dt':0.0, 'sspCondition': " "}
+             'Implicit_RHS': 0, 'Implicit_solves':0,  'Negative_model': 0,
+             'lmax_1dev': 0.0, 'lmax_1dev_ref': 0.0, 'rel_diff_1dev': 0.0,
+             'error': 0.0, 'runtime':0.0, 'avg_dt':0.0, 'sspCondition': " "}
 
     if (modetype == "adaptive"):
         runcommand = " %s   --rtol %e   --k %e" % (solver['exe'], runV, kVal)
@@ -79,9 +85,7 @@ def runtest(solver, modetype, runV, kVal, kName, showcommand=True, sspcommand=Tr
         stats['Implicit_RHS']     = 0   
         stats['runtime']          = 0     # runtime should be 0 is test failed
         stats['Implicit_solves']  = 0 
-        # stats['maxIntStep']       = 0
         stats['avg_dt']           = 0
-        # stats['Negative_model']   = 0 
 
     ssp_cond = 1
     # If SUNDIALS did not fail
@@ -99,8 +103,8 @@ def runtest(solver, modetype, runV, kVal, kName, showcommand=True, sspcommand=Tr
                 stats['Explicit_RHS'] = int(txt[5])       #right hand side evaluations for explicit method
             elif (("Implicit" in txt) and ("RHS" in txt)):
                 stats['Implicit_RHS'] = int(txt[5])       #right hand side evaluations for implicit method
-            # elif (("Largest" in txt) and ("average" in txt) and ("step" in txt) and ("size" in txt)):
-                # stats['maxIntStep'] = float(txt[7])         #last internal step size used in adaptive run
+
+        #record the number of times the model has negative values at any time step
         sum_negLines = 0
         for line in stdout_lines:
             txt = line.split()
@@ -197,17 +201,17 @@ def runtest(solver, modetype, runV, kVal, kName, showcommand=True, sspcommand=Tr
         # ==== end using correct reference solution for each diffusion coefficient ====
 
         # # ======================================================================
-        # # check the SSP condition (smooth final profile and not negative values
-        ##  at all time steps for each diffusion coefficient)
+        # # check the SSP condition (smooth final profile using the smooth_tol
+        # # and non-negative values at all time steps for each diffusion coefficient)
         # # ======================================================================
         # # running python file to plot pressure and density 
         sspcommand = " python ./plot_population.py"
         ssp_result = subprocess.run(shlex.split(sspcommand), stdout=subprocess.PIPE) 
         ssp_stdout_lines = ssp_result.stdout.decode('utf-8').splitlines()
 
-        ## uncomment the following lines if you want to plot the time evolution for each method, each sigma, each rtol or dt
-        ## uncomment the corresponding lines in plot_linear_adv_rec.py to save the frames as png files
-        ## rename final solution plot file to include the diffusion coefficient and run type
+        # uncomment the following lines if you want to plot the time evolution for each method, each sigma, each rtol or dt
+        # uncomment the corresponding lines in plot_population.py to save the frames as png files
+        # rename final solution plot file to include the diffusion coefficient and run type
         # new_name_final_soln = f"finalSoln_population_{kName}_{modetype}_{solver['name']}_{runV}.png"
         # if os.path.exists("populationModel_finalsoln.png"):
         #     os.rename("populationModel_finalsoln.png", new_name_final_soln)
@@ -228,30 +232,27 @@ def runtest(solver, modetype, runV, kVal, kName, showcommand=True, sspcommand=Tr
                 stats['lmax_1dev'] = float(line.split('=')[-1].strip())
             elif (("Lmax" in txt) and ("error" in txt) and ("using" in txt) and ("reference" in txt) and ("solution" in txt)):
                 stats['error'] = float(line.split('=')[-1].strip())
+            elif (("Reference" in txt) and ("first-derivative" in txt) and ("max" in txt)):
+                stats['lmax_1dev_ref'] = float(line.split('=')[-1].strip())
 
-        # ignore errors greater than 10  
+        # ignore errors greater than 10
         if stats['error'] > 10.0:
             stats['ReturnCode'] = 1
 
         # assessing SSPness based on positivity at all time steps and smooth profile at final time step
-        if (kVal==0.0) or (kVal==0.02) or (kVal==0.04):
-            if (stats['Negative_model'] == 0):
-                if (kVal==0.0) and (stats['lmax_1dev'] >= 49.28) and (stats['lmax_1dev'] <= 49.45):
-                    stats['sspCondition'] = str('ssp')
-                    ssp_cond = 0
-                elif (kVal==0.02) and (stats['lmax_1dev'] >= 1.2) and (stats['lmax_1dev'] <= 1.66):
-                    stats['sspCondition'] = str('ssp')
-                    ssp_cond = 0
-                elif (kVal==0.04) and (stats['lmax_1dev'] >= 0.7) and (stats['lmax_1dev'] <= 1.05):
-                    stats['sspCondition'] = str('ssp')
-                    ssp_cond = 0
-                else:
-                    stats['sspCondition'] = 'not ssp'
-                    ssp_cond = 1
+        # (smooth: first derivative within smooth_tol of the reference solution's first derivative)
+        if kVal in smooth_tol:
+            tau_low, tau_high = smooth_tol[kVal]
+            D     = stats['lmax_1dev'] #derivative value
+            D_ref = stats['lmax_1dev_ref'] #derivative value of the reference solution
+            stats['rel_diff_1dev'] = (D - D_ref) / D_ref     # + means D bigger than D_ref, - means D smaller than D_ref
+            if (stats['Negative_model'] == 0) and (D_ref * (1 - tau_low) <= D <= D_ref * (1 + tau_high)):
+                stats['sspCondition'] = str('ssp')
+                ssp_cond = 0
             else:
-                stats['sspCondition'] = str('not ssp')  
-                ssp_cond = 1   
-            
+                stats['sspCondition'] = str('not ssp')
+                ssp_cond = 1
+
             if ssp_cond == 1:
                 stats['ReturnCode'] = 1
             #end
@@ -270,30 +271,30 @@ SSPL312      = "./population   --dirk_table ARKODE_SSP_LSPUM_SDIRK_3_1_2  --erk_
 SSP423       = "./population   --dirk_table ARKODE_SSP_ESDIRK_4_2_3       --erk_table ARKODE_SSP_ERK_4_2_3  "  
 SSP923       = "./population   --dirk_table ARKODE_SSP_ESDIRK_9_2_3       --erk_table ARKODE_SSP_ERK_9_2_3  "    
 
-## These are points for which the method attains non-negativity at all time steps and a smooth solution at the final time
-## step for each diffusion coefficient.
-adaptive_params = [1e-11, 1e-10, 1e-9, 1e-8, 1e-7, 1e-6, 1e-5, 5e-5, 1e-4, 5e-4, 1e-3, 5e-3] # relative tolerances
-fixed_params    = [] # fixed step sizes
-for i in range(-14, -2, 1): 
-    fixed_params.append(0.25 * (2 ** i))
-#end
+# common lists: used both for the Stage 1 search and for the plots (sorted from smallest to largest)
+adaptive_params = sorted([1e-11, 1e-10, 1e-9, 1e-8, 1e-7, 1e-6, 1e-5, 5e-5, 1e-4, 5e-4,
+                          1e-3, 5e-3, 1e-2, 5e-2, 1e-1, 5e-1, 1.0])                  # relative tolerances
+fixed_params    = sorted([0.25 * (2 ** i) for i in range(-14, 5)])                   # fixed step sizes (0.25*2^-14 to 0.25*2^4)
 
+## Diffusion coefficients
+diff_coef = {'diffk0':0.0, 'diffk02':0.02, 'diffk04':0.04}
+
+solvertype = [{'name': 'SSP212',       'exe': SSP212},
+              {'name': 'SSP312',       'exe': SSP312},
+              {'name': 'SSPL312',      'exe': SSPL312},
+              {'name': 'SSP423',       'exe': SSP423},
+              {'name': 'SSP923',       'exe': SSP923}]
 
 ## -------------------------------------------------------------------------------------------------------------
 # This section uses the Bisection Method to compute the step size or rtol at which the method
 # switches from ssp to nonssp. Here, ssp refers to positiviy at all time steps and a smooth final profile.
-# The step size or rtol values are rounded to 3 significant figures. 
+# The step size or rtol values are rounded to 4 significant figures. 
 # The values computed in this section can be appended to the run values (rtol or step sizes)
-# to generate the plots. The next block of codes (with adaptive and fixed runs) was computed first 
-# to determine the interval to bisect before this section was run. You can uncomment the block of codes to 
-# generated the step size or relative tolerance values at which the methods switch from ssp (0) to nonssp (1).
-# You do not need to run this section unless you want to recompute the bisection values.
-# In that case, adaptive params can run from 10^{r}, r = 0, -1, ..., -8, and
-#               fixed params can run from 0.25 * 2^{r}, r = 4, -3, ..., -14.
+# to generate the plots.
 ## -------------------------------------------------------------------------------------------------------------
 def round_to_sf(x, sf):
     """
-    Converts a number to three significant figures
+    Converts a number to sf significant figures
 
     Input:
         x:  number to round
@@ -304,150 +305,152 @@ def round_to_sf(x, sf):
     return round(x,-int(floor(log10(abs(x)))) + (sf - 1))
 
 
-def bisection_midval(solvers, runtype, paramList):
+all_runs = []   # stats of every run in Stage 1 and Stage 2
+
+def bisection_midval(solver, runtype):
     """
-    Use bisection method to determine values at which methods switch between SSP and Non-SSP.
+    Bisection between solver['sspVal'] (ssp-preserving) and solver['nonsspVal'] (not ssp-preserving),
+    with each test value rounded to four significant figures.
 
     Input:
-        solvers (list):   List of solvers with 'name', 'exe', 'sspVal', 'nonsspVal', and 'kvalue'.
-        runtype (str):    adaptive or fixed.
-        paramList (list): rtols or fixed_h
+        solver (dict): one bracket from Stage 1 with 'name', 'exe', 'kvalue', 'kname', 'sspVal', 'nonsspVal'
+        runtype (str): adaptive or fixed
 
-    Output: returns the bisection values
+    Output: returns the largest ssp-preserving value found (to four significant figures)
     """
-     
-    for solver in solvers:
-        name = solver['name']
-        kval = solver['kvalue']
-        kname = solver['kname']
+    sspVal    = solver['sspVal']        # known to pass (from Stage 1)
+    nonsspVal = solver['nonsspVal']     # known to fail (from Stage 1)
+    preMidVal = None
+    iters     = 0
 
-        _,condLow = runtest(solver, runtype, solver['sspVal'], kval, kname, showcommand=True, sspcommand=True)
-        _,condHigh = runtest(solver, runtype,solver['nonsspVal'], kval, kname, showcommand=True, sspcommand=True)
+    while True:
+        midVal = round_to_sf((sspVal + nonsspVal) / 2.0, 4)
 
-        iter = 0
-        preMidVal = None
-        second_to_preMidVal = None
-        while True:
-            midVal = (solver['sspVal'] + solver['nonsspVal'])/2.0
-            midVal = round_to_sf(midVal,4)
+        # stop when rounding no longer gives a new value
+        if midVal == preMidVal or midVal == sspVal or midVal == nonsspVal:
+            break
+        preMidVal = midVal
 
-            # end run if midpoint value is the same as previous one and store the last midpoint point value 
-            # as well as the previous distinct midpoint value
-            if midVal == preMidVal:
-                if second_to_preMidVal is not None:
-                    paramList.append(second_to_preMidVal)
-                paramList.append(midVal)
-                print("Mid value did not change after rounding.")
-                break
-            
-            # update midpoint values
-            second_to_preMidVal = preMidVal
-            preMidVal           = midVal
+        stats, condMid = runtest(solver, runtype, midVal, solver['kvalue'], solver['kname'],
+                                 showcommand=True, sspcommand=True)
+        all_runs.append(stats)
+        if condMid == 0:
+            sspVal = midVal             # midpoint passes, replace the lower end with the midpoint
+        else:
+            nonsspVal = midVal          # midpoint fails, replace the upper end with the midpoint
+        iters += 1
 
-            # the bisection method
-            _,condMid =  runtest(solver, runtype, midVal, kval, kname, showcommand=True, sspcommand=True)
-            if (condMid==0):
-                solver['sspVal'] = midVal
-            elif (condMid==1):
-                solver['nonsspVal'] = midVal
-
-            # end run both values have the same ssp condition and store the last midpoint point value 
-            #  as well as the previous distinct midpoint value
-            _,condLow  = runtest(solver, runtype, solver['sspVal'], kval, kname, showcommand=True, sspcommand=True)
-            _,condHigh = runtest(solver, runtype, solver['nonsspVal'], kval, kname, showcommand=True, sspcommand=True)
-            if (condLow==condHigh):
-                if second_to_preMidVal is not None:
-                    paramList.append(second_to_preMidVal)
-                paramList.append(midVal)
-                print(f"Both values have the same SSP condition ({condLow}).")
-                break
-            iter += 1
-
-        # print results
-        print(f"{runtype} run with {name}, {kval}, iter {iter} : SSP-value & cond = {solver['sspVal'],condLow}, NonSSP-value & cond = {solver['nonsspVal'], condHigh}")
-
-# # #-------------------------------------- adaptive runs -----------------------------------------
-# solvernames_adaptK0 = [{'name': 'SSP212',  'exe': SSP212,             'sspVal': 1e-2, 'nonsspVal': 5e-2, 'kvalue': 0.0, 'kname': 'diffk0'},
-#                        {'name': 'SSP312',  'exe': SSP312,             'sspVal': 5e-2, 'nonsspVal': 1e-1, 'kvalue': 0.0, 'kname': 'diffk0'},
-#                        {'name':  'SSPL312', 'exe': SSPL312,           'sspVal': 1e-2, 'nonsspVal': 5e-2, 'kvalue': 0.0, 'kname': 'diffk0'},
-#                        {'name': 'SSP423',  'exe': SSP423,             'sspVal': 1e-1, 'nonsspVal': 5e-1, 'kvalue': 0.0, 'kname': 'diffk0'} ]
-
-# solvernames_adaptK2 = [{'name': 'SSP212',  'exe': SSP212,             'sspVal': 1e-3, 'nonsspVal': 2e-3, 'kvalue': 0.02, 'kname': 'diffk02'},
-#                        {'name': 'SSP312',  'exe': SSP312,             'sspVal': 1e-1, 'nonsspVal': 5e-1, 'kvalue': 0.02, 'kname': 'diffk02'},
-#                        {'name': 'SSPL312', 'exe': SSPL312,            'sspVal': 1e-2, 'nonsspVal': 5e-2, 'kvalue': 0.02, 'kname': 'diffk02'},
-#                        {'name': 'SSP423',  'exe': SSP423,             'sspVal': 5e-3, 'nonsspVal': 1e-2, 'kvalue': 0.02, 'kname': 'diffk02'},
-#                        {'name': 'SSP923',  'exe': SSP923,             'sspVal': 5e-4, 'nonsspVal': 1e-3, 'kvalue': 0.02, 'kname': 'diffk02'} ]
-
-# solvernames_adaptK4 = [{'name': 'SSP212', 'exe': SSP212,              'sspVal': 5e-4, 'nonsspVal': 1e-3, 'kvalue': 0.04, 'kname': 'diffk04'},
-#                        {'name': 'SSP312', 'exe': SSP312,              'sspVal': 5e-1, 'nonsspVal': 1.0, 'kvalue': 0.04, 'kname': 'diffk04'},
-#                        {'name': 'SSPL312','exe': SSPL312,             'sspVal': 1e-2, 'nonsspVal': 5e-2, 'kvalue': 0.04, 'kname': 'diffk04'},
-#                        {'name': 'SSP423', 'exe': SSP423,              'sspVal': 5e-3, 'nonsspVal': 1e-2, 'kvalue': 0.04, 'kname': 'diffk04'},
-#                        {'name': 'SSP923', 'exe': SSP923,              'sspVal': 5e-4, 'nonsspVal': 1e-3, 'kvalue': 0.04, 'kname': 'diffk04'}  ]
-
-# bisection_midval(solvernames_adaptK0, "adaptive", paramList = adaptive_params)
-# bisection_midval(solvernames_adaptK2, "adaptive", paramList = adaptive_params)
-# bisection_midval(solvernames_adaptK4, "adaptive", paramList = adaptive_params)
+    print(f"{runtype} {solver['name']} {solver['kname']}: largest ssp = {sspVal}, "
+          f"smallest non-ssp = {nonsspVal}, iterations = {iters}")
+    return {'name': solver['name'], 'kname': solver['kname'], 'runtype': runtype,
+            'largest_ssp': sspVal, 'smallest_nonssp': nonsspVal, 'status': "bisected"}
 
 
-# # #-------------------------------------- fixed runs -----------------------------------------
-# solvernames_fixedK0 = [{'name': 'SSP212',  'exe': SSP212,            'sspVal': 0.5, 'nonsspVal': 1.0, 'kvalue': 0.0, 'kname': 'diffk0'} ,
-#                        {'name': 'SSP312',  'exe': SSP312,            'sspVal': 1.0, 'nonsspVal': 1.3, 'kvalue': 0.0, 'kname': 'diffk0'} ,
-#                        {'name': 'SSPL312', 'exe': SSPL312,           'sspVal': 1.0, 'nonsspVal': 2.0, 'kvalue': 0.0, 'kname': 'diffk0'} ]
+## -------------------------------------------------------------------------------------------------------------
+# For each method and diffusion coefficient, run the search list from the smallest value to the
+# largest and stop at the first value that is not ssp-preserving. The bracket for the bisection is
+# [last ssp value, first non-ssp value]. All values below the bracket have been checked and are ssp-preserving.
+## -------------------------------------------------------------------------------------------------------------
+search_fixed    = fixed_params      
+search_adaptive = adaptive_params   
 
-# solvernames_fixedK2 = [{'name': 'SSP212',  'exe': SSP212,            'sspVal': 0.015625,'nonsspVal': 0.03125,'kvalue': 0.02, 'kname': 'diffk02'},
-#                        {'name': 'SSPL312', 'exe': SSPL312,           'sspVal': 1.0,     'nonsspVal': 2.0,    'kvalue': 0.02, 'kname': 'diffk02'},
-#                        {'name': 'SSP423',  'exe': SSP423,            'sspVal': 0.5,    'nonsspVal': 0.65,    'kvalue': 0.02, 'kname': 'diffk02'},
-#                        {'name': 'SSP923',  'exe': SSP923,            'sspVal': 0.03125, 'nonsspVal': 0.0625, 'kvalue': 0.02, 'kname': 'diffk02'} ]
+def find_brackets(solvers, runtype, searchList, diffCoefs):
+    """
+    Runs each method from the smallest to the largest value in searchList and stops at the first
+    non-ssp value.
 
-# solvernames_fixedK4 = [{'name': 'SSP212',  'exe': SSP212,            'sspVal': 0.015625, 'nonsspVal': 0.03125, 'kvalue': 0.04, 'kname': 'diffk04'},
-#                        {'name': 'SSPL312', 'exe': SSPL312,           'sspVal': 1.0,      'nonsspVal': 2.0,     'kvalue': 0.04, 'kname': 'diffk04'},
-#                        {'name': 'SSP423',  'exe': SSP423,            'sspVal': 0.5,      'nonsspVal': 1.0,     'kvalue': 0.04, 'kname': 'diffk04'},
-#                        {'name': 'SSP923',  'exe': SSP923,            'sspVal': 0.03125,  'nonsspVal': 0.0625,  'kvalue': 0.04, 'kname': 'diffk04'} ]
+    Input:
+        solvers (list):    list of solvers with 'name' and 'exe'
+        runtype (str):     adaptive or fixed
+        searchList (list): fixed step sizes or rtols
+        diffCoefs (dict):  diffusion coefficients {kname: kval}
 
-# bisection_midval(solvernames_fixedK0, "fixed", paramList = fixed_params)
-# bisection_midval(solvernames_fixedK2, "fixed", paramList = fixed_params)
-# bisection_midval(solvernames_fixedK4, "fixed", paramList = fixed_params)
+    Output: returns a list of brackets (one per method and diffusion coefficient)
+    """
+    brackets = []
+    for k_name, k_val in diffCoefs.items():
+        for solver in solvers:
+            sspVal, nonsspVal, status = None, None, ""
+            for runV in sorted(searchList):                       # smallest to largest
+                stats, cond = runtest(solver, runtype, runV, k_val, k_name, showcommand=True, sspcommand=True)
+                all_runs.append(stats)
+                if cond == 0:
+                    sspVal = runV                                  # still ssp, keep going from the smallest value to the largest
+                else:
+                    nonsspVal = runV                               # first non-ssp value, stop
+                    break
+
+            if sspVal is None:
+                status = "smallest value not ssp"
+            elif nonsspVal is None:
+                status = "ssp at largest value tested"
+            else:
+                status = "bracket found"
+
+            print(f"{runtype} {solver['name']} {k_name}: sspVal = {sspVal}, nonsspVal = {nonsspVal} ({status})")
+            brackets.append({'name': solver['name'], 'exe': solver['exe'], 'kvalue': k_val, 'kname': k_name,
+                             'runtype': runtype, 'sspVal': sspVal, 'nonsspVal': nonsspVal, 'status': status})
+    return brackets
 
 
 ## ----------------------------------------------------------------------------------------------------
-# This section generates the data for each method, diffusion coefficient with different fixed step
-# sizes and rtols
+# Stage 1 (brackets fro [ssp, nonssp]) 
+# Stage 2 (bisecting the bracket in stage 1). 
+# Comment out to skip recomputing the largest ssp-preserving step sizes and rtols. 
+# The results are saved in population_brackets.xlsx and population_bisection.xlsx.
 ## ----------------------------------------------------------------------------------------------------
-## Diffusion coefficients
-diff_coef = {'diffk0':0.0, 'diffk02':0.02, 'diffk04':0.04}
+# Stage 1: find the brackets (smallest to largest, stop at the first non-ssp value)
+brackets_fixed    = find_brackets(solvertype, "fixed",    search_fixed,    diff_coef)
+brackets_adaptive = find_brackets(solvertype, "adaptive", search_adaptive, diff_coef)
+pd.DataFrame(brackets_fixed + brackets_adaptive).to_excel("population_brackets.xlsx", index=False)
 
-solvertype = [{'name': 'SSP212',       'exe': SSP212},
-              {'name': 'SSP312',       'exe': SSP312},
-              {'name': 'SSPL312',      'exe': SSPL312},
-              {'name': 'SSP423',       'exe': SSP423},
-              {'name': 'SSP923',       'exe': SSP923}]
+# Stage 2: bisection on each bracket found (to read the brackets back from the saved file instead, use
+# brackets = pd.read_excel("population_brackets.xlsx").to_dict('records') and change loop to use for b in brackets)
+bisection_results = []
+for b in brackets_fixed + brackets_adaptive:
+    if b['status'] == "bracket found":                       # only bisect where a bracket exists
+        bisection_results.append(bisection_midval(b, b['runtype']))
+    else:                                                     # nothing to bisect: keep Stage 1 result
+        bisection_results.append({'name': b['name'], 'kname': b['kname'], 'runtype': b['runtype'],
+                                  'largest_ssp': b['sspVal'], 'smallest_nonssp': b['nonsspVal'],
+                                  'status': b['status']})
+pd.DataFrame(bisection_results).to_excel("population_bisection.xlsx", index=False)
 
-# run tests and collect results as pandas data frames (one for fixed, one for adaptive)
-fnameFixed    = 'population_stats_fixed'
-fnameAdaptive = 'population_stats_adaptive'
+
+# save the stats of every run: this includes the runs in Stage 1 and Stage 2, for both fixed and adaptive time stepping
+RunStatsAllDf = pd.DataFrame.from_records(all_runs)
+RunStatsAllDf.to_excel('population_all_runs.xlsx', index=False)
+
+# keep the bisection value and all values in the params list below it
 RunStatsFixed    = []
 RunStatsAdaptive = []
 for k_name, k_val in diff_coef.items():
-    for runV_val in adaptive_params:
-        for solver_adapt in solvertype:
-            adaptive_stat, _ = runtest(solver_adapt, "adaptive", runV_val, k_val, k_name, showcommand=True, sspcommand=True)
-            RunStatsAdaptive.append(adaptive_stat)
+    for solver in solvertype:
 
-    for runV_val in fixed_params:
-        for solver_adapt in solvertype:
-            fixed_stat, _ = runtest(solver_adapt, "fixed", runV_val, k_val, k_name, showcommand=True, sspcommand=True)
-            RunStatsFixed.append(fixed_stat)
+        # bisection value for this method and diffusion coefficient
+        for b in bisection_results:
+            if (b['name'] == solver['name']) and (b['kname'] == k_name) and (b['runtype'] == "adaptive"):
+                topAdapt = b['largest_ssp']
+            if (b['name'] == solver['name']) and (b['kname'] == k_name) and (b['runtype'] == "fixed"):
+                topFixed = b['largest_ssp']
+
+        # pick the runs for this method and diffusion coefficient: here we are storing the stats for the bisection
+        # ssp-value and all values below it because those values were checked and are ssp-preserving.
+        for stat in all_runs:
+            if (stat['IMEX_method'] == solver['name']) and (stat['diff_coef'] == k_val):
+                if (stat['Runtype'] == "adaptive"):
+                    if ((stat['runVal'] in adaptive_params) and (stat['runVal'] < topAdapt)) or (stat['runVal'] == topAdapt):
+                        RunStatsAdaptive.append(stat)
+                if (stat['Runtype'] == "fixed"):
+                    if ((stat['runVal'] in fixed_params) and (stat['runVal'] < topFixed)) or (stat['runVal'] == topFixed):
+                        RunStatsFixed.append(stat)
+
 RunStatsFixedDf    = pd.DataFrame.from_records(RunStatsFixed)
 RunStatsAdaptiveDf = pd.DataFrame.from_records(RunStatsAdaptive)
 
 # save each dataframe as a separate Excel file
-print("RunStatsFixedDf object:")
-print(RunStatsFixedDf)
-print("RunStatsAdaptiveDf object:")
-print(RunStatsAdaptiveDf)
-print("Saving as Excel")
-RunStatsFixedDf.to_excel(fnameFixed + '.xlsx', index=False)
-RunStatsAdaptiveDf.to_excel(fnameAdaptive + '.xlsx', index=False)
+RunStatsFixedDf.to_excel('population_stats_fixed.xlsx', index=False)
+RunStatsAdaptiveDf.to_excel('population_stats_adaptive.xlsx', index=False)
 
 
 # ===============================================================================================================================

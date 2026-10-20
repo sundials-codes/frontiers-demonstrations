@@ -89,7 +89,6 @@ with open(datafile, "r") as file:
     # plt.xlabel(r"$x$")
     # plt.ylabel(r"pSol")
     # plt.plot(x, pSol[-1, :], linewidth=2)
-    # plt.show()
    
     ##uncomment if you want to plot the solution at 3 time intervals (initial, middle, final)
     # plt.rc("font", size=15)
@@ -181,20 +180,34 @@ diffk0 = False #only one type of diffusion coefficient option can be true at a t
 diffk02 = True
 diffk04 = False
 
-# l-infinity error
-elmax = 0.0 
+def max_first_derivative(sol, dx):
+    """ max |p_{i+1} - p_i| / dx over the N-1 neighbouring pairs (same formula as for the numerical solution) """
+    return np.max(np.abs(np.diff(sol))) / dx
+
+# l-infinity error and first derivative of the reference solution
+elmax = 0.0
+dref  = 0.0
 if (diffk0):
     diffk0_pSol_ref = read_ref_solution("referenceSoln_population_diffk0.txt")
     elmax = np.max(np.abs(diffk0_pSol_ref - pSol_lastStep))
-    
+    dref  = max_first_derivative(diffk0_pSol_ref, dx)
+
 elif (diffk02):
     diffk02_pSol_ref = read_ref_solution("referenceSoln_population_diffk02.txt")
     elmax = np.max(np.abs(diffk02_pSol_ref - pSol_lastStep))
+    dref  = max_first_derivative(diffk02_pSol_ref, dx)
 
 elif (diffk04):
     diffk04_pSol_ref = read_ref_solution("referenceSoln_population_diffk04.txt")
     elmax = np.max(np.abs(diffk04_pSol_ref - pSol_lastStep))
+    dref  = max_first_derivative(diffk04_pSol_ref, dx)
 # end
 print("Lmax error using reference solution = %.6e" %elmax)
+print("Reference first-derivative max = %.6f" %dref)
+
+##uncomment if you want to plot the solution at the final time step only
+# rel_diff = abs(lmax_pSol_xi - dref) / dref if dref > 0 else float('nan')
+# plt.title(f"D = {lmax_pSol_xi:.4f},  D_ref = {dref:.4f},  rel. diff = {100*rel_diff:.3f}%")
+# plt.savefig("populationModel_frames.png")
 
 ##### end of script #####

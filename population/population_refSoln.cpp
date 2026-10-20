@@ -14,16 +14,18 @@
  * Example problem:
  *
  * The following test simulates a simple 1D Population Density equation,
- *    P_t = f + b(x,P)P - r_d*P + kP_xx
+ *    P_t = b(x,P)P - r_d*P + kP_xx
  * for t in [0, 10], x in [0, 1], with initial condition
  *    P(0,x) =  0, periodic boundary conditions, and a point-source term,
- *    f(0,x) is a random value in [0.8 1.2]
- *    f(t,x) = 0, for all t>0
+ * 
  * r_d = 1, b = r_b*(e/(e+P)), e = 0.005
  * r_b = 1*(1 + alpha*t), for 0<=x<=0.5
  * r_b = 100*(1 + alpha*t), for 0.5<x<=1
  * alpha = 0.001 (negative for declining birth rate)
  * k = 0.0,0.02, 0.04 (with diffusion) or 0(without diffusion)
+ * 
+ * The initial condition is set to a random value between 0.8 and 1.2, 
+ * with a fixed random seed.
  *
  * The spatial derivatives are computed using second-order
  * centered differences, with the data distributed over N points
