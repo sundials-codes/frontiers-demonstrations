@@ -23,7 +23,7 @@ import matplotlib.pyplot as plt
 import itertools
 from itertools import cycle
 from matplotlib.gridspec import GridSpec
-from math import log10, floor
+from math import log10, floor, isnan
 
 # utility routine to run a test, storing the run options and solver statistics
 def runtest(solver, modetype, runV, k1Val, pulseVal, pulseName, showcommand=True, sspcommand=True):
@@ -50,7 +50,7 @@ def runtest(solver, modetype, runV, k1Val, pulseVal, pulseName, showcommand=True
     if (modetype == "adaptive"):
         runcommand = "%s  --rtol %e  --k1 %e  --k2 %e  --sigma %e" % (solver['exe'], runV, k1Val, k2Val, pulseVal)
     elif (modetype == "fixed"):
-        runcommand = "%s  --fixed_h %.6f  --k1 %e  --k2 %e  --sigma %e" % (solver['exe'], runV, k1Val, k2Val, pulseVal)
+        runcommand = "%s  --fixed_h %.16e  --k1 %e  --k2 %e  --sigma %e" % (solver['exe'], runV, k1Val, k2Val, pulseVal)
 
     start_time = time.time()
     result = subprocess.run(shlex.split(runcommand), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -250,11 +250,11 @@ def runtest(solver, modetype, runV, k1Val, pulseVal, pulseName, showcommand=True
                 stats['l1erruv'] = float(line.split('=')[-1].strip())
 
             # ignore errors greater than 10   
-            if (stats['erroru'] or stats['l1erru']) > 10.0:
+            if (stats['erroru'] > 10.0 or stats['l1erru'] > 10.0 or isnan(stats['erroru']) or isnan(stats['l1erru'])):
                 stats['ReturnCode'] = 1
-            elif (stats['errorv'] or stats['l1errv']) > 10.0:
+            elif (stats['errorv'] > 10.0 or stats['l1errv'] > 10.0 or isnan(stats['errorv']) or isnan(stats['l1errv'])):
                 stats['ReturnCode'] = 1
-            elif (stats['erroruv'] or stats['l1erruv'])> 10.0:
+            elif (stats['erroruv'] > 10.0 or stats['l1erruv'] > 10.0 or isnan(stats['erroruv']) or isnan(stats['l1erruv'])):
                 stats['ReturnCode'] = 1
         
     return stats
