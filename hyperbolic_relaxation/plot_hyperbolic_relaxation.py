@@ -204,34 +204,35 @@ else:
 # ## -------------------- plot solution overlaid with reference solution: solution at final time step -----------------------
 # x_ref = np.linspace(xl, xr, len(refLastSoln_rho))
 # fig, ax = plt.subplots(2, 2, figsize=(10, 7), constrained_layout=True)
+# fig.get_layout_engine().set(w_pad=0.2, h_pad=0.1, wspace=0.25, hspace=0.1)
 # # plot density
 # ax[0, 0].plot(x, rhodata, linestyle='-', label='computed', color='blue', linewidth=2)
 # ax[0, 0].plot(x_ref, refLastSoln_rho, linestyle='--',label='reference', color='red', linewidth=2)
-# ax[0, 0].set_xlabel('x', fontsize=10)
-# ax[0, 0].set_ylabel(r'Density ($\rho$)', fontsize=10)
-# ax[0, 0].legend()
+# # ax[0, 0].set_xlabel('x', fontsize=10)
+# ax[0, 0].set_ylabel(r'Density ($\rho$)', fontsize=12)
+# # ax[0, 0].legend()
 
 # # plot velocity
 # ax[0, 1].plot(x, veldata, linestyle='-', label='computed', color='blue', linewidth=2)
 # ax[0, 1].plot(x_ref, refLastSoln_vel, linestyle='--',label='reference', color='red', linewidth=2)
-# ax[0, 1].set_xlabel('x', fontsize=10)
-# ax[0, 1].set_ylabel(r'velocity ($\mu$)', fontsize=10)
-# ax[0, 1].legend()
+# # ax[0, 1].set_xlabel('x', fontsize=10)
+# ax[0, 1].set_ylabel(r'velocity ($\mu$)', fontsize=12)
+# # ax[0, 1].legend()
 
 # # plot pressure
 # ax[1, 0].plot(x, przdata, linestyle='-', label='computed', color='blue', linewidth=2)
 # ax[1, 0].plot(x_ref, refLastSoln_prz, linestyle='--',label='reference', color='red', linewidth=2)
-# ax[1, 0].set_xlabel('x', fontsize=10)
-# ax[1, 0].set_ylabel(r'pressure ($p$)', fontsize=10)
-# ax[1, 0].legend()
+# ax[1, 0].set_xlabel('x', fontsize=12)
+# ax[1, 0].set_ylabel(r'pressure ($p$)', fontsize=12)
+# # ax[1, 0].legend()
 
 # # plot internal energy difference
 # ax[1, 1].plot(x, etdiff, linestyle='-', label='computed', color='blue', linewidth=2)
 # ax[1, 1].plot(x_ref, refLastSoln_et, linestyle='--',label='reference', color='red', linewidth=2)
-# ax[1, 1].set_xlabel('x', fontsize=10)
-# ax[1, 1].set_ylabel(r'energy ($e - e_{eq}$)', fontsize=10)
+# ax[1, 1].set_xlabel('x', fontsize=12)
+# ax[1, 1].set_ylabel(r'energy ($e - e_{eq}$)', fontsize=12)
 # ax[1, 1].legend()
 
-# plt.show()
-# # plt.savefig("hyperbolic_relaxation_final_time_solution.png")
+# # plt.show()
+# plt.savefig("hyperbolic_relaxation_final_time_solution.png")
 # # plt.close()
