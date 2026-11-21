@@ -1,19 +1,8 @@
 #!/usr/bin/env python3
 # --------------------------------------------------------------------------------------------------------------------------------
-# Programmer(s): Sylvia Amihere and Daniel R. Reynolds @ SMU
-# --------------------------------------------------------------------------------------------------------------------------------
-# SUNDIALS Copyright Start
-# Copyright (c) 2002-2024, Lawrence Livermore National Security
-# and Southern Methodist University.
-# All rights reserved.
-#
-# See the top-level LICENSE and NOTICE files for details.
-#
-# SPDX-License-Identifier: BSD-3-Clause
-# SUNDIALS Copyright End
+# Programmer(s): Sylvia Amihere @ UMBC
 #----------------------------------------------------------------------------------------------------------------------------------
-# ReadME: This script generates the L-infinity norm and plots at 3 time steps for a particular method.
-#         Run the "runtest_referenceSolution.py" script to generate the reference solutions to be used in this script.
+# matplotlib-based plotting script for the serial linear advection-reaction example
 #-----------------------------------------------------------------------------------------------------------------------------------
 
 # imports

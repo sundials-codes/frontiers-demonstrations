@@ -1,10 +1,6 @@
 #!/usr/bin/env python
 #------------------------------------------------------------------------------------------------------------------------------------
-# Programmer(s):  Sylvia Amihere @ SMU
-#------------------------------------------------------------------------------------------------------------------------------------
-# Copyright (c) 2025, Southern Methodist University.
-# All rights reserved.
-# For details, see the LICENSE file.
+# Programmer(s):  Sylvia Amihere @ UMBC
 #------------------------------------------------------------------------------------------------------------------------------------
 # ReadME: This script generates the reference solutions needed to compute the error norm for the populatin density model.
 #-------------------------------------------------------------------------------------------------------------------------------------

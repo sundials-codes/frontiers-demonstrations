@@ -2,12 +2,7 @@
 #------------------------------------------------------------------------------------------------------------------------------------
 # Programmer(s):  Sylvia Amihere @ UMBC
 #------------------------------------------------------------------------------------------------------------------------------------
-# Copyright (c) 2025, University of Maryland Baltimore County.
-# All rights reserved.
-# For details, see the LICENSE file.
-#------------------------------------------------------------------------------------------------------------------------------------
-# ReadME: This scripts runs the different imex schemes with different diffusion coefficients and parameters, 
-#         using either adaptive or fixed time stepping.
+# ReadME: This scripts runs the different imex schemes, using either adaptive or fixed time stepping.
 #         The stats for the fixed runs and the adaptive runs are stored in two separate excel files.
 #-------------------------------------------------------------------------------------------------------------------------------------
 

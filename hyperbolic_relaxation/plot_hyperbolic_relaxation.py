@@ -1,18 +1,8 @@
 #!/usr/bin/env python3
 # ------------------------------------------------------------------------------
-# Programmer(s): Sylvia Amihere @ SMU
+# Programmer(s): Sylvia Amihere @ UMBC
 # ------------------------------------------------------------------------------
-# SUNDIALS Copyright Start
-# Copyright (c) 2002-2024, Lawrence Livermore National Security
-# and Southern Methodist University.
-# All rights reserved.
-#
-# See the top-level LICENSE and NOTICE files for details.
-#
-# SPDX-License-Identifier: BSD-3-Clause
-# SUNDIALS Copyright End
-# ------------------------------------------------------------------------------
-# matplotlib-based plotting script for the serial linear advection example
+# matplotlib-based plotting script for the serial hyperbolic relaxation example
 # ------------------------------------------------------------------------------
 
 # imports
@@ -58,7 +48,7 @@ with open(datafile, "r") as file:
     my = np.zeros((nx), dtype=float)
     mz = np.zeros((nx), dtype=float)
     et = np.zeros((nx), dtype=float)
-    x = np.linspace(xl, xr, nx)
+    x = xl + np.arange(nx) * (xr - xl) / nx
     dx = (xr - xl)/nx
 
     last_line_run = ""
@@ -201,8 +191,9 @@ else:
 ##### end of script #####
 
 
-# ## -------------------- plot solution overlaid with reference solution: solution at final time step -----------------------
-# x_ref = np.linspace(xl, xr, len(refLastSoln_rho))
+## -------------------- plot solution overlaid with reference solution: solution at final time step -----------------------
+# nx_ref = len(refLastSoln_rho) 
+# x_ref = xl + np.arange(nx_ref) * (xr - xl) / nx_ref
 # fig, ax = plt.subplots(2, 2, figsize=(10, 7), constrained_layout=True)
 # fig.get_layout_engine().set(w_pad=0.2, h_pad=0.1, wspace=0.25, hspace=0.1)
 # # plot density
@@ -236,3 +227,23 @@ else:
 # # plt.show()
 # plt.savefig("hyperbolic_relaxation_final_time_solution.png")
 # # plt.close()
+
+nx_ref = len(refLastSoln_rho)
+x_ref = xl + np.arange(nx_ref) * (xr - xl) / nx_ref
+
+plots = [
+    (rhodata, refLastSoln_rho, r'Density ($\rho$)',      "hyperbolic_relaxation_final_density.png",  False),
+    (veldata, refLastSoln_vel, r'velocity ($u$)',        "hyperbolic_relaxation_final_velocity.png", False),
+    (przdata, refLastSoln_prz, r'pressure ($p$)',        "hyperbolic_relaxation_final_pressure.png", False),
+    (etdiff,  refLastSoln_et,  r'energy ($e - e_{eq}$)', "hyperbolic_relaxation_final_energy.png",   True)]
+
+for comp, ref, ylabel, fname, show_legend in plots:
+    fig, ax = plt.subplots(figsize=(5, 3.5), constrained_layout=True)
+    ax.plot(x, comp, linestyle='-', label='computed', color='blue', linewidth=2)
+    ax.plot(x_ref, ref, linestyle='--', label='reference', color='red', linewidth=2)
+    ax.set_xlabel('x', fontsize=12)
+    ax.set_ylabel(ylabel, fontsize=12)
+    if show_legend:
+        ax.legend()
+    fig.savefig(fname)
+    plt.close(fig)

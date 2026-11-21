@@ -2,11 +2,7 @@
 #------------------------------------------------------------------------------------------------------------------------------------
 # Programmer(s):  Sylvia Amihere @ UMBC
 #------------------------------------------------------------------------------------------------------------------------------------
-# Copyright (c) 2025, University of Maryland Baltimore County.
-# All rights reserved.
-# For details, see the LICENSE file.
-#------------------------------------------------------------------------------------------------------------------------------------
-# ReadME: This script generates the reference solutions needed to compute the error norm for the populatin density model.
+# ReadME: This script generates the reference solutions needed to compute the error norm for the linear advection reaction problem.
 #-------------------------------------------------------------------------------------------------------------------------------------
 
 # imports

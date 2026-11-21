@@ -1,158 +1,74 @@
 #!/usr/bin/env python3
 # --------------------------------------------------------------------------------------------------------------------------------
-# Programmer(s): Sylvia Amihere and Daniel R. Reynolds @ SMU
+# Programmer(s): Sylvia Amihere and Daniel R. Reynolds @ UMBC
 # --------------------------------------------------------------------------------------------------------------------------------
-# SUNDIALS Copyright Start
-# Copyright (c) 2002-2024, Lawrence Livermore National Security
-# and Southern Methodist University.
-# All rights reserved.
-#
-# See the top-level LICENSE and NOTICE files for details.
-#
-# SPDX-License-Identifier: BSD-3-Clause
-# SUNDIALS Copyright End
-#----------------------------------------------------------------------------------------------------------------------------------
-# ReadME: This script generates the L-infinity norm and plots at 3 time steps for a particular method.
-#         Run the "runtest_referenceSolution.py" script to generate the reference solutions to be used in this script.
+# Used by runtests_population.py. Computes D, D_ref, |D_ref - D|/D_ref and the error at the final time, and saves the plot of the 
+# solution at the final time. The plot title shows D, D_ref, |D_ref - D|/D_ref and the number of time steps with negative values.
 #-----------------------------------------------------------------------------------------------------------------------------------
 
 # imports
 import sys, os
-import pandas as pd
-import numpy as np
+import numpy as np          
 import matplotlib.pyplot as plt
-from matplotlib.gridspec import GridSpec
+
+# optional arguments (passed by runtests_population.py)
+outfile  = sys.argv[1] if len(sys.argv) > 1 else "populationModel_frames.png"
+negsteps = sys.argv[2] if len(sys.argv) > 2 else "not counted"
+label    = sys.argv[3] if len(sys.argv) > 3 else ""
 
 # data file name
 datafile = "population.txt"
-
-# return with an error if the file does not exist
-if not os.path.isfile(datafile):
-    msg = "Error: file " + datafile + " does not exist"
-    sys.exit(msg)
 
 # read solution file, storing each line as a string in a list
 with open(datafile, "r") as file:
     lines = file.readlines()
 
-    # extract header information
-    title  = lines.pop(0)  # Title
-    T0     = float(lines.pop(0).split()[2])   # initial time
-    Tf     = float(lines.pop(0).split()[2])   # final time
-    N      = int(lines.pop(0).split()[2])     # spatial dimension
-    xl     = float(lines.pop(0).split()[2])   # left endpoint on spatial grid
-    xr     = float(lines.pop(0).split()[2])   # right endpoint on spatial grid 
-    diff_k = float(lines.pop(0).split()[2])   # diffusion coefficient 
-    x      = np.linspace(xl, xr, N)
+# extract header information
+title  = lines.pop(0)  # Title
+T0     = float(lines.pop(0).split()[2])   # initial time
+Tf     = float(lines.pop(0).split()[2])   # final time
+N      = int(lines.pop(0).split()[2])     # spatial dimension
+xl     = float(lines.pop(0).split()[2])   # left endpoint on spatial grid
+xr     = float(lines.pop(0).split()[2])   # right endpoint on spatial grid
+diff_k = float(lines.pop(0).split()[2])   # diffusion coefficient
+x      = np.linspace(xl, xr, N)
 
-    lastline  = (lines[-1])
-    num_steps = lastline.split(':')
-    nsteps    = int(num_steps[1].strip()) # total number of steps taken
+lastline  = (lines[-1])
+num_steps = lastline.split(':')
+nsteps    = int(num_steps[1].strip()) # total number of steps taken
 
-    dt = (Tf-T0)/nsteps                   # temporal step size
-    dx = (xr - xl)/N                      # spatial step size
-    
-    # allocate solution data as 2D Python arrays
-    t    = np.zeros((nsteps), dtype=float)
-    pSol = np.zeros((nsteps, N), dtype=float)
+dx = (xr - xl)/N                      # spatial step size (same as in plot_population.py)
 
-    # store remaining data into numpy arrays
-    it = 0
-    for i in range(len(lines)):
-        if "Time step" in lines[i]:
-            t[it] = float(lines[i].split(':')[1])
-            pSol[it, :] = np.array(lines[i+1].split(), dtype=float)
-            it += 1
-            if it == nsteps:
-                break
+# allocate solution data as 2D Python arrays
+t    = np.zeros((nsteps), dtype=float)
+pSol = np.zeros((nsteps, N), dtype=float)
 
-    ## Extract vector solution at the last time step
-    pSol_lastStep = np.zeros((N), dtype=float)
-    for i in range(len(pSol[nsteps-1, :])):
-        pSol_lastStep[i] = pSol[nsteps-1, i] 
+# store remaining data into numpy arrays
+it = 0
+for i in range(len(lines)):
+    if "Time step" in lines[i]:
+        t[it] = float(lines[i].split(':')[1])
+        pSol[it, :] = np.array(lines[i+1].split(), dtype=float)
+        it += 1
+        if it == nsteps:
+            break
 
-    print("last time read =", t[nsteps-1], " tf should be 10.0")
-    ## Use First Derivative to Determine Smoothness of Graph 
-    pSol_x = np.zeros((N), dtype=float)
-    for i in range(len(pSol[nsteps-1,:])):
-        pSol_x[i] = pSol[nsteps-1,i]
+# solution at the last time step
+pSol_lastStep = np.array(pSol[nsteps-1, :], dtype=float)
+print("last time read = %.16e" % t[nsteps-1])
 
-    lmax_pSol_xi = 0.0
-    for i in range(len(pSol_x-1)-1):
-        pSol_xi = np.abs((pSol_x[i+1] - pSol_x[i])/dx)
-        if pSol_xi > lmax_pSol_xi:
-            lmax_pSol_xi = pSol_xi
-    print("Lmax of first derivative at final time step = %.6f" %lmax_pSol_xi)
+def max_first_derivative(sol, dx):
+    """ max |p_{i+1} - p_i| / dx over the N-1 neighbouring pairs """
+    return np.max(np.abs(np.diff(sol))) / dx
 
-    # ##uncomment if you want to plot the solution at the final time step only 
-    # ## plotting only the solution at the final time step 
-    # plt.xlabel(r"$x$")
-    # plt.ylabel(r"pSol")
-    # plt.plot(x, pSol[-1, :], linewidth=2)
-   
-    ##uncomment if you want to plot the solution at 3 time intervals (initial, middle, final)
-    # plt.rc("font", size=15)
-    # plt.rcParams["figure.figsize"] = [7.2, 4.8]
-    # plt.rcParams["text.usetex"] = True
-    # plt.rcParams["figure.constrained_layout.use"] = True
-
-    # ## subplots with time snapshots of the population model
-    # fig = plt.figure(figsize=(10, 5))
-    # gs = GridSpec(1, 3, figure=fig)
-    # ax00 = fig.add_subplot(gs[0, 0])  # left column
-    # ax01 = fig.add_subplot(gs[0, 1])  # middle column
-    # ax02 = fig.add_subplot(gs[0, 2])  # right column
-    # it = 0
-    # tval = repr(float(t[it])).zfill(3)
-    # ax00.plot(x, pSol[it, :], "-b",)
-    # ax00.set_title(r"$t =$ " + tval)
-    # ax00.set_ylabel(r"$P(t,x)$")
-    # ax00.set_xlabel(r"$x$")
-    # ax00.set_xticks([0.0, 0.2, 0.4, 0.6, 0.8, 1.0])
-
-    # middleval = int(np.ceil(nsteps/2))
-    # it = middleval
-    # tval = repr(float(t[it])).zfill(3)
-    # ax01.plot(x, pSol[it, :], "-b")
-    # ax01.set_title(r"$t =$ " + tval)
-    # ax01.set_xlabel(r"$x$")
-    # ax01.set_xticks([0.0, 0.2, 0.4, 0.6, 0.8, 1.0])
-    
-    # it = -1
-    # tval = repr(float(t[it])).zfill(3)
-    # ax02.plot(x, pSol[it, :], "-b")
-    # ax02.set_title(r"$t =$ " + tval)
-    # ax02.set_xlabel(r"$x$")
-    # ax02.set_xticks([0.0, 0.2, 0.4, 0.6, 0.8, 1.0])
-    # plt.savefig("populationModel_frames.png")
-
-    # # plt.rc("font", size=15)
-    # # plt.rcParams["figure.figsize"] = [7.2, 4.8]
-    # plt.rcParams["text.usetex"] = True
-    # plt.rcParams["figure.constrained_layout.use"] = True
-
-    # plt.close()
-
+# first derivative of the numerical solution (same formula as plot_population.py)
+lmax_pSol_xi = max_first_derivative(pSol_lastStep, dx)
+print("Lmax of first derivative at final time step = %.6f" % lmax_pSol_xi)
 
 ## ------------------ Extract Reference Solution at Final Time Step -----------------------
 def read_ref_solution(filename):
-    """
-    This script extract the solution at the final time step of the reference solution 
-    required to compute the error norm at the final time step.
-
-    Input: filename: reference solution filename
-           N : the length of the solution at the final time step
-
-    Output: returns the solution vector at the final time step
-    """
-    if not os.path.isfile(filename):
-        msg = "Error: file " + filename + " does not exist"
-        sys.exit(msg)
-    
-    # read solution file, storing each line as a string in a list
+    """ returns the solution vector at the final time step of the reference solution """
     with open(filename, "r") as file_ref:
-
-        # extract header information
         title_ref = file_ref.readline()
         T0_ref    = float((file_ref.readline().split())[2])
         Tf_ref    = float((file_ref.readline().split())[2])
@@ -160,54 +76,32 @@ def read_ref_solution(filename):
         last_line = ""
         for line in file_ref:
             if "Number of Time Steps" in line:
-                nsteps_ref = int(line.split(':')[1].strip()) # extract total number of steps taken
                 break
-            # track the last non-empty solution, every nonempty line overwrites the last line
             if line.strip():
                 last_line = line
+    return np.array(last_line.split(), dtype=float)
 
-    # store only solution at the final step
-    last_data = last_line.split()
+# reference solution for the diffusion coefficient in population.txt
+ref_files = {0.0: "referenceSoln_population_diffk0.txt",
+             0.02: "referenceSoln_population_diffk02.txt",
+             0.04: "referenceSoln_population_diffk04.txt"}
+pSol_ref = read_ref_solution(ref_files[diff_k])
+elmax = np.max(np.abs(pSol_ref - pSol_lastStep))
+dref  = max_first_derivative(pSol_ref, dx)
+rel_diff = abs(dref - lmax_pSol_xi) / dref
 
-    pSol_ref_lastStep = np.zeros((N_ref), dtype=float)
-    pSol_ref_lastStep = np.array(last_data, dtype=float)
+print("Lmax error using reference solution = %.6e" % elmax)
+print("Reference first-derivative max = %.6f" % dref)
+print("Relative difference of first derivative = %.10e" % rel_diff)
 
-    return pSol_ref_lastStep
-
-
-## -------------------- Compute L-infinty norm using the reference solution -----------------------
-diffk0 = False #only one type of diffusion coefficient option can be true at a time (keep as only "1" space before and after =)
-diffk02 = True
-diffk04 = False
-
-def max_first_derivative(sol, dx):
-    """ max |p_{i+1} - p_i| / dx over the N-1 neighbouring pairs (same formula as for the numerical solution) """
-    return np.max(np.abs(np.diff(sol))) / dx
-
-# l-infinity error and first derivative of the reference solution
-elmax = 0.0
-dref  = 0.0
-if (diffk0):
-    diffk0_pSol_ref = read_ref_solution("referenceSoln_population_diffk0.txt")
-    elmax = np.max(np.abs(diffk0_pSol_ref - pSol_lastStep))
-    dref  = max_first_derivative(diffk0_pSol_ref, dx)
-
-elif (diffk02):
-    diffk02_pSol_ref = read_ref_solution("referenceSoln_population_diffk02.txt")
-    elmax = np.max(np.abs(diffk02_pSol_ref - pSol_lastStep))
-    dref  = max_first_derivative(diffk02_pSol_ref, dx)
-
-elif (diffk04):
-    diffk04_pSol_ref = read_ref_solution("referenceSoln_population_diffk04.txt")
-    elmax = np.max(np.abs(diffk04_pSol_ref - pSol_lastStep))
-    dref  = max_first_derivative(diffk04_pSol_ref, dx)
-# end
-print("Lmax error using reference solution = %.6e" %elmax)
-print("Reference first-derivative max = %.6f" %dref)
-
-##uncomment if you want to plot the solution at the final time step only
-# rel_diff = abs(lmax_pSol_xi - dref) / dref if dref > 0 else float('nan')
-# plt.title(f"D = {lmax_pSol_xi:.4f},  D_ref = {dref:.4f},  rel. diff = {100*rel_diff:.3f}%")
-# plt.savefig("populationModel_frames.png")
+## ------------------ Plot the solution at the final time step -----------------------
+if outfile.lower() != "none":
+    fig, ax = plt.subplots()
+    ax.plot(x, pSol_lastStep)
+    ax.set_title(f"{label}\n"
+                 f"D = {lmax_pSol_xi:.4f},  D_ref = {dref:.4f},  |D_ref - D|/D_ref = {100*rel_diff:.3f}%,  "
+                 f"negative steps = {negsteps}", fontsize=9)
+    fig.savefig(outfile)
+    plt.close(fig)
 
 ##### end of script #####

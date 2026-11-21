@@ -2,9 +2,11 @@
  * Programmer(s): Sylvia Amihere @ UMBC
  *---------------------------------------------------------------
  * SUNDIALS Copyright Start
- * Copyright (c) 2002-2025, Lawrence Livermore National Security,
+ * Copyright (c) 2025-2026, Lawrence Livermore National Security,
+ * University of Maryland Baltimore County, and the SUNDIALS contributors.
+ * Copyright (c) 2013-2025, Lawrence Livermore National Security
  * and Southern Methodist University.
- * Copyright (c) 2025, University of Maryland Baltimore County.
+ * Copyright (c) 2002-2013, Lawrence Livermore National Security.
  * All rights reserved.
  *
  * See the top-level LICENSE and NOTICE files for details.
@@ -89,7 +91,6 @@ using namespace std;
     sunrealtype sigma;           /* pulse steepness value */
     sunrealtype xstart;          /* left endpoint on spatial grid */
     sunrealtype xend;            /* right endpoint on spatial grid */
-    string swap_type;            /* Swapping or Non-Swapping of b-vectors of the method and its embedding*/ 
 
   // constructor (with default values)
   UserData()
@@ -103,8 +104,7 @@ using namespace std;
     sigma(0.05),
     xstart(ZERO),
     xend(1.0),
-    dx(ZERO),
-    swap_type("nonswap"){};
+    dx(ZERO){};
   };
 
 class ARKODEParameters
@@ -133,7 +133,6 @@ public:
    // Time Parameters
    sunrealtype T0;           // initial time
    sunrealtype Tf;           // end time
-  //  int Nt;                // number of output times
    
    // Output-related information
    int output;         // 0 = none, 1 = stats, 2 = disk, 3 = disk with tstop
@@ -148,7 +147,6 @@ public:
       fixed_h(ZERO),
       maxsteps(10000),
       output(1),
-      // Nt(10),
       T0(ZERO),
       Tf(1.0){};
  
@@ -161,7 +159,6 @@ static int Jac(N_Vector v, N_Vector Jv, sunrealtype t, N_Vector y, N_Vector fy, 
 static int ReadInputs(std::vector<std::string>& args, UserData& udata, ARKODEParameters& uopts, SUNContext ctx);
 static void InputHelp();
 static int PrintSetup(UserData& udata,ARKODEParameters& uopts);
-// static int trueSol(sunrealtype t, N_Vector tSol, void* user_data); //Exact solution
 
 /* Private function to check function return values */
 static int check_flag(void* flagvalue, const char* funcname, int opt);
@@ -169,8 +166,6 @@ static int check_flag(void* flagvalue, const char* funcname, int opt);
 /* Main Program */
 int main(int argc, char* argv[])
 {
-  // int maxl           = 100;
-
   // SUNDIALS context object for this simulation
   sundials::Context ctx;
 
@@ -221,39 +216,12 @@ int main(int argc, char* argv[])
   flag = ARKodeSStolerances(arkode_mem, uopts.rtol, uopts.atol);
   if (check_flag(&flag, "ARKodeSStolerances", 1)) { return 1; }
   /* Tighten nonlinear solver tolerance */
-  flag = ARKodeSetNonlinConvCoef(arkode_mem, SUN_RCONST(0.01));
+  flag = ARKodeSetNonlinConvCoef(arkode_mem, SUN_RCONST(0.0001));
   if (check_flag(&flag, "ARKodeSetNonlinConvCoef", 1)) { return 1; }
 
   /*Keep original butcher tableau or swap b-vectors of method and its embedding*/
-  if (udata.swap_type == "nonswap"){
-    flag = ARKStepSetTableName(arkode_mem, uopts.dirk_table.c_str(), "ARKODE_ERK_NONE"); 
-    if (check_flag(&flag, "ARKStepSetTableName", 1)) { return 1; } 
-  }
-  else if (udata.swap_type == "swap") {
-    ARKodeButcherTable Be = ARKodeButcherTable_LoadERKByName(uopts.erk_table.c_str());
-    ARKodeButcherTable Bi = ARKodeButcherTable_LoadDIRKByName(uopts.dirk_table.c_str());
-
-    int s = Bi->stages;
-    sunrealtype* A_new = (sunrealtype*) malloc(s * s * sizeof(sunrealtype));
-    for (int i = 0; i < s; i++) {
-      for (int j = 0; j < s; j++) { A_new[i * s + j] = Bi->A[i][j]; }
-    }
-    ARKodeButcherTable Bi_swap = ARKodeButcherTable_Create(Bi->stages, Bi->p, Bi->q, Bi->c, A_new, Bi->d, Bi->b);
-    if (check_flag((void*)Bi_swap, "ARKodeButcherTable_Create", 0)) { return 1; }
-
-    for (int i = 0; i < s; i++) {
-      for (int j = 0; j < s; j++) { A_new[i * s + j] = Be->A[i][j]; }
-    }
-    ARKodeButcherTable Be_swap = ARKodeButcherTable_Create(Be->stages, Be->p, Be->q, Be->c, A_new, Be->d, Be->b);
-    if (check_flag((void*)Be_swap, "ARKodeButcherTable_Create", 0)) { return 1; }
-    free(A_new);
-    flag = ARKStepSetTables(arkode_mem, Bi_swap->q, Bi_swap->p, Bi_swap, Be_swap);
-    if (check_flag(&flag, "ARKStepSetTables", 1)) { return 1; }
-    ARKodeButcherTable_Free(Be);
-    ARKodeButcherTable_Free(Bi); 
-    ARKodeButcherTable_Free(Be_swap);
-    ARKodeButcherTable_Free(Bi_swap);
-  }
+  flag = ARKStepSetTableName(arkode_mem, uopts.dirk_table.c_str(), "ARKODE_ERK_NONE"); 
+  if (check_flag(&flag, "ARKStepSetTableName", 1)) { return 1; } 
 
   if (uopts.fixed_h > ZERO)
   {
@@ -333,7 +301,6 @@ int main(int argc, char* argv[])
 
   /* Clean up and return with successful completion */
   N_VDestroy(y);           /* Free vectors */
-  // free(udata);             /* Free user data */
   N_VDestroy(tSol);
   ARKodeFree(&arkode_mem); /* Free integrator memory */
   SUNLinSolFree(LS);       /* Free linear solver */
@@ -398,45 +365,6 @@ static int fi(sunrealtype t, N_Vector y, N_Vector ydot, void* user_data)
 
   return 0; /* Return with success */
 }
-
-
-// /* f routine to compute the ODE explicit RHS function f(t,y). */
-// static int fe(sunrealtype t, N_Vector y, N_Vector ydot, void* user_data)
-// {
-//   UserData* udata = (UserData*)user_data; /* access problem data */
-//   sunrealtype *Y = NULL, *Ydot = NULL;
-//   Y = N_VGetArrayPointer(y); /* access data arrays */
-//   if (check_flag((void*)Y, "N_VGetArrayPointer", 0)) { return 1; }
-//   Ydot = N_VGetArrayPointer(ydot);
-//   if (check_flag((void*)Ydot, "N_VGetArrayPointer", 0)) { return 1; }
-//   N_VConst(0.0, ydot); /* Initialize ydot to zero */
-
-//   // /* set parameters */
-//   // const sunindextype N  = udata->N;
-//   // const sunrealtype dx  = udata->dx;
-//   // const sunrealtype k1  = udata->k1;
-//   // const sunrealtype k2  = udata->k2;
-//   // const sunrealtype s1  = udata->s1;
-//   // const sunrealtype s2  = udata->s2;
-//   // sunrealtype* u = Y; //the first N entries for vector u
-//   // sunrealtype* v = Y + N; //the next N entries for vector v
-//   // sunrealtype* udot = Ydot;
-//   // sunrealtype* vdot = Ydot + N;
-
-//   //boundary conditions
-//   // u[0] = 0.0;//1.0 - SUNRpowerI(sin(12.0*t),4);
-
-//   //interior points
-//   // for (int i = 0; i < N; i++){
-//   //   udot[i] = 0.0;//-k1*u[i] + k2*v[i] + s1;
-//   // }
-
-//   // for (int i = 0; i < N; i++){
-//   //   vdot[i] =  0.0;//k1*u[i] - k2*v[i] + s2; 
-//   // }
-
-//   return 0; /* Return with success */
-// }
 
 
 inline void find_arg(std::vector<std::string>& args, const std::string key,
@@ -526,11 +454,9 @@ static int ReadInputs(std::vector<std::string>& args, UserData& udata,
  find_arg(args, "--N", udata.N);
  find_arg(args, "--xstart", udata.xstart);
  find_arg(args, "--xend", udata.xend);
- find_arg(args, "--swap_type", udata.swap_type);
  find_arg(args, "--k1", udata.k1);
  find_arg(args, "--k2", udata.k2);
  find_arg(args, "--sigma", udata.sigma);
-
 
 // Integrator options
  find_arg(args, "--dirk_table", uopts.dirk_table);
@@ -542,7 +468,6 @@ static int ReadInputs(std::vector<std::string>& args, UserData& udata,
  find_arg(args,  "--output", uopts.output);
  find_arg(args,  "--T0", uopts.T0);
  find_arg(args,  "--Tf", uopts.Tf);
-//  find_arg(args,  "--Nt", uopts.Nt);
 
  // Recompute mesh spacing and [re]allocate flux array
  udata.dx = (udata.xend - udata.xstart) / udata.N;
@@ -561,7 +486,6 @@ static void InputHelp()
    std::cout << "  --erk_table <str> : method (ARKODE_SSP_ERK_2_1_2, "
                 "ARKODE_SSP_ERK_3_1_2, " 
                 "ARKODE_SSP_LSPUM_ERK_3_1_2, or ARKODE_SSP_ERK_4_2_3)\n";
-   std::cout << "  --swap_type <str> : swap, nonswap  \n";
    std::cout << "  --N <int>         : dimension\n";
    std::cout << "  --rtol <real>     : relative tolerance\n";
    std::cout << "  --atol <real>     : absolute tolerance\n";
@@ -575,7 +499,6 @@ static void InputHelp()
    std::cout << "  --xend <real>     : right spatial end point  \n";
    std::cout << "  --T0 <real>       : initial time \n";
    std::cout << "  --Tf <real>       : end time\n";
-  //  std::cout << "  --Nt <int>        : number of outputs\n";
    std::cout << "  --help            : print options and exit\n";
  }
 
@@ -590,7 +513,6 @@ static int PrintSetup(UserData& udata, ARKODEParameters& uopts)
   std::cout << "  dx           = " << udata.dx << std::endl;
   std::cout << "  xstart       = " << udata.xstart << std::endl;
   std::cout << "  xend         = " << udata.xend << std::endl;
-  std::cout << "  swap_type    = " << udata.swap_type << std::endl;
   std::cout << "  k1           = " << udata.k1 << std::endl;
   std::cout << "  k2           = " << udata.k2 << std::endl;
   std::cout << "  sigma        = " << udata.sigma << std::endl;
@@ -603,7 +525,6 @@ static int PrintSetup(UserData& udata, ARKODEParameters& uopts)
   std::cout << "  maxsteps     = " << uopts.maxsteps << std::endl;
   std::cout << "  T0           = " << uopts.T0 << std::endl;
   std::cout << "  Tf           = " << uopts.Tf << std::endl;
-  // std::cout << "  Nt           = " << uopts.Nt << std::endl;
   std::cout << " --------------------------------- " << std::endl;
   std::cout << "  output       = " << uopts.output << std::endl;
   std::cout << " --------------------------------- " << std::endl;

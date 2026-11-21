@@ -2,14 +2,9 @@
 #------------------------------------------------------------------------------------------------------------------------------------
 # Programmer(s):  Sylvia Amihere @ UMBC
 #------------------------------------------------------------------------------------------------------------------------------------
-# Copyright (c) 2025, University of Maryland Baltimore County.
-# All rights reserved.
-# For details, see the LICENSE file.
-#------------------------------------------------------------------------------------------------------------------------------------
-# ReadME: This scripts runs the different imex schemes with different diffusion coefficients and parameters, 
-#         using either adaptive or fixed time stepping, for a linear advection-reaction test problem.
+# ReadME: This scripts runs the different imex schemes with different sigma values, 
+#         using either adaptive or fixed time stepping, for the linear advection-reaction test problem.
 #         The stats for the fixed runs and the adaptive runs are stored in two separate excel files.
-#         The goal is to test the accuracy of the IMEX SSP schemes.
 #-------------------------------------------------------------------------------------------------------------------------------------
 
 # imports
@@ -278,8 +273,8 @@ pulse_steepness = {"pulseP1": 0.1, "pulseP05": 0.05, "pulseP02": 0.02, "pulseP01
 
 
 # ----------------------------------------------------------------------------------------------------
-# This section generates the data for each method with different fixed step sizes and rtols
-# ----------------------------------------------------------------------------------------------------
+# # This section generates the data for each method with different fixed step sizes and rtols
+# # ----------------------------------------------------------------------------------------------------
 # Integrator types
 solvertype = [{'name': 'SSP212',  'exe': SSP212},
               {'name': 'SSP312',  'exe': SSP312},
@@ -327,8 +322,6 @@ df_fixed    = pd.read_excel('linear_adv_rec_stats_fixed' + '.xlsx')    # excel f
 df_adaptive = pd.read_excel('linear_adv_rec_stats_adaptive' + '.xlsx') # excel file with the adaptive runs
 
 colors   = ['red', 'black', 'blue', 'green', 'orange'] 
-# markers  = ['o', '*', 's', '^', '+']
-# modetype = ['fixed', 'adaptive']
 
 x_metrics = [('StepAttempts', 'step-attempts','step_attempts'), 
              ('Implicit_solves', 'implicit-solves','implicit_solves'), 
@@ -374,6 +367,6 @@ for pulse_name, pulse_val in pulse_steepness.items():
             ax.legend(by_label.values(), by_label.keys(), bbox_to_anchor=(1.05, 1), borderaxespad=0., loc='upper left', fontsize=20)
 
             ax.set_xlabel(f'{x_label}', fontsize=20)
-            ax.set_ylabel(f'{y_label}', fontsize=20)
+            ax.set_ylabel(rf'error ($\sigma = {pulse_val}$)', fontsize=20)
             plt.savefig(f"{x_filename}_{y_filename}_LAR_{pulse_name}.png", bbox_inches="tight")
             plt.close(fig)

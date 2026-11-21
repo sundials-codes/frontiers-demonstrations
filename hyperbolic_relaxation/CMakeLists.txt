@@ -10,8 +10,7 @@ set(source_ref hyperbolic_relaxation_refSol.cpp)
 set(extras 
     plot_hyperbolic_relaxation.py
     runtests_hyperbolic_relaxation.py
-    runtests_hyperbolic_relaxation_refSol.py
-    run-all-hyperbolic-relaxation-tests.sh)
+    runtests_hyperbolic_relaxation_refSol.py)
 
 #   set the target name
 set(target_main hyperbolic_relaxation)

@@ -85,13 +85,36 @@ find_package(SUNDIALS REQUIRED
 
 message(STATUS "Found SUNDIALS: ${SUNDIALS_DIR}")
 
+# ----------------------------------------------------------------------------
+# IMEX SSP Butcher tables
+#
+# Compile every example with imex_ssp_tables/imex_ssp_tables.hpp, so that the
+# five IMEX SSP methods (SSP212, SSP312, SSPL312 with the updated embedding,
+# SSP423, SSP923) always use the tables from this repository, whichever SUNDIALS
+# branch is installed. Turn off with -DUSE_IMEX_SSP_TABLES=OFF.
+# ----------------------------------------------------------------------------
+
+option(USE_IMEX_SSP_TABLES "Use the in-repo IMEX SSP Butcher tables" ON)
+
+if(USE_IMEX_SSP_TABLES)
+  set(IMEX_SSP_TABLES_HEADER "${CMAKE_CURRENT_SOURCE_DIR}/imex_ssp_tables/imex_ssp_tables.hpp")
+  if(NOT EXISTS "${IMEX_SSP_TABLES_HEADER}")
+    message(FATAL_ERROR "IMEX SSP tables header not found: ${IMEX_SSP_TABLES_HEADER}")
+  endif()
+  add_compile_options("$<$<COMPILE_LANGUAGE:CXX>:SHELL:-include \"${IMEX_SSP_TABLES_HEADER}\">")
+  message(STATUS "Using IMEX SSP tables from ${IMEX_SSP_TABLES_HEADER}")
+endif()
+
 # --------------------------------------------------------
 # add subdirectories for specific demonstration test codes
 # --------------------------------------------------------
 
 add_subdirectory(population)
-add_subdirectory(Euler_1D)
-add_subdirectory(linear_advection)
 add_subdirectory(linear_advection_reaction)
 add_subdirectory(hyperbolic_relaxation)
-add_subdirectory(euler_reaction)
+
+# -----------------------------------------------------------
+# install the script that runs all the examples into "bin"
+# -----------------------------------------------------------
+
+install(PROGRAMS run-all-examples.sh DESTINATION ${demonstration_bin})

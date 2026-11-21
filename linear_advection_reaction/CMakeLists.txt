@@ -12,8 +12,7 @@ set(source_ref
 set(extras
     runtests_linear_adv_rec.py
     plot_linear_adv_rec.py
-    runtests_linear_adv_rec_refSol.py
-    run-all-linear-advection-reaction-tests.sh)
+    runtests_linear_adv_rec_refSol.py)
 
 #   set the target name for main function
 set(target_main linear_adv_rec)
