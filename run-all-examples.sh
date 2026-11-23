@@ -18,7 +18,11 @@ echo -e "Generating reference solutions for each diffusion coefficient. \n"
 python3 runtests_population_refSol.py
 
 echo -e "Generating all stats and saving in an excel file. \n"
-python3 runtests_population.py
+echo -e "  Step 1: MODE = uncheckedSMOOTH (bisection runs and final-time plots). \n"
+python3 runtests_population.py uncheckedSMOOTH
+
+echo -e "  Step 2: MODE = ssp (uses the TAU values set in runtests_population.py). \n"
+python3 runtests_population.py ssp
 
 echo -e "Run tests for the population density example completed!\n"
 

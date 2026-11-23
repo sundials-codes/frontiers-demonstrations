@@ -41,7 +41,6 @@
  * on the SUNDIALS table IDs, so it is never triggered by the tables supplied
  * here, whichever SUNDIALS branch is installed.)
  *
- * Set IMEXSSP_VERBOSE=1 to print (to stderr) which tables were used.
  * ---------------------------------------------------------------------------*/
 
 #ifndef IMEX_SSP_TABLES_HPP
@@ -59,7 +58,6 @@
 #include <sundials/sundials_types.h>
 
 #include <cstdio>
-#include <cstdlib>
 #include <cstring>
 
 namespace imexssp {
@@ -443,12 +441,6 @@ inline const Method* FindByERK(const char* name)
   return NULL;
 }
 
-inline bool Verbose()
-{
-  const char* v = std::getenv("IMEXSSP_VERBOSE");
-  return (v != NULL) && (v[0] != '\0') && (v[0] != '0');
-}
-
 /* ---------------------------------------------------------------------------
  * Internal helpers: build one of the tables above by name, or fall back to the
  * SUNDIALS built-in table for any other name (e.g. ARK548L2SA).
@@ -505,15 +497,6 @@ inline int SetTableName(void* arkode_mem, const char* itable, const char* etable
 
   ARKodeButcherTable Bref = (Bi != NULL) ? Bi : Be;
   int flag = ARKStepSetTables(arkode_mem, Bref->q, Bref->p, Bi, Be);
-
-  if (Verbose())
-  {
-    const Method* m = (mi != NULL) ? mi : me;
-    std::fprintf(stderr,
-                 "[imex_ssp_tables] %s: using in-repo tables (dirk = %s, erk = %s), "
-                 "ARKStepSetTables flag = %d\n",
-                 m->label, inone ? "NONE" : itable, enone ? "NONE" : etable, flag);
-  }
 
   ARKodeButcherTable_Free(Bi);
   ARKodeButcherTable_Free(Be);
