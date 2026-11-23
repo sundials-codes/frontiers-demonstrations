@@ -18,6 +18,13 @@ To obtain the code, clone this repository with Git:
   git clone https://github.com/sundials-codes/frontiers-demonstrations.git
 ```
 
+The results in the paper on embedded IMEX SSP methods were generated with the `embedded-ssp-imex` branch of this repository. To reproduce them, switch to that branch after cloning:
+
+```bash
+  cd frontiers-demonstrations
+  git checkout embedded-ssp-imex
+```
+
 
 ### Requirements
 
