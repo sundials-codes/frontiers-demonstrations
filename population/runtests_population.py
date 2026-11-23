@@ -47,6 +47,10 @@ from math import log10, floor
 
 ## ===================================================================================================================================
 MODE = "uncheckedSMOOTH"        # "uncheckedSMOOTH" (run first to determine TAU values) or "ssp" (run second, after setting TAU)
+# MODE may also be given on the command line, e.g.  python3 runtests_population.py ssp
+# (with no argument, the value set above is used)
+if len(sys.argv) > 1:
+    MODE = sys.argv[1]
 
 # smoothness tolerance: the final profile is smooth if |D_ref - D| / D_ref <= tau
 # set these after inspecting the final-time plots by running uncheckedSMOOTH

@@ -197,8 +197,8 @@ def read_ref_solution(filename):
     return uSolRefFinal, vSolRefFinal, uvSolRefFinal
 
 ## -------------------- Compute L-infinty norm using the reference solution -----------------------
-pulseP1 = True
-pulseP05 = False
+pulseP1 = False
+pulseP05 = True
 pulseP02 = False
 pulseP01 = False
 
