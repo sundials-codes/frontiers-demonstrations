@@ -65,7 +65,7 @@ We recommend that users follow the posted instructions for installing SUNDIALS.
 ```bash
 mkdir deps/sundials/build
 cd deps/sundials/build
-cmake -DCMAKE_INSTALL_PREFIX=../../sundials-install -DENABLE_MPI=ON -DSUNDIALS_INDEX_SIZE=32 ..
+cmake -DCMAKE_INSTALL_PREFIX=../../sundials-install -DSUNDIALS_ENABLE_MPI=ON -DSUNDIALS_INDEX_SIZE=32 ..
 make -j install
 ```
 
